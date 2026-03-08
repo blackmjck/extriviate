@@ -1,0 +1,64 @@
+<div class="lobby-page">
+  <div class="lobby-card">
+    <h1 class="lobby-title">{{ session()?.name ?? 'Game Lobby' }}</h1>
+
+    <div class="join-code-section">
+      <span class="join-code-label">Join Code</span>
+      <button class="join-code-display" (click)="copyJoinCode()">
+        <span class="code-text">{{ joinCode() }}</span>
+        <span class="copy-hint">
+          @if (copied()) {
+            Copied!
+          } @else {
+            Click to copy
+          }
+        </span>
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-banner">{{ errorMessage() }}</div>
+    }
+
+    <div class="players-section">
+      <h2 class="section-heading">
+        Players <span class="player-count">({{ players().length }})</span>
+      </h2>
+
+      <ul class="player-list">
+        @for (player of players(); track player.playerId) {
+          <li class="player-item">
+            <span class="player-avatar">{{ player.displayName.charAt(0).toUpperCase() }}</span>
+            <span class="player-name">{{ player.displayName }}</span>
+            @if (player.isHost) {
+              <span class="host-badge">Host</span>
+            }
+            @if (player.isDisconnected) {
+              <span class="disconnected-badge">Disconnected</span>
+            }
+          </li>
+        } @empty {
+          <li class="empty-state">Waiting for players to join...</li>
+        }
+      </ul>
+    </div>
+
+    <div class="lobby-actions">
+      @if (isHost()) {
+        <button
+          class="btn-start"
+          (click)="startGame()"
+          [disabled]="starting()"
+        >
+          @if (starting()) {
+            Starting...
+          } @else {
+            Start Game
+          }
+        </button>
+      } @else {
+        <p class="waiting-message">Waiting for the host to start the game...</p>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+@if (isVisible()) {
+  <aside class="host-panel">
+    <h3 class="panel-title">Host Controls</h3>
+
+    <div class="phase-status">
+      <span class="phase-label">Phase:</span>
+      <span class="phase-value">{{ phaseLabel() }}</span>
+    </div>
+
+    <!-- Buzzer controls -->
+    <div class="control-group">
+      <button class="control-btn release" (click)="releaseBuzzers()">Release Buzzers</button>
+      <button class="control-btn lock" (click)="lockBuzzers()">Lock Buzzers</button>
+    </div>
+
+    <!-- Answer evaluation -->
+    @if (showEvaluationButtons()) {
+      <div class="evaluation-section">
+        @if (activePlayerName(); as name) {
+          <p class="answering-player">{{ name }} answered:</p>
+        }
+
+        @if (submittedAnswer(); as answer) {
+          <p class="submitted-answer">"{{ answer }}"</p>
+        }
+
+        <div class="eval-buttons">
+          <button class="control-btn correct" (click)="evaluateAnswer(true)">Correct</button>
+          <button class="control-btn wrong" (click)="evaluateAnswer(false)">Wrong</button>
+        </div>
+      </div>
+    }
+  </aside>
+}

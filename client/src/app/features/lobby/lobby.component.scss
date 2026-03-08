@@ -1,0 +1,208 @@
+.lobby-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: var(--bg-primary, #0a0a14);
+  font-family: var(--font-ui, 'Trebuchet MS'), sans-serif;
+}
+
+.lobby-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 2rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.lobby-title {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-question, Georgia), serif;
+  font-size: 1.75rem;
+  color: #fff;
+  text-align: center;
+}
+
+.join-code-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.join-code-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.join-code-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 2rem;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover {
+    border-color: var(--accent, #4169e1);
+    background: rgba(65, 105, 225, 0.05);
+  }
+}
+
+.code-text {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--score-value, #f5c842);
+  font-family: var(--font-ui, 'Trebuchet MS'), sans-serif;
+}
+
+.copy-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.error-banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+  font-size: 0.875rem;
+}
+
+.players-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+
+  .player-count {
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+  }
+}
+
+.player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.player-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent, #4169e1);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.player-name {
+  flex: 1;
+  color: #fff;
+  font-size: 0.9375rem;
+}
+
+.host-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(245, 200, 66, 0.15);
+  color: var(--score-value, #f5c842);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.disconnected-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+}
+
+.lobby-actions {
+  text-align: center;
+}
+
+.btn-start {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent, #4169e1), #5a7ff5);
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: var(--font-ui, 'Trebuchet MS'), sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  box-shadow: 0 4px 16px rgba(65, 105, 225, 0.3);
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.waiting-message {
+  margin: 0;
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
+  font-size: 0.9375rem;
+}

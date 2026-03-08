@@ -1,0 +1,98 @@
+<div class="question-container">
+  <!-- Point value banner -->
+  @if (pointValue(); as pv) {
+    <div class="point-banner">${{ pv }}</div>
+  }
+
+  <!-- Question content blocks -->
+  <div class="question-content">
+    @for (block of questionContent(); track $index) {
+      @if (isTextBlock(block)) {
+        <p class="question-text" [class]="block.formatting ?? ''">{{ block.value }}</p>
+      }
+      @if (isImageBlock(block)) {
+        <img class="question-image" [src]="block.url" [alt]="block.alt ?? 'Question image'" />
+      }
+      @if (isVideoBlock(block)) {
+        <video class="question-video" [src]="block.url" controls>
+          @if (block.caption) {
+            <track kind="captions" />
+          }
+        </video>
+      }
+    }
+  </div>
+
+  <!-- Timer -->
+  @if (timerValue(); as tv) {
+    <div class="timer" [class.urgent]="tv <= 3">{{ tv }}</div>
+  }
+
+  <!-- Buzz button -->
+  @if (showBuzzButton()) {
+    <button class="buzz-button" (click)="buzz()">BUZZ</button>
+  }
+
+  <!-- Answer input -->
+  @if (showAnswerInput()) {
+    <form class="answer-form" (ngSubmit)="submitAnswer()">
+      <input
+        class="answer-input"
+        type="text"
+        placeholder="Type your answer..."
+        [ngModel]="answerText()"
+        (ngModelChange)="answerText.set($event)"
+        name="answer"
+        autocomplete="off"
+      />
+
+      @if (speech.isAvailable()) {
+        <button
+          type="button"
+          class="ptt-button"
+          [class.listening]="speech.isListening()"
+          (pointerdown)="startPtt()"
+          (pointerup)="stopPtt()"
+          (pointerleave)="stopPtt()"
+        >
+          @if (speech.isListening()) {
+            <span class="ptt-icon">&#9899;</span>
+          } @else {
+            <span class="ptt-icon">&#127908;</span>
+          }
+        </button>
+      }
+
+      <button type="submit" class="submit-button">Submit</button>
+    </form>
+
+    @if (speech.interimTranscript(); as interim) {
+      <p class="interim-transcript">{{ interim }}</p>
+    }
+  }
+
+  <!-- Answer result -->
+  @if (showResult()) {
+    <div class="result" [class.correct]="isCorrect()" [class.wrong]="isCorrect() === false">
+      @if (isCorrect()) {
+        <span class="result-label">Correct!</span>
+      } @else {
+        <span class="result-label">Incorrect</span>
+      }
+
+      @if (submittedAnswer(); as sa) {
+        <p class="submitted-answer">Answered: "{{ sa }}"</p>
+      }
+
+      @if (answerContent().length > 0) {
+        <div class="correct-answer">
+          @for (block of answerContent(); track $index) {
+            @if (isTextBlock(block)) {
+              <p>{{ block.value }}</p>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,186 @@
+:host {
+  display: block;
+}
+
+.cat-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ---- Buttons ----
+
+.btn {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+
+  &--sm {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  &--xs {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+
+  &--primary {
+    background: var(--accent, #4169e1);
+    color: #fff;
+
+    &:hover {
+      background: lighten(#4169e1, 8%);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--accent, #4169e1);
+    border: 1px solid rgba(65, 105, 225, 0.3);
+
+    &:hover {
+      background: rgba(65, 105, 225, 0.1);
+    }
+  }
+
+  &--danger-ghost {
+    background: transparent;
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+
+    &:hover {
+      background: rgba(231, 76, 60, 0.1);
+    }
+  }
+}
+
+// ---- Form ----
+
+.cat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #999;
+}
+
+.input {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #e0e0e0;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: var(--accent, #4169e1);
+  }
+}
+
+// ---- Category List ----
+
+.cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  &__select {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(65, 105, 225, 0.1);
+    }
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  &__desc {
+    font-size: 0.75rem;
+    color: #888;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__empty {
+    text-align: center;
+    color: #666;
+    padding: 24px 0;
+    font-size: 0.85rem;
+  }
+}
+
+// ---- States ----
+
+.loading-text {
+  color: #999;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+
+.error-banner {
+  background: rgba(231, 76, 60, 0.15);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}

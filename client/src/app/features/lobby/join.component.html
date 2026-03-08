@@ -1,0 +1,142 @@
+<div class="join-page">
+  @if (fetchingSession()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading session...</p>
+    </div>
+  } @else if (!session()) {
+    <div class="error-state">
+      <h2>Oops</h2>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  } @else {
+    <div class="join-card">
+      <h1 class="session-name">{{ session()!.name }}</h1>
+      <p class="session-code">Code: <strong>{{ session()!.joinCode }}</strong></p>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <div class="method-tabs">
+        <button
+          class="tab"
+          [class.active]="joinMethod() === 'guest'"
+          (click)="selectMethod('guest')"
+        >
+          Guest
+        </button>
+        <button
+          class="tab"
+          [class.active]="joinMethod() === 'login'"
+          (click)="selectMethod('login')"
+        >
+          Log In
+        </button>
+        <button
+          class="tab"
+          [class.active]="joinMethod() === 'signup'"
+          (click)="selectMethod('signup')"
+        >
+          Sign Up
+        </button>
+      </div>
+
+      <form (ngSubmit)="onJoin()" class="join-form">
+        @if (joinMethod() === 'guest') {
+          <div class="form-group">
+            <label for="guestName">Display Name</label>
+            <input
+              id="guestName"
+              type="text"
+              [ngModel]="guestName()"
+              (ngModelChange)="guestName.set($event)"
+              name="guestName"
+              placeholder="Enter your name"
+              required
+            />
+          </div>
+        }
+
+        @if (joinMethod() === 'login') {
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input
+              id="loginEmail"
+              type="email"
+              [ngModel]="loginEmail()"
+              (ngModelChange)="loginEmail.set($event)"
+              name="loginEmail"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input
+              id="loginPassword"
+              type="password"
+              [ngModel]="loginPassword()"
+              (ngModelChange)="loginPassword.set($event)"
+              name="loginPassword"
+              placeholder="Your password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+        }
+
+        @if (joinMethod() === 'signup') {
+          <div class="form-group">
+            <label for="signupName">Display Name</label>
+            <input
+              id="signupName"
+              type="text"
+              [ngModel]="signupName()"
+              (ngModelChange)="signupName.set($event)"
+              name="signupName"
+              placeholder="Your name"
+              required
+              autocomplete="name"
+            />
+          </div>
+          <div class="form-group">
+            <label for="signupEmail">Email</label>
+            <input
+              id="signupEmail"
+              type="email"
+              [ngModel]="signupEmail()"
+              (ngModelChange)="signupEmail.set($event)"
+              name="signupEmail"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+          <div class="form-group">
+            <label for="signupPassword">Password</label>
+            <input
+              id="signupPassword"
+              type="password"
+              [ngModel]="signupPassword()"
+              (ngModelChange)="signupPassword.set($event)"
+              name="signupPassword"
+              placeholder="Create a password"
+              required
+              autocomplete="new-password"
+            />
+          </div>
+        }
+
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          @if (loading()) {
+            Joining...
+          } @else {
+            Join Game
+          }
+        </button>
+      </form>
+    </div>
+  }
+</div>

@@ -1,0 +1,46 @@
+<div class="game-list">
+  <header class="game-list__header">
+    <h1 class="game-list__title">My Games</h1>
+    <button class="btn btn--primary" (click)="createGame()">Create Game</button>
+  </header>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading">Loading games...</div>
+  } @else {
+    @if (games().length === 0) {
+      <div class="empty-state">
+        <p>You haven't created any games yet.</p>
+        <button class="btn btn--primary" (click)="createGame()">Create Your First Game</button>
+      </div>
+    } @else {
+      <div class="game-grid">
+        @for (game of games(); track game.id) {
+          <div class="game-card">
+            <div class="game-card__body">
+              <h3 class="game-card__title">{{ game.title }}</h3>
+              <span class="game-card__status" [class.game-card__status--published]="game.isPublished">
+                {{ game.isPublished ? 'Published' : 'Draft' }}
+              </span>
+            </div>
+            <div class="game-card__actions">
+              <button class="btn btn--ghost" (click)="editGame(game.id)">Edit</button>
+              <button class="btn btn--danger-ghost" (click)="deleteGame(game.id)">Delete</button>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+          <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+          <button class="btn btn--ghost" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+        </div>
+      }
+    }
+  }
+</div>

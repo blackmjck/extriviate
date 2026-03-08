@@ -1,0 +1,173 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--bg-primary, #0a0a14);
+  color: #e0e0e0;
+  padding: 48px 24px;
+}
+
+.session-end {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent, #4169e1);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+// ---- Podium ----
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+
+  &__slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  &__medal {
+    font-size: 1.75rem;
+  }
+
+  &__name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &__score {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--score-value, #f5c842);
+  }
+
+  &__bar {
+    width: 100%;
+    background: var(--accent, #4169e1);
+    border-radius: 6px 6px 0 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 12px;
+    min-height: 40px;
+  }
+
+  &__rank {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  &__slot--rank-1 .podium__bar {
+    background: var(--accent, #4169e1);
+  }
+
+  &__slot--rank-2 .podium__bar {
+    background: rgba(65, 105, 225, 0.7);
+  }
+
+  &__slot--rank-3 .podium__bar {
+    background: rgba(65, 105, 225, 0.45);
+  }
+}
+
+// ---- Rankings table ----
+
+.rankings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+    color: #999;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  &__row {
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &--top3 {
+      font-weight: 600;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  &__rank {
+    width: 60px;
+    text-align: center;
+  }
+
+  &__name {
+    flex: 1;
+  }
+
+  &__score {
+    width: 100px;
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--score-value, #f5c842);
+  }
+}
+
+// ---- Play Again ----
+
+.play-again-btn {
+  margin-top: 8px;
+  padding: 14px 40px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent, #4169e1);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.2s, transform 0.1s;
+
+  &:hover {
+    background: lighten(#4169e1, 8%);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

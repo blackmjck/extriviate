@@ -1,0 +1,35 @@
+@if (isRevealed()) {
+  <div class="daily-double-overlay">
+    <div class="daily-double-card">
+      <h2 class="title">Daily Double!</h2>
+
+      @if (isActivePlayer()) {
+        <div class="wager-section">
+          <p class="score-display">Your score: ${{ playerScore() }}</p>
+
+          <label class="wager-label" for="wagerInput">Enter your wager</label>
+
+          <div class="wager-controls">
+            <input
+              id="wagerInput"
+              type="number"
+              class="wager-input"
+              [min]="minWager"
+              [max]="maxWager()"
+              [ngModel]="wagerAmount()"
+              (ngModelChange)="wagerAmount.set($event)"
+            />
+          </div>
+
+          <p class="wager-range">
+            Min: ${{ minWager }} &mdash; Max: ${{ maxWager() }}
+          </p>
+
+          <button class="wager-submit" (click)="submitWager()">Lock In Wager</button>
+        </div>
+      } @else {
+        <p class="waiting-text">Waiting for player to set wager...</p>
+      }
+    </div>
+  </div>
+}

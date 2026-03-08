@@ -1,0 +1,233 @@
+:host {
+  display: block;
+}
+
+.question-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.point-banner {
+  color: var(--score-value, #f5c842);
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: 'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.question-content {
+  width: 100%;
+  text-align: center;
+}
+
+.question-text {
+  color: #fff;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+  line-height: 1.6;
+  margin: 0 0 16px;
+
+  &.bold {
+    font-weight: 700;
+  }
+
+  &.italic {
+    font-style: italic;
+  }
+
+  &.underline {
+    text-decoration: underline;
+  }
+
+  &.code {
+    font-family: 'Courier New', Courier, monospace;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+}
+
+.question-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  object-fit: contain;
+  margin: 12px 0;
+}
+
+.question-video {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+// Timer
+.timer {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s ease;
+
+  &.urgent {
+    color: #e74c3c;
+    animation: pulse 0.6s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+// Buzz button
+.buzz-button {
+  width: min(30vw, 120px);
+  height: min(30vw, 120px);
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  background: #e74c3c;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow:
+    0 6px 20px rgba(231, 76, 60, 0.5),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    box-shadow:
+      0 2px 8px rgba(231, 76, 60, 0.4),
+      inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Answer form
+.answer-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  align-items: center;
+}
+
+.answer-input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid var(--accent, #4169e1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+
+  &:focus {
+    border-color: var(--score-value, #f5c842);
+    box-shadow: 0 0 0 2px rgba(245, 200, 66, 0.2);
+  }
+}
+
+.ptt-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--accent, #4169e1);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+
+  &.listening {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.15);
+  }
+}
+
+.ptt-icon {
+  line-height: 1;
+}
+
+.submit-button {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent, #4169e1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: lighten(#4169e1, 8%);
+  }
+}
+
+.interim-transcript {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+// Result display
+.result {
+  text-align: center;
+  padding: 20px;
+  border-radius: 12px;
+  min-width: 200px;
+
+  &.correct {
+    background: rgba(46, 204, 113, 0.15);
+    border: 2px solid #2ecc71;
+  }
+
+  &.wrong {
+    background: rgba(231, 76, 60, 0.15);
+    border: 2px solid #e74c3c;
+  }
+}
+
+.result-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.submitted-answer {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+}
+
+.correct-answer {
+  margin-top: 12px;
+  color: var(--score-value, #f5c842);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.1rem;
+}

@@ -1,0 +1,87 @@
+<div class="editor">
+  @if (loading()) {
+    <div class="loading">Loading game...</div>
+  } @else {
+    <header class="editor__header">
+      <button class="btn btn--ghost" (click)="goBack()">Back</button>
+      <h1 class="editor__title">Edit Game</h1>
+      <button
+        class="btn btn--primary"
+        [disabled]="saving() || !isDirty()"
+        (click)="saveGame()"
+      >
+        {{ saving() ? 'Saving...' : 'Save' }}
+      </button>
+    </header>
+
+    @if (error()) {
+      <div class="error-banner">{{ error() }}</div>
+    }
+
+    <!-- Metadata -->
+    <section class="metadata">
+      <div class="metadata__field">
+        <label class="label" for="game-title">Title</label>
+        <input
+          id="game-title"
+          class="input"
+          type="text"
+          [ngModel]="title()"
+          (ngModelChange)="title.set($event); onMetadataChange()"
+          maxlength="100"
+        />
+      </div>
+      <div class="metadata__field metadata__field--toggle">
+        <label class="label" for="daily-doubles">Daily Doubles</label>
+        <input
+          id="daily-doubles"
+          type="checkbox"
+          [ngModel]="dailyDoublesEnabled()"
+          (ngModelChange)="dailyDoublesEnabled.set($event); onMetadataChange()"
+        />
+      </div>
+    </section>
+
+    <!-- Board Grid -->
+    <section class="board">
+      <div class="board__grid">
+        @for (slot of categorySlots(); track slot.position) {
+          <div class="board__column">
+            <div class="board__category-header" (click)="openCategoryManager(slot.position)">
+              @if (slot.gameCategory) {
+                <span class="board__category-name">{{ slot.gameCategory.category.name }}</span>
+              } @else {
+                <span class="board__category-empty">+ Add Category</span>
+              }
+            </div>
+
+            @for (row of questionRows; track row) {
+              <div class="board__cell">
+                @if (getQuestionAtSlot(slot, row); as question) {
+                  <span class="board__point-value">{{ question.pointValue }}</span>
+                } @else {
+                  <span class="board__cell-empty">--</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Category Manager Overlay -->
+    @if (showCategoryManager()) {
+      <div class="overlay" (click)="closeCategoryManager()">
+        <div class="overlay__panel" (click)="$event.stopPropagation()">
+          <header class="overlay__header">
+            <h2>Select Category</h2>
+            <button class="btn btn--ghost" (click)="closeCategoryManager()">Close</button>
+          </header>
+          <app-category-manager
+            (categorySelected)="onCategoryAssigned($event)"
+          />
+        </div>
+      </div>
+    }
+  }
+</div>

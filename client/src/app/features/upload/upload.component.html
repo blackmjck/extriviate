@@ -1,0 +1,39 @@
+<div class="upload">
+  <div
+    class="drop-zone"
+    [class.drop-zone--active]="dragOver()"
+    [class.drop-zone--uploading]="uploading()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    @if (uploading()) {
+      <div class="drop-zone__progress">
+        <span class="drop-zone__file-name">{{ fileName() }}</span>
+        <div class="progress-bar">
+          <div class="progress-bar__fill" [style.width.%]="progressPercent()"></div>
+        </div>
+        <span class="drop-zone__percent">{{ progressPercent() }}%</span>
+      </div>
+    } @else {
+      <div class="drop-zone__prompt">
+        <span class="drop-zone__icon">&#8679;</span>
+        <span class="drop-zone__text">Drag & drop an image or video here</span>
+        <span class="drop-zone__or">or</span>
+        <label class="drop-zone__browse-btn">
+          Browse Files
+          <input
+            type="file"
+            class="drop-zone__input"
+            [accept]="acceptTypes"
+            (change)="onFileSelected($event)"
+          />
+        </label>
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+</div>

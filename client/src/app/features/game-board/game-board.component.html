@@ -1,0 +1,27 @@
+<div class="board-container">
+  <div class="board-grid">
+    <!-- Category headers -->
+    @for (cat of categories(); track cat.id) {
+      <div class="category-header">
+        <span class="category-name">{{ cat.category.name }}</span>
+      </div>
+    }
+
+    <!-- Question rows -->
+    @for (row of rowIndices(); track row) {
+      @for (cat of categories(); track cat.id) {
+        @let question = getQuestionAt(cat, row);
+        <button
+          class="cell"
+          [class.answered]="isAnswered(question)"
+          [disabled]="isAnswered(question)"
+          (click)="selectCell(question)"
+        >
+          @if (!isAnswered(question) && question) {
+            <span class="point-value">${{ question.pointValue }}</span>
+          }
+        </button>
+      }
+    }
+  </div>
+</div>

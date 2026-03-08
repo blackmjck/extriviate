@@ -1,0 +1,43 @@
+<div class="session-end">
+  <h1 class="title">Final Results</h1>
+
+  <!-- Podium for top 3 -->
+  @if (podium().length > 0) {
+    <div class="podium">
+      @for (player of podiumOrdered(); track player.rank) {
+        <div class="podium__slot" [class]="'podium__slot--rank-' + player.rank">
+          <span class="podium__medal">{{ getMedalEmoji(player.rank) }}</span>
+          <span class="podium__name">{{ player.displayName }}</span>
+          <span class="podium__score">{{ player.score | number }}</span>
+          <div class="podium__bar" [style.height]="getPodiumHeight(player.rank)">
+            <span class="podium__rank">{{ player.rank }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Full rankings table -->
+  @if (rankedPlayers().length > 0) {
+    <table class="rankings">
+      <thead>
+        <tr>
+          <th class="rankings__rank">Rank</th>
+          <th class="rankings__name">Player</th>
+          <th class="rankings__score">Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (player of rankedPlayers(); track player.rank) {
+          <tr class="rankings__row" [class.rankings__row--top3]="player.rank <= 3">
+            <td class="rankings__rank">{{ player.rank }}</td>
+            <td class="rankings__name">{{ player.displayName }}</td>
+            <td class="rankings__score">{{ player.score | number }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <button class="play-again-btn" (click)="playAgain()">Play Again</button>
+</div>

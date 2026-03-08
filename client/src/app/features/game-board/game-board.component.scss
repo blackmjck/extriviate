@@ -1,0 +1,109 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.board-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  min-width: 600px;
+}
+
+.category-header {
+  background: var(--accent, #4169e1);
+  color: #fff;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+
+  .category-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+}
+
+.cell {
+  background: var(--accent, #4169e1);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 16px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.2s ease,
+    transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: lighten(#4169e1, 8%);
+    transform: scale(1.03);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &.answered {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: transparent;
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.point-value {
+  color: var(--score-value, #f5c842);
+  font-weight: 800;
+  font-size: 1.4rem;
+  font-family: 'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+// Responsive: stack categories on small screens
+@media (max-width: 640px) {
+  .board-grid {
+    min-width: unset;
+    grid-template-columns: repeat(6, minmax(80px, 1fr));
+  }
+
+  .category-header {
+    font-size: 0.65rem;
+    padding: 8px 4px;
+    min-height: 48px;
+  }
+
+  .cell {
+    min-height: 48px;
+    padding: 8px 4px;
+  }
+
+  .point-value {
+    font-size: 1rem;
+  }
+}
