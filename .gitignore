@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+*/dist/
+client/.angular/
+
+# Environment files
+server/.env
+server/.env.*
+!server/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode (keep settings but not personal configs)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# VSCode extensions
+.angulardoc.json
+
+# AI tooling
+.claude/

@@ -1,0 +1,23 @@
+{
+  "name": "extriviate",
+  "version": "0.0.0",
+  "private": true,
+  "author": "guesswho@stevenwiggins.net",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @extriviate/server\" \"npm run dev -w @extriviate/client\"",
+    "build:shared": "npm run build -w @extriviate/shared",
+    "build:server": "npm run build -w @extriviate/server",
+    "build:client": "npm run build -w @extriviate/client",
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "prettier": "^3.8.1"
+  }
+}
