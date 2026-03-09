@@ -25,12 +25,16 @@
     }
   </div>
 
-  <!-- Player gallery strip -->
-  <app-player-gallery
-    [players]="players()"
-    [activePlayerId]="activePlayerId()"
-    [questionSelecterId]="questionSelecterId()"
-    [showScores]="true"
-    layout="row"
-  />
+  <!-- Player gallery strip + media controls -->
+  <div class="bottom-bar">
+    <app-media-controls [playerId]="localPlayerId()" />
+    <app-player-gallery
+      [players]="players()"
+      [activePlayerId]="activePlayerId()"
+      [questionSelecterId]="questionSelecterId()"
+      [submittedAnswer]="submittedAnswer()"
+      [showScores]="true"
+      layout="row"
+    />
+  </div>
 </div>

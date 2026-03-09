@@ -16,8 +16,11 @@ export class GameSocketService {
   private currentToken: string | undefined;
   private pendingMessages: ClientGameMessage[] = [];
   private intentionallyClosed = false;
+  private hasConnectedOnce = false;
 
   readonly connectionState = signal<ConnectionState>('disconnected');
+  /** True only while attempting to reconnect after a dropped connection (never on initial load). */
+  readonly reconnecting = signal(false);
   readonly messages$ = new Subject<GameplayMessage>();
 
   connect(sessionId: number, token?: string): void {
@@ -30,12 +33,14 @@ export class GameSocketService {
 
   disconnect(): void {
     this.intentionallyClosed = true;
+    this.hasConnectedOnce = false;
     this.clearReconnectTimer();
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
     this.connectionState.set('disconnected');
+    this.reconnecting.set(false);
     this.pendingMessages = [];
   }
 
@@ -62,6 +67,8 @@ export class GameSocketService {
 
     this.socket.onopen = () => {
       this.connectionState.set('connected');
+      this.hasConnectedOnce = true;
+      this.reconnecting.set(false);
       this.reconnectAttempt = 0;
 
       // If guest session exists, send reconnect_guest as first message
@@ -99,6 +106,10 @@ export class GameSocketService {
   }
 
   private scheduleReconnect(): void {
+    if (this.hasConnectedOnce) {
+      this.reconnecting.set(true);
+    }
+
     const baseDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempt), 30000);
     const jitter = baseDelay * 0.2 * (Math.random() * 2 - 1); // +/- 20%
     const delay = baseDelay + jitter;

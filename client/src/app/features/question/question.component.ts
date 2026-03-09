@@ -1,15 +1,15 @@
 import { Component, inject, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { ContentBlock, RoundPhase } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 import { GameSocketService } from '../../core/services/game-socket.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SpeechRecognitionService } from '../../core/services/speech-recognition.service';
+import { ContentBlocksComponent } from '../../shared/components/content-blocks/content-blocks.component';
 
 @Component({
   selector: 'app-question',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ContentBlocksComponent],
   templateUrl: './question.component.html',
   styleUrl: './question.component.scss',
 })
@@ -100,15 +100,4 @@ export class QuestionComponent {
     this.timerValue.set(null);
   }
 
-  isTextBlock(block: ContentBlock): block is ContentBlock & { type: 'text' } {
-    return block.type === 'text';
-  }
-
-  isImageBlock(block: ContentBlock): block is ContentBlock & { type: 'image' } {
-    return block.type === 'image';
-  }
-
-  isVideoBlock(block: ContentBlock): block is ContentBlock & { type: 'video' } {
-    return block.type === 'video';
-  }
 }

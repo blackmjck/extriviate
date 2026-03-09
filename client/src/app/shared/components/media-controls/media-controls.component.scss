@@ -1,0 +1,59 @@
+:host {
+  display: contents;
+}
+
+.media-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8e8f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  &.off {
+    background: rgba(225, 65, 65, 0.2);
+    border-color: rgba(225, 65, 65, 0.5);
+
+    &:hover {
+      background: rgba(225, 65, 65, 0.3);
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .control-btn {
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}

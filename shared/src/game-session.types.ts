@@ -115,6 +115,7 @@ export type ClientGameMessage =
   | { type: 'lock_buzzers' }
   | { type: 'player_ready'; playerId: number }
   | { type: 'video_ended'; playerId: number }
+  | { type: 'media_state_update'; playerId: number; cameraActive: boolean; audioMuted: boolean }
   | { type: 'webrtc_offer'; fromPeerId: string; toPeerId: string; sdp: string }
   | { type: 'webrtc_answer'; fromPeerId: string; toPeerId: string; sdp: string }
   | { type: 'webrtc_ice_candidate'; fromPeerId: string; toPeerId: string; candidate: string };

@@ -772,6 +772,21 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
             break;
           }
 
+          case 'media_state_update': {
+            const player = state.players.get(msg.playerId);
+            if (player) {
+              player.cameraActive = msg.cameraActive;
+              player.audioMuted = msg.audioMuted;
+              gameStateService.broadcast(state, {
+                type: 'media_state_update',
+                playerId: msg.playerId,
+                cameraActive: msg.cameraActive,
+                audioMuted: msg.audioMuted,
+              }, socket);
+            }
+            break;
+          }
+
           // WebRTC signaling — relay without inspection
           case 'webrtc_offer':
           case 'webrtc_answer':

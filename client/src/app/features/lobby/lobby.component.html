@@ -21,9 +21,12 @@
     }
 
     <div class="players-section">
-      <h2 class="section-heading">
-        Players <span class="player-count">({{ players().length }})</span>
-      </h2>
+      <div class="section-header">
+        <h2 class="section-heading">
+          Players <span class="player-count">({{ players().length }})</span>
+        </h2>
+        <app-media-controls [playerId]="localPlayerId()" />
+      </div>
 
       <app-player-gallery
         [players]="players()"

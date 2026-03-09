@@ -4,13 +4,15 @@ import { firstValueFrom } from 'rxjs';
 import type { GameSession, ApiResponse } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { WebRtcService } from '../../core/services/webrtc.service';
 import { PlayerGalleryComponent } from '../../shared/components/player-gallery/player-gallery.component';
+import { MediaControlsComponent } from '../../shared/components/media-controls/media-controls.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-lobby',
   standalone: true,
-  imports: [PlayerGalleryComponent],
+  imports: [PlayerGalleryComponent, MediaControlsComponent],
   templateUrl: './lobby.component.html',
   styleUrl: './lobby.component.scss',
 })
@@ -18,6 +20,7 @@ export class LobbyComponent {
   private readonly http = inject(HttpClient);
   private readonly gameState = inject(GameStateService);
   private readonly auth = inject(AuthService);
+  private readonly webrtc = inject(WebRtcService);
 
   readonly session = signal<GameSession | null>(null);
   readonly starting = signal(false);
@@ -28,6 +31,13 @@ export class LobbyComponent {
   readonly isHost = this.gameState.isHost;
 
   readonly joinCode = computed(() => this.session()?.joinCode ?? '');
+
+  readonly localPlayerId = computed(() => {
+    const myPeerId = this.webrtc.peerId;
+    if (!myPeerId) return 0;
+    const player = this.gameState.players().find((p) => p.peerId === myPeerId);
+    return player?.playerId ?? 0;
+  });
 
   setSession(session: GameSession): void {
     this.session.set(session);

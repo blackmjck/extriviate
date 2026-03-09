@@ -4,7 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import type { GameBoard, GameCategory, GameQuestion } from '@extriviate/shared';
 import { GAME_CATEGORY_COUNT, GAME_QUESTION_ROWS } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
+import { WebRtcService } from '../../core/services/webrtc.service';
 import { PlayerGalleryComponent } from '../../shared/components/player-gallery/player-gallery.component';
+import { MediaControlsComponent } from '../../shared/components/media-controls/media-controls.component';
 
 export interface CellSelection {
   gameCategoryId: number;
@@ -16,13 +18,14 @@ export interface CellSelection {
 @Component({
   selector: 'app-game-board',
   standalone: true,
-  imports: [PlayerGalleryComponent],
+  imports: [PlayerGalleryComponent, MediaControlsComponent],
   templateUrl: './game-board.component.html',
   styleUrl: './game-board.component.scss',
 })
 export class GameBoardComponent {
   private readonly http = inject(HttpClient);
   private readonly gameState = inject(GameStateService);
+  private readonly webrtc = inject(WebRtcService);
 
   readonly board = input.required<GameBoard>();
   readonly sessionId = input.required<number>();
@@ -35,6 +38,15 @@ export class GameBoardComponent {
   readonly questionSelecterId = computed(
     () => this.gameState.roundState()?.questionSelecterId ?? null,
   );
+
+  readonly submittedAnswer = computed(() => this.gameState.roundState()?.submittedAnswer ?? null);
+
+  readonly localPlayerId = computed(() => {
+    const myPeerId = this.webrtc.peerId;
+    if (!myPeerId) return 0;
+    const player = this.gameState.players().find((p) => p.peerId === myPeerId);
+    return player?.playerId ?? 0;
+  });
 
   readonly categories = computed(() => {
     const b = this.board();

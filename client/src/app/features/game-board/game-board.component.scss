@@ -85,6 +85,18 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+
+  app-player-gallery {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 // Responsive: stack categories on small screens
 @media (max-width: 640px) {
   .board-grid {

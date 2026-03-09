@@ -1,0 +1,31 @@
+@for (block of blocks(); track $index) {
+  @if (isText(block)) {
+    <p
+      class="block-text"
+      [class.bold]="block.formatting === 'bold'"
+      [class.italic]="block.formatting === 'italic'"
+      [class.underline]="block.formatting === 'underline'"
+      [class.code]="block.formatting === 'code'"
+    >{{ block.value }}</p>
+  }
+  @if (isImage(block)) {
+    <figure class="block-image-wrap">
+      <img class="block-image" [src]="block.url" [alt]="block.alt ?? ''" loading="lazy" />
+      @if (block.alt) {
+        <figcaption class="block-caption">{{ block.alt }}</figcaption>
+      }
+    </figure>
+  }
+  @if (isVideo(block)) {
+    <figure class="block-video-wrap">
+      <video class="block-video" [src]="block.url" controls playsinline preload="metadata">
+        @if (block.caption) {
+          <track kind="captions" [label]="block.caption" />
+        }
+      </video>
+      @if (block.caption) {
+        <figcaption class="block-caption">{{ block.caption }}</figcaption>
+      }
+    </figure>
+  }
+}

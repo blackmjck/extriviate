@@ -6,21 +6,7 @@
 
   <!-- Question content blocks -->
   <div class="question-content">
-    @for (block of questionContent(); track $index) {
-      @if (isTextBlock(block)) {
-        <p class="question-text" [class]="block.formatting ?? ''">{{ block.value }}</p>
-      }
-      @if (isImageBlock(block)) {
-        <img class="question-image" [src]="block.url" [alt]="block.alt ?? 'Question image'" />
-      }
-      @if (isVideoBlock(block)) {
-        <video class="question-video" [src]="block.url" controls>
-          @if (block.caption) {
-            <track kind="captions" />
-          }
-        </video>
-      }
-    }
+    <app-content-blocks [blocks]="questionContent()" />
   </div>
 
   <!-- Timer -->
@@ -86,11 +72,7 @@
 
       @if (answerContent().length > 0) {
         <div class="correct-answer">
-          @for (block of answerContent(); track $index) {
-            @if (isTextBlock(block)) {
-              <p>{{ block.value }}</p>
-            }
-          }
+          <app-content-blocks [blocks]="answerContent()" />
         </div>
       }
     </div>

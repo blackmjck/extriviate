@@ -1,0 +1,71 @@
+$tail-size: 9px;
+$bubble-bg: #fff;
+
+:host {
+  display: block;
+  pointer-events: none;
+}
+
+.bubble {
+  background: $bubble-bg;
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: #111827;
+  font-family: var(--font-ui, 'Trebuchet MS'), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+  position: relative;
+
+  // Shared tail base
+  &::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  // Tail at bottom — bubble appears above the avatar
+  &.tail-bottom::before {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: $tail-size solid transparent;
+    border-right: $tail-size solid transparent;
+    border-top: $tail-size solid $bubble-bg;
+  }
+
+  // Tail at top — bubble appears below the avatar
+  &.tail-top::before {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: $tail-size solid transparent;
+    border-right: $tail-size solid transparent;
+    border-bottom: $tail-size solid $bubble-bg;
+  }
+
+  // Tail on left — bubble extends rightward, avatar is to the left
+  &.tail-left::before {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: $tail-size solid transparent;
+    border-bottom: $tail-size solid transparent;
+    border-right: $tail-size solid $bubble-bg;
+  }
+
+  // Tail on right — bubble extends leftward, avatar is to the right
+  &.tail-right::before {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: $tail-size solid transparent;
+    border-bottom: $tail-size solid transparent;
+    border-left: $tail-size solid $bubble-bg;
+  }
+}

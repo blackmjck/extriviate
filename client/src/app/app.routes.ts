@@ -1,11 +1,28 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  // ---- Auth-required routes ----
   {
     path: '',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/game-editor/game-list.component').then((m) => m.GameListComponent),
   },
+  {
+    path: 'games/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
+  },
+  {
+    path: 'games/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
+  },
+
+  // ---- Public routes ----
   {
     path: 'login',
     loadComponent: () =>
@@ -26,16 +43,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/lobby/lobby.component').then((m) => m.LobbyComponent),
   },
-  {
-    path: 'games/new',
-    loadComponent: () =>
-      import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
-  },
-  {
-    path: 'games/:id',
-    loadComponent: () =>
-      import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
-  },
+
   {
     path: '**',
     redirectTo: '',

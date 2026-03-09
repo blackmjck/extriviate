@@ -1,10 +1,12 @@
 import { Component, inject, input, computed, ElementRef, viewChildren, effect } from '@angular/core';
 import type { LivePlayer } from '@extriviate/shared';
 import { WebRtcService } from '../../../core/services/webrtc.service';
+import { SpeechBubbleComponent } from '../speech-bubble/speech-bubble.component';
 
 @Component({
   selector: 'app-player-gallery',
   standalone: true,
+  imports: [SpeechBubbleComponent],
   templateUrl: './player-gallery.component.html',
   styleUrl: './player-gallery.component.scss',
 })
@@ -25,6 +27,9 @@ export class PlayerGalleryComponent {
 
   /** Layout mode: 'row' for horizontal strip, 'grid' for wrap layout. */
   readonly layout = input<'row' | 'grid'>('row');
+
+  /** Answer text to display in a speech bubble above the active player. Only shown in row layout. */
+  readonly submittedAnswer = input<string | null>(null);
 
   readonly remoteStreams = this.webrtc.remoteStreams;
   readonly localStream = this.webrtc.localStream$;
@@ -61,6 +66,23 @@ export class PlayerGalleryComponent {
 
   isActive(player: LivePlayer): boolean {
     return player.playerId === this.activePlayerId();
+  }
+
+  showBubble(player: LivePlayer): boolean {
+    return (
+      this.layout() === 'row' &&
+      this.submittedAnswer() !== null &&
+      player.playerId === this.activePlayerId()
+    );
+  }
+
+  /**
+   * Tail points toward the avatar. In a row layout the gallery strip sits at the
+   * bottom of the screen, so the bubble appears above the card with the tail
+   * pointing downward back to the avatar.
+   */
+  getBubbleTailSide(_index: number): 'bottom' {
+    return 'bottom';
   }
 
   isSelector(player: LivePlayer): boolean {
