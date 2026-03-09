@@ -4,11 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import type { GameSession, ApiResponse } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 import { AuthService } from '../../core/services/auth.service';
+import { PlayerGalleryComponent } from '../../shared/components/player-gallery/player-gallery.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-lobby',
   standalone: true,
+  imports: [PlayerGalleryComponent],
   templateUrl: './lobby.component.html',
   styleUrl: './lobby.component.scss',
 })

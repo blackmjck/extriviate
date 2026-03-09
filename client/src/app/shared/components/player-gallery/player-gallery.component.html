@@ -1,0 +1,63 @@
+<div class="gallery" [class.layout-row]="layout() === 'row'" [class.layout-grid]="layout() === 'grid'">
+  @for (player of players(); track player.playerId) {
+    <div
+      class="player-card"
+      [class.active]="isActive(player)"
+      [class.selector]="isSelector(player)"
+      [class.disconnected]="player.isDisconnected"
+    >
+      <!-- Avatar area -->
+      <div class="avatar-area">
+        @if (hasVideoStream(player)) {
+          <video
+            #videoEl
+            class="avatar-video"
+            [attr.data-peer-id]="player.peerId"
+            autoplay
+            playsinline
+            [muted]="player.peerId === localPeerId()"
+          ></video>
+        } @else if (player.avatarMode === 'static' && player.avatarUrl) {
+          <img class="avatar-image" [src]="player.avatarUrl" [alt]="player.displayName" />
+        } @else {
+          <span class="avatar-initial">{{ getInitial(player.displayName) }}</span>
+        }
+
+        <!-- Disconnected overlay -->
+        @if (player.isDisconnected) {
+          <div class="disconnected-overlay">
+            <span class="disconnected-icon" aria-label="Disconnected">&#9888;</span>
+          </div>
+        }
+
+        <!-- Audio muted indicator -->
+        @if (!player.audioMuted && player.cameraActive) {
+          <span class="audio-indicator" aria-label="Microphone active"></span>
+        }
+      </div>
+
+      <!-- Player info -->
+      <div class="player-info">
+        <span class="player-name" [title]="player.displayName">{{ player.displayName }}</span>
+
+        @if (showScores()) {
+          <span class="player-score" [class.negative]="player.score < 0">
+            ${{ player.score }}
+          </span>
+        }
+      </div>
+
+      <!-- Badges -->
+      <div class="badges">
+        @if (player.isHost) {
+          <span class="badge badge-host">Host</span>
+        }
+        @if (isActive(player)) {
+          <span class="badge badge-active">Active</span>
+        }
+      </div>
+    </div>
+  } @empty {
+    <div class="empty-state">No players yet</div>
+  }
+</div>

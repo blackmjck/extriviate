@@ -24,4 +24,13 @@
       }
     }
   </div>
+
+  <!-- Player gallery strip -->
+  <app-player-gallery
+    [players]="players()"
+    [activePlayerId]="activePlayerId()"
+    [questionSelecterId]="questionSelecterId()"
+    [showScores]="true"
+    layout="row"
+  />
 </div>

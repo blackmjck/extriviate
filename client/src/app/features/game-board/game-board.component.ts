@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import type { GameBoard, GameCategory, GameQuestion } from '@extriviate/shared';
 import { GAME_CATEGORY_COUNT, GAME_QUESTION_ROWS } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
+import { PlayerGalleryComponent } from '../../shared/components/player-gallery/player-gallery.component';
 
 export interface CellSelection {
   gameCategoryId: number;
@@ -15,6 +16,7 @@ export interface CellSelection {
 @Component({
   selector: 'app-game-board',
   standalone: true,
+  imports: [PlayerGalleryComponent],
   templateUrl: './game-board.component.html',
   styleUrl: './game-board.component.scss',
 })
@@ -27,6 +29,12 @@ export class GameBoardComponent {
   readonly questionSelected = output<CellSelection>();
 
   readonly answeredIds = signal<Set<number>>(new Set());
+
+  readonly players = this.gameState.players;
+  readonly activePlayerId = computed(() => this.gameState.roundState()?.activePlayerId ?? null);
+  readonly questionSelecterId = computed(
+    () => this.gameState.roundState()?.questionSelecterId ?? null,
+  );
 
   readonly categories = computed(() => {
     const b = this.board();

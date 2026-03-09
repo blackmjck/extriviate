@@ -25,22 +25,10 @@
         Players <span class="player-count">({{ players().length }})</span>
       </h2>
 
-      <ul class="player-list">
-        @for (player of players(); track player.playerId) {
-          <li class="player-item">
-            <span class="player-avatar">{{ player.displayName.charAt(0).toUpperCase() }}</span>
-            <span class="player-name">{{ player.displayName }}</span>
-            @if (player.isHost) {
-              <span class="host-badge">Host</span>
-            }
-            @if (player.isDisconnected) {
-              <span class="disconnected-badge">Disconnected</span>
-            }
-          </li>
-        } @empty {
-          <li class="empty-state">Waiting for players to join...</li>
-        }
-      </ul>
+      <app-player-gallery
+        [players]="players()"
+        layout="grid"
+      />
     </div>
 
     <div class="lobby-actions">
