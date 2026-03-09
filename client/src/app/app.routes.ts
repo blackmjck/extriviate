@@ -41,7 +41,7 @@ export const routes: Routes = [
   {
     path: 'session/:id',
     loadComponent: () =>
-      import('./features/lobby/lobby.component').then((m) => m.LobbyComponent),
+      import('./features/game-session/game-session.component').then((m) => m.GameSessionComponent),
   },
 
   {

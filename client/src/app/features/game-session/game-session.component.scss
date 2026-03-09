@@ -1,0 +1,45 @@
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
+  background: #0a0a14;
+}
+
+.game-container {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-container--paused {
+  // Board is visible but dimmed under the paused overlay
+  app-game-board {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 10;
+}
+
+.overlay--message {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.overlay-message {
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 1.5rem;
+  color: #f5c842;
+  text-align: center;
+  padding: 2rem;
+}

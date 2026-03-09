@@ -1,4 +1,5 @@
 import type { ContentBlock } from './upload.types.ts';
+import type { GameBoard } from './game.types.ts';
 
 // ---- Round State Machine ----
 
@@ -95,6 +96,10 @@ export type GameplayMessage =
 // The payload sent on initial connect or reconnect — complete snapshot.
 export interface FullStateSyncPayload {
   sessionId: number;
+  gameId: number;
+  sessionName: string;
+  joinCode: string;
+  board: GameBoard;
   mode: SessionMode;
   turnBased: boolean;
   status: 'lobby' | 'active' | 'paused' | 'completed';

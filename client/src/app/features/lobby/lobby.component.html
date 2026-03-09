@@ -1,6 +1,6 @@
 <div class="lobby-page">
   <div class="lobby-card">
-    <h1 class="lobby-title">{{ session()?.name ?? 'Game Lobby' }}</h1>
+    <h1 class="lobby-title">{{ sessionName() || 'Game Lobby' }}</h1>
 
     <div class="join-code-section">
       <span class="join-code-label">Join Code</span>

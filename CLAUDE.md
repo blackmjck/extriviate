@@ -473,19 +473,6 @@ WS     /api/sessions/:id/ws?token=...
 
 ---
 
-## What Is Not Built Yet
-
-The following are designed and documented here but have no implementation:
-
-- Adaptive game board layout component
-- Daily Double wager UI
-- Host controls panel
-- Session end / rankings screen
-- AI evaluation layer (`useAIEvaluation` flag exists, always `false`)
-- Whisper / Deepgram STT (Phase 2/3 — Web Speech API only for now)
-
----
-
 ## Design Tokens (Mobile UI)
 
 ```
@@ -496,3 +483,97 @@ Question text: Georgia, serif
 UI text:       Trebuchet MS, sans-serif
 Score display: Courier New, monospace
 ```
+
+---
+
+## Gap Analysis: Extriviate — What Exists vs. What Should
+
+### Critical (game cannot be played at all)
+
+1. **No active game page or route**
+
+All gameplay components exist (`GameBoardComponent`, `QuestionComponent`, `DailyDoubleComponent`, `HostControlsComponent`) but no parent "active session" container component exists to compose them, and no route in `app.routes.ts` points to one. `session/:id` currently routes directly to `LobbyComponent` and stays there forever.
+
+2. **Lobby never transitions to the game**
+
+`LobbyComponent` sets status to `active` via REST but never watches `sessionStatus` (the signal is in `GameStateService`) and never navigates anywhere. The game cannot start from the player's perspective.
+
+3. **SessionEndComponent is not routed or triggered**
+
+`SessionEndComponent` exists but there is no route for it in `app.routes.ts` and nothing in the client watches for `sessionStatus === 'completed'` to navigate there.
+
+4. **Timer messages are dead-wired**
+
+`timer_started` and `timer_expired` fall into the no-op `case` group in `game-state.service.ts:135-136`. `QuestionComponent.startTimer()` is defined but never called — the countdown timer never runs.
+
+5. **Guest player identity is broken for all gameplay**
+
+`QuestionComponent.currentPlayerId` and `DailyDoubleComponent.currentPlayerId` both derive from `authService.currentUser()?.id`, which is `null` for guests. Guests can never buzz in, submit an answer, or declare a wager. `GameStateService.isHost()` has the same flaw — a guest host will never see host controls.
+
+### Significant (functionality is present but incorrect or incomplete)
+
+6. **`HostControlsComponent.evaluateAnswer()` calls the wrong protocol**
+
+It sends `release_buzzers`/`lock_buzzers` WebSocket messages to simulate evaluation. CLAUDE.md specifies user-hosted evaluation uses `POST /api/sessions/:id/evaluate` (REST). The WebSocket path never updates scores or broadcasts an `answer_result`, so scores are never updated in user-hosted mode.
+
+7. **`GameBoardComponent` doesn't enforce question-selection turn order**
+
+Any player can click any unanswered cell at any time. `selectCell()` doesn't check whether the local player matches `questionSelecterId`. Server-side the route may reject it, but the client has no guard.
+
+8. **`GameBoardComponent.answeredIds` uses a local signal, not server state**
+
+Answered questions are tracked in a local `Set`. On reconnect the `full_state_sync` does not repopulate this set, so previously answered cells reappear as available. The `isAnswered()` method should derive from `question.isAnswered` (server-provided via the board state) rather than a local accumulator.
+
+9. **Adaptive game board layout not built**
+
+`CLAUDE.md` explicitly lists this as not yet built. The board is a static 6×6 grid. No orientation prompt (despite `OrientationService` existing), no compact portrait mode, no mobile-optimized touch targets. NOTES.md section VI has the full design spec.
+
+### Minor (polish/completeness)
+
+10. **`connection-status` component is never rendered**
+
+`shared/components/connection-status` exists but doesn't appear used in any template. The reconnecting/disconnected state from `GameSocketService` is never surfaced to the user.
+
+11. **No orientation prompt UI**
+
+`OrientationService` provides `isPortrait`/`isSmallScreen` signals but no component renders a "please rotate your device" prompt for mobile players.
+
+12. **`QuestionComponent` buzz button uses `(click)` not `(touchstart)`**
+
+`CLAUDE.md` and `NOTES.md` both specify the buzz button must use `(touchstart)` + `event.preventDefault()` to avoid the 300ms delay. The current template uses `(click)`.
+
+13. **AI evaluation flag exists, always false** — intentional deferral, no action needed.
+
+### Prioritized Task List
+
+| #   | Task                                                                                                       | Blocking?                             |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | Create active-game container component + routes (composes board, question, DD, host-controls, session-end) | Yes — nothing works without this      |
+| 2   | Wire lobby → game navigation on `sessionStatus` change                                                     | Yes                                   |
+| 3   | Wire game → session-end navigation on `sessionStatus === 'completed'`                                      | Yes                                   |
+| 4   | Fix guest player identity (`currentPlayerId`, `isHost`) to use `GuestSessionService`                       | Yes — guests can't play               |
+| 5   | Subscribe to `timer_started`/`timer_expired` and drive `QuestionComponent` timer                           | Yes — timer never runs                |
+| 6   | Fix `HostControlsComponent.evaluateAnswer()` to call `POST /evaluate` REST endpoint                        | Yes — user-hosted scores never update |
+| 7   | Add question-selection guard in `GameBoardComponent` (only questionSelecter can click)                     | High                                  |
+| 8   | Replace `answeredIds` local signal with server-driven `isAnswered` from `full_state_sync`                  | High                                  |
+| 9   | Adaptive/responsive game board layout (portrait compact mode + orientation prompt)                         | High — NOTES.md has full spec         |
+| 10  | Show `connection-status` component in the active game shell                                                | Medium                                |
+| 11  | Change buzz button to `(touchstart)` + `event.preventDefault()`                                            | Low                                   |
+| 12  | Set up Vitest testing for the `/server` files                                                              | Low                                   |
+| 13  | Set up Vitest/Playwright testing (unit and e2e) for the `/client` files                                    | Low                                   |
+
+### Task List Completion Status
+
+- [x] 1. Create active-game container component + routes **(completed)**
+- [x] 2. Wire lobby -> game navigation on `sessionStatus` change **(completed)**
+- [ ] 3. Wire game -> session-end navigation on `sessionStatus === 'completed'`
+- [ ] 4. Fix guest player identity (`currentPlayerId`, `isHost`) to use `GuestSessionService`
+- [ ] 5. Subscribe to `timer_started`/`timer_expired` and drive `QuestionComponent` timer
+- [ ] 6. Fix `HostControlsComponent.evaluateAnswer()` to call `POST /evaluate` REST endpoint
+- [ ] 7. Add question-selection guard in `GameBoardComponent` (only questionSelecter can click)
+- [ ] 8. Replace `answeredIds` local signal with server-driven `isAnswered` from `full_state_sync`
+- [ ] 9. Adaptive/responsive game board layout (portrait compact mode + orientation prompt)
+- [ ] 10. Show `connection-status` component in the active game
+- [ ] 11. Change buzz button to `(touchstart)` + `event.preventDefault()`
+- [x] 12. Set up Vitest testing for the `/server` files **(completed)**
+- [x] 13. Set up Vitest/Playwright testing (unit and e2e) for the `/client` files

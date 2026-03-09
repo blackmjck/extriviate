@@ -1,0 +1,33 @@
+<app-connection-status />
+
+@switch (sessionStatus()) {
+  @case ('lobby') {
+    <app-lobby />
+  }
+  @case ('active') {
+    <div class="game-container">
+      @if (board(); as board) {
+        <app-game-board [board]="board" [sessionId]="sessionId()" />
+      }
+      @if (showDailyDoubleOverlay()) {
+        <div class="overlay"><app-daily-double /></div>
+      } @else if (showQuestionOverlay()) {
+        <div class="overlay"><app-question /></div>
+      }
+      <app-host-controls />
+    </div>
+  }
+  @case ('paused') {
+    <div class="game-container game-container--paused">
+      @if (board(); as board) {
+        <app-game-board [board]="board" [sessionId]="sessionId()" />
+      }
+      <div class="overlay overlay--message">
+        <p class="overlay-message">Game Paused — waiting for host to reconnect&hellip;</p>
+      </div>
+    </div>
+  }
+  @case ('completed') {
+    <app-session-end />
+  }
+}

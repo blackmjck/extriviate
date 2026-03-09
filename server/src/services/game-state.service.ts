@@ -10,6 +10,7 @@ import type {
   BuzzerLockReason,
   RoundPhase,
   ContentBlock,
+  GameBoard,
 } from '@extriviate/shared';
 import {
   BUZZ_WINDOW_DURATION_MS,
@@ -28,6 +29,9 @@ import {
 export interface SessionGameState {
   sessionId: number;
   gameId: number;
+  sessionName: string;
+  joinCode: string;
+  board: GameBoard;
   mode: SessionMode;
   turnBased: boolean;
   status: 'lobby' | 'active' | 'paused' | 'completed';
@@ -77,6 +81,9 @@ export class GameStateService {
   createSession(
     sessionId: number,
     gameId: number,
+    sessionName: string,
+    joinCode: string,
+    board: GameBoard,
     mode: SessionMode,
     turnBased: boolean,
     hostPlayerId: number,
@@ -87,6 +94,9 @@ export class GameStateService {
     const state: SessionGameState = {
       sessionId,
       gameId,
+      sessionName,
+      joinCode,
+      board,
       mode,
       turnBased,
       status: 'lobby',
@@ -572,6 +582,10 @@ export class GameStateService {
 
     return {
       sessionId: state.sessionId,
+      gameId: state.gameId,
+      sessionName: state.sessionName,
+      joinCode: state.joinCode,
+      board: state.board,
       mode: state.mode,
       turnBased: state.turnBased,
       status: state.status,
@@ -579,6 +593,19 @@ export class GameStateService {
       roundState,
       hostPlayerId: state.hostPlayerId,
     };
+  }
+
+  // Marks a question as answered in the cached board so full_state_sync
+  // reflects current isAnswered state without a DB round-trip.
+  markBoardQuestionAnswered(state: SessionGameState, questionId: number): void {
+    for (const cat of state.board.categories) {
+      for (const q of cat.questions) {
+        if (q.questionId === questionId) {
+          q.isAnswered = true;
+          return;
+        }
+      }
+    }
   }
 
   // ---- Active Player Count ----

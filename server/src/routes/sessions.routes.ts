@@ -105,15 +105,25 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       const mode = (session as any).mode ?? 'computer_hosted';
       const turnBased = (session as any).turn_based ?? false;
 
+      const sessionName = name;
+      const joinCode = (session as any).join_code as string;
+
       gameStateService.createSession(
         session.id,
         gameId,
+        sessionName,
+        joinCode,
+        board,
         mode,
         turnBased,
         userId,
         boardValues,
         (playerId, newScore) => sessionService.updateScore(playerId, newScore),
-        (questionId) => sessionService.markQuestionAnswered(gameId, questionId),
+        (questionId) => {
+          sessionService.markQuestionAnswered(gameId, questionId);
+          const s = gameStateService.getSession(session.id);
+          if (s) gameStateService.markBoardQuestionAnswered(s, questionId);
+        },
       );
 
       // Add the host as the first player
@@ -257,19 +267,26 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
 
       const updated = await sessionService.updateStatus(sessionId, request.body.status);
 
-      // Update in-memory state
+      // Update in-memory state and broadcast to all connected clients
       const state = gameStateService.getSession(sessionId);
       if (state) {
         state.status = request.body.status as any;
 
         if (request.body.status === 'completed') {
-          // Set ranks and clean up
+          // Set ranks, broadcast full_state_sync with completed status,
+          // then remove session. Broadcast must happen before removeSession.
           await sessionService.setRanks(sessionId);
           gameStateService.broadcast(state, {
-            type: 'round_state_update',
-            roundState: state.roundState,
+            type: 'full_state_sync',
+            state: gameStateService.buildFullStateSync(state),
           });
           gameStateService.removeSession(sessionId);
+        } else {
+          // 'active' or 'paused' — all clients need to react to the status change
+          gameStateService.broadcast(state, {
+            type: 'full_state_sync',
+            state: gameStateService.buildFullStateSync(state),
+          });
         }
       }
 
@@ -809,6 +826,8 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
         const identity = gameStateService.removePlayerSocket(state, socket);
         if (!identity) return;
 
+        const statusBefore = state.status;
+
         gameStateService.handleDisconnect(state, identity.playerId, (removedId) => {
           gameStateService.broadcast(state, { type: 'player_removed', playerId: removedId });
         });
@@ -817,6 +836,15 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           type: 'player_disconnected',
           playerId: identity.playerId,
         });
+
+        // If a user_hosted host disconnecting caused the session to pause,
+        // broadcast the status change so all clients can react.
+        if (state.status === 'paused' && statusBefore !== 'paused') {
+          gameStateService.broadcast(state, {
+            type: 'full_state_sync',
+            state: gameStateService.buildFullStateSync(state),
+          });
+        }
       });
     }
   );

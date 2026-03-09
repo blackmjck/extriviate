@@ -14,7 +14,11 @@
     "build:server": "npm run build -w @extriviate/server",
     "build:client": "npm run build -w @extriviate/client",
     "build": "npm run build:shared && npm run build:server && npm run build:client",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test -w @extriviate/server && npm run test -w @extriviate/client",
+    "test:server": "npm run test -w @extriviate/server",
+    "test:client": "npm run test -w @extriviate/client",
+    "e2e": "npm run e2e -w @extriviate/client"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

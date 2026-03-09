@@ -22,15 +22,14 @@ export class LobbyComponent {
   private readonly auth = inject(AuthService);
   private readonly webrtc = inject(WebRtcService);
 
-  readonly session = signal<GameSession | null>(null);
   readonly starting = signal(false);
   readonly copied = signal(false);
   readonly errorMessage = signal('');
 
   readonly players = this.gameState.players;
   readonly isHost = this.gameState.isHost;
-
-  readonly joinCode = computed(() => this.session()?.joinCode ?? '');
+  readonly sessionName = this.gameState.sessionName;
+  readonly joinCode = this.gameState.joinCode;
 
   readonly localPlayerId = computed(() => {
     const myPeerId = this.webrtc.peerId;
@@ -38,10 +37,6 @@ export class LobbyComponent {
     const player = this.gameState.players().find((p) => p.peerId === myPeerId);
     return player?.playerId ?? 0;
   });
-
-  setSession(session: GameSession): void {
-    this.session.set(session);
-  }
 
   async copyJoinCode(): Promise<void> {
     const code = this.joinCode();
@@ -57,8 +52,8 @@ export class LobbyComponent {
   }
 
   async startGame(): Promise<void> {
-    const session = this.session();
-    if (!session) return;
+    const sessionId = this.gameState.sessionId();
+    if (!sessionId) return;
 
     this.starting.set(true);
     this.errorMessage.set('');
@@ -66,7 +61,7 @@ export class LobbyComponent {
     try {
       await firstValueFrom(
         this.http.patch<ApiResponse<GameSession>>(
-          `${environment.apiUrl}/api/sessions/${session.id}/status`,
+          `${environment.apiUrl}/api/sessions/${sessionId}/status`,
           { status: 'active' },
           { headers: this.auth.getAuthHeaders() },
         ),

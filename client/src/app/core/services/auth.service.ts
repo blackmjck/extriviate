@@ -70,6 +70,10 @@ export class AuthService {
     }
   }
 
+  getAccessToken(): string | null {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  }
+
   getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
     return token ? { Authorization: `Bearer ${token}` } : {};

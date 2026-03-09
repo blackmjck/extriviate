@@ -7,6 +7,7 @@ import type {
   GameplayMessage,
   SessionMode,
   SessionStatus,
+  GameBoard,
 } from '@extriviate/shared';
 import { GameSocketService } from './game-socket.service';
 import { AuthService } from './auth.service';
@@ -23,6 +24,11 @@ export class GameStateService {
   readonly hostPlayerId = signal<number | null>(null);
   readonly mode = signal<SessionMode>('computer_hosted');
   readonly turnBased = signal<boolean>(false);
+  readonly board = signal<GameBoard | null>(null);
+  readonly gameId = signal<number | null>(null);
+  readonly sessionId = signal<number | null>(null);
+  readonly sessionName = signal<string>('');
+  readonly joinCode = signal<string>('');
 
   readonly isHost = computed(() => {
     const user = this.authService.currentUser();
@@ -149,5 +155,10 @@ export class GameStateService {
     this.hostPlayerId.set(state.hostPlayerId);
     this.mode.set(state.mode);
     this.turnBased.set(state.turnBased);
+    this.board.set(state.board);
+    this.gameId.set(state.gameId);
+    this.sessionId.set(state.sessionId);
+    this.sessionName.set(state.sessionName);
+    this.joinCode.set(state.joinCode);
   }
 }
