@@ -18,7 +18,12 @@ declare module 'fastify' {
     // The PostgreSQL connection pool
 
     redis: import('redis').RedisClientType;
-    // The Redis client instance
+    // The Redis client instance (or a null stub when Redis is unavailable)
+
+    redisAvailable: boolean;
+    // True when a live Redis connection was established at startup.
+    // When false, token blacklisting is skipped and blacklist checks always
+    // return false — all other functionality is unaffected.
 
     signAccessToken: (payload: Omit<JwtPayload, 'iat' | 'exp'>) => string;
     signRefreshToken: (payload: Omit<JwtPayload, 'iat' | 'exp'>) => string;

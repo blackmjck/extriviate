@@ -25,7 +25,10 @@ export const config = {
     url: requireEnvVar("DATABASE_URL"),
   },
   redis: {
-    url: requireEnvVar("REDIS_URL"),
+    url: optionalVar("REDIS_URL", ""),
+    // Optional - if not set, the server runs without Redis.
+    // The only degradation is that logout does not immediately invalidate
+    // tokens; they expire naturally (access: 15m, refresh: 7d).
   },
   jwt: {
     secret: requireEnvVar("JWT_SECRET"),

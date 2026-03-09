@@ -44,7 +44,15 @@ const jwtPlugin: FastifyPluginAsync = async (fastify) => {
   // Decorate with a helper to blacklist a token by its jti.
   // The token is stored in Redis with an expiry matching when it would
   // naturally expire anyway - so Redis cleans up automatically.
+  // If Redis is unavailable, this is a no-op — tokens expire naturally.
   fastify.decorate("blacklistToken", async (jti: string, expiresAt: number) => {
+    if (!fastify.redisAvailable) {
+      fastify.log.warn(
+        { jti },
+        "Redis unavailable — token not blacklisted, will expire naturally",
+      );
+      return;
+    }
     const secondsRemaining = expiresAt - Math.floor(Date.now() / 1000);
     if (secondsRemaining > 0) {
       await fastify.redis.set(
@@ -57,10 +65,14 @@ const jwtPlugin: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // Decorate with a helper to check if a token's jti is blacklisted
+  // Decorate with a helper to check if a token's jti is blacklisted.
+  // If Redis is unavailable, always returns false (no blacklist to check).
   fastify.decorate(
     "isTokenBlacklisted",
     async (jti: string): Promise<boolean> => {
+      if (!fastify.redisAvailable) {
+        return false;
+      }
       const result = await fastify.redis.get(`blacklist:${jti}`);
       return result !== null;
     },
@@ -81,6 +93,6 @@ export default fp(jwtPlugin, {
   name: "jwt",
   fastify: "5.x",
   dependencies: ["redis"],
-  // Tells fastify-plugin to verify that the 'redis' plugin has been registered
-  // before this one - since blacklistToken depends on fastify.redis
+  // redis must still be registered first so fastify.redisAvailable is set
+  // before jwtPlugin runs — the redis plugin always succeeds now (graceful fallback).
 });
