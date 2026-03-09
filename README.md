@@ -1,5 +1,7 @@
 # Extriviate
 
+![Extriviate logo](client/public/icons/icon-96x96.svg)
+
 A multiplayer browser-based Jeopardy-style trivia game. Players join a session via a 6-character code, answer questions on a 6x6 board, and compete for points. Supports both computer-hosted (fully automated) and user-hosted (manual control) modes.
 
 ## Stack
