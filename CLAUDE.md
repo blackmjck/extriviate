@@ -477,17 +477,10 @@ WS     /api/sessions/:id/ws?token=...
 
 The following are designed and documented here but have no implementation:
 
-- Angular client (all features, components, services)
-- `sessions.routes.ts` — the most complex route file (WebSocket handler lives here)
-- `session.service.ts` — DB operations for sessions
-- `auth.service.ts` — signup/login/logout/refresh
 - Adaptive game board layout component
-- Player gallery (avatars, active highlight, disconnected indicator)
 - Daily Double wager UI
-- Speech bubble answer display
 - Host controls panel
 - Session end / rankings screen
-- PWA manifest + service worker config
 - AI evaluation layer (`useAIEvaluation` flag exists, always `false`)
 - Whisper / Deepgram STT (Phase 2/3 — Web Speech API only for now)
 
