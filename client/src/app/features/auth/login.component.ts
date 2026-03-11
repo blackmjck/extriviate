@@ -1,11 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { isApiErrorResponse } from '../../shared/utils/helpers';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
@@ -26,8 +27,13 @@ export class LoginComponent {
     try {
       await this.auth.login(this.email(), this.password());
       await this.router.navigate(['/']);
-    } catch (err: any) {
-      const message = err?.error?.error?.message ?? 'Login failed. Please try again.';
+    } catch (err: unknown) {
+      let message = 'Login failed. Please try again.';
+      if (isApiErrorResponse(err)) {
+        message = err.error.error.message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       this.errorMessage.set(message);
     } finally {
       this.loading.set(false);

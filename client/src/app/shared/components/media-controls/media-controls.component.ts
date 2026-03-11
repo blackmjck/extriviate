@@ -1,10 +1,10 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { WebRtcService } from '../../../core/services/webrtc.service';
 import { GameSocketService } from '../../../core/services/game-socket.service';
 
 @Component({
   selector: 'app-media-controls',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './media-controls.component.html',
   styleUrl: './media-controls.component.scss',
 })

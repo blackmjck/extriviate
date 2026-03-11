@@ -11,11 +11,13 @@ import type {
 } from '@extriviate/shared';
 import { GameSocketService } from './game-socket.service';
 import { AuthService } from './auth.service';
+import { GuestSessionService } from './guest-session.service';
 
 @Injectable({ providedIn: 'root' })
 export class GameStateService {
   private readonly socketService = inject(GameSocketService);
   private readonly authService = inject(AuthService);
+  private readonly guestSessionService = inject(GuestSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly players = signal<LivePlayer[]>([]);
@@ -30,13 +32,25 @@ export class GameStateService {
   readonly sessionName = signal<string>('');
   readonly joinCode = signal<string>('');
 
+  /**
+   * The current player's ID — works for both authenticated users and guests.
+   * Authenticated users: sourced from the JWT-backed AuthService signal.
+   * Guests: sourced from GuestSessionService (sessionStorage).
+   */
+  readonly currentPlayerId = computed<number | null>(
+    () => this.authService.currentUser()?.id ?? this.guestSessionService.getPlayerId(),
+  );
+
+  /** The questionId (questions FK) of the currently-active question, or null when idle.
+   *  Used by GameBoardComponent to hide the in-progress cell on all clients as soon
+   *  as round_state_update arrives, without waiting for the next full_state_sync. */
+  readonly activeQuestionId = computed(() => this.roundState()?.questionId ?? null);
+
   readonly isHost = computed(() => {
-    const user = this.authService.currentUser();
+    const playerId = this.currentPlayerId();
     const hostId = this.hostPlayerId();
-    if (!user || hostId === null) {
-      return false;
-    }
-    return user.id === hostId;
+    if (playerId === null || hostId === null) return false;
+    return playerId === hostId;
   });
 
   constructor() {
@@ -146,6 +160,21 @@ export class GameStateService {
         // These are handled by other services or components directly via messages$
         break;
     }
+  }
+
+  markQuestionAnswered(gameQuestionId: number): void {
+    this.board.update((board) => {
+      if (!board) return board;
+      return {
+        ...board,
+        categories: board.categories.map((cat) => ({
+          ...cat,
+          questions: cat.questions.map((q) =>
+            q.id === gameQuestionId ? { ...q, isAnswered: true } : q,
+          ),
+        })),
+      };
+    });
   }
 
   private applyFullStateSync(state: FullStateSyncPayload): void {

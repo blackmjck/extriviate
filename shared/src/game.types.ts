@@ -1,4 +1,4 @@
-import type { ContentBlock } from "./upload.types.ts";
+import type { ContentBlock } from './upload.types.js';
 
 // ---- Categories ----
 
@@ -41,13 +41,15 @@ export interface Answer {
   acceptedAnswers: string[]; // alternative accepted answer strings for fuzzy matching
 }
 
+export interface CreateAnswerRequest {
+  content: ContentBlock[];
+  acceptedAnswers?: string[];
+}
+
 export interface CreateQuestionRequest {
   categoryId: number;
   content: ContentBlock[];
-  answer: {
-    content: ContentBlock[];
-    acceptedAnswers?: string[];
-  };
+  answer: CreateAnswerRequest;
 }
 
 export interface UpdateQuestionRequest {

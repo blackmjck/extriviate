@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, DestroyRef, OnDestroy } from '@angular/core';
+import { Injectable, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import type { GameplayMessage } from '@extriviate/shared';
@@ -19,7 +19,7 @@ const RTC_CONFIG: RTCConfiguration = {
 };
 
 @Injectable({ providedIn: 'root' })
-export class WebRtcService implements OnDestroy {
+export class WebRtcService {
   private readonly socketService = inject(GameSocketService);
   private readonly gameState = inject(GameStateService);
   private readonly destroyRef = inject(DestroyRef);
@@ -163,10 +163,6 @@ export class WebRtcService implements OnDestroy {
     this.cameraActive.set(false);
     this.audioMuted.set(true);
     this.emitRemoteStreams();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy();
   }
 
   // ---- Private ----

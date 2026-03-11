@@ -1,0 +1,93 @@
+<div class="cat-list-page">
+  <header class="cat-list-page__header">
+    <a routerLink="/" class="btn btn--ghost">← Games</a>
+    <h1 class="cat-list-page__title">My Categories</h1>
+    @if (!showForm()) {
+      <button class="btn btn--primary" (click)="openCreateForm()">New Category</button>
+    } @else {
+      <span></span>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="error-banner" role="alert">{{ error() }}</div>
+  }
+
+  @if (showForm()) {
+    <form class="cat-form" [formGroup]="form" (ngSubmit)="submitForm()">
+      <h2 class="cat-form__heading">{{ editing() ? 'Edit Category' : 'New Category' }}</h2>
+
+      <div class="cat-form__field">
+        <label class="cat-form__label" for="cat-name">Name <span aria-hidden="true">*</span></label>
+        <input
+          id="cat-name"
+          class="cat-form__input"
+          type="text"
+          formControlName="name"
+          maxlength="100"
+          autocomplete="off"
+        />
+        @if (form.get('name')?.invalid && form.get('name')?.touched) {
+          <span class="cat-form__error" role="alert">Name is required.</span>
+        }
+      </div>
+
+      <div class="cat-form__field">
+        <label class="cat-form__label" for="cat-desc">Description</label>
+        <input
+          id="cat-desc"
+          class="cat-form__input"
+          type="text"
+          formControlName="description"
+          maxlength="255"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="cat-form__actions">
+        <button class="btn btn--primary" type="submit" [disabled]="saving() || form.invalid">
+          @if (saving()) { Saving… } @else { {{ editing() ? 'Update' : 'Create' }} }
+        </button>
+        <button class="btn btn--ghost" type="button" (click)="cancelForm()">Cancel</button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <p class="loading-text">Loading categories…</p>
+  } @else {
+    @if (categories().length === 0) {
+      <div class="empty-state">
+        <p>You haven't created any categories yet.</p>
+        @if (!showForm()) {
+          <button class="btn btn--primary" (click)="openCreateForm()">Create Your First Category</button>
+        }
+      </div>
+    } @else {
+      <ul class="cat-items" role="list">
+        @for (cat of categories(); track cat.id) {
+          <li class="cat-item">
+            <div class="cat-item__info">
+              <span class="cat-item__name">{{ cat.name }}</span>
+              @if (cat.description) {
+                <span class="cat-item__desc">{{ cat.description }}</span>
+              }
+            </div>
+            <div class="cat-item__actions">
+              <button class="btn btn--ghost btn--sm" (click)="openEditForm(cat)">Edit</button>
+              <button class="btn btn--danger-ghost btn--sm" (click)="deleteCategory(cat.id)">Delete</button>
+            </div>
+          </li>
+        }
+      </ul>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+          <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+          <button class="btn btn--ghost" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+        </div>
+      }
+    }
+  }
+</div>

@@ -17,14 +17,16 @@ export class GameSocketService {
   private pendingMessages: ClientGameMessage[] = [];
   private intentionallyClosed = false;
   private hasConnectedOnce = false;
+  private isReconnecting = false;
 
   readonly connectionState = signal<ConnectionState>('disconnected');
   /** True only while attempting to reconnect after a dropped connection (never on initial load). */
   readonly reconnecting = signal(false);
   readonly messages$ = new Subject<GameplayMessage>();
 
-  connect(sessionId: number, token?: string): void {
+  connect(sessionId: number, token?: string, isReconnect = false): void {
     this.intentionallyClosed = false;
+    this.isReconnecting = isReconnect;
     this.currentSessionId = sessionId;
     this.currentToken = token;
     this.reconnectAttempt = 0;
@@ -71,13 +73,16 @@ export class GameSocketService {
       this.reconnecting.set(false);
       this.reconnectAttempt = 0;
 
-      // If guest session exists, send reconnect_guest as first message
-      if (this.guestSession.hasSession()) {
+      // Only send reconnect_guest when this is a genuine reconnect (not initial join).
+      // On initial join, guestSession is already stored before connect() is called,
+      // so hasSession() would be true even on the very first connection.
+      if (this.isReconnecting && this.guestSession.hasSession()) {
         const guestToken = this.guestSession.getToken();
         if (guestToken) {
           this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
         }
       }
+      this.isReconnecting = false;
 
       // Flush pending messages
       this.flushPendingMessages();
@@ -106,6 +111,7 @@ export class GameSocketService {
   }
 
   private scheduleReconnect(): void {
+    this.isReconnecting = true;
     if (this.hasConnectedOnce) {
       this.reconnecting.set(true);
     }

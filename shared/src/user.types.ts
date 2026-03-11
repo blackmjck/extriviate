@@ -35,3 +35,11 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
 }
+
+// Aggregated stats for a user's profile page.
+export interface UserStats {
+  gamesCreated: number;
+  categoriesCreated: number;
+  questionsCreated: number;
+  sessionsPlayed: number;
+}

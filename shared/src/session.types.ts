@@ -1,6 +1,6 @@
-import type { GameBoard } from "./game.types";
-import type { PublicUser } from "./user.types";
-import type { SessionMode } from "./game-session.types";
+import type { GameBoard } from "./game.types.js";
+import type { PublicUser } from "./user.types.js";
+import type { SessionMode } from "./game-session.types.js";
 
 // The status lifecycle of a game session.
 // 'lobby' - session created, host is waiting for players to join
@@ -59,6 +59,8 @@ export interface JoinSessionResponse {
 export interface CreateSessionRequest {
   gameId: number;
   name: string; // the session display name chosen by the host
+  mode: SessionMode;
+  turnBased: boolean;
 }
 
 // The full live session state sent over WebSocket or on initial page load.

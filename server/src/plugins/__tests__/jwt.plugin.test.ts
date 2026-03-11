@@ -124,7 +124,7 @@ describe('jwt.plugin — token signing', () => {
     const { app } = buildApp({ redisAvailable: false });
     await app.ready();
 
-    const token = app.signAccessToken({ sub: '42', email: '', role: 'user', jti: 'abc' });
+    const token = app.signAccessToken({ sub: '42', email: '', role: 'creator', jti: 'abc' });
     expect(typeof token).toBe('string');
     expect(token.length).toBeGreaterThan(0);
     await app.close();
@@ -134,7 +134,7 @@ describe('jwt.plugin — token signing', () => {
     const { app } = buildApp({ redisAvailable: false });
     await app.ready();
 
-    const token = app.signRefreshToken({ sub: '42', email: '', role: 'user', jti: 'abc' });
+    const token = app.signRefreshToken({ sub: '42', email: '', role: 'creator', jti: 'abc' });
     expect(typeof token).toBe('string');
     expect(token.length).toBeGreaterThan(0);
     await app.close();

@@ -1,11 +1,20 @@
-import { Component, inject, input, computed, ElementRef, viewChildren, effect } from '@angular/core';
+import {
+  Component,
+  inject,
+  input,
+  computed,
+  ElementRef,
+  viewChildren,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import type { LivePlayer } from '@extriviate/shared';
 import { WebRtcService } from '../../../core/services/webrtc.service';
 import { SpeechBubbleComponent } from '../speech-bubble/speech-bubble.component';
 
 @Component({
   selector: 'app-player-gallery',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [SpeechBubbleComponent],
   templateUrl: './player-gallery.component.html',
   styleUrl: './player-gallery.component.scss',
@@ -79,9 +88,10 @@ export class PlayerGalleryComponent {
   /**
    * Tail points toward the avatar. In a row layout the gallery strip sits at the
    * bottom of the screen, so the bubble appears above the card with the tail
-   * pointing downward back to the avatar.
+   * pointing downward back to the avatar. In the future if the layout changes
+   * or becomes dynamic we can do more calculation here instead.
    */
-  getBubbleTailSide(_index: number): 'bottom' {
+  getBubbleTailSide(): 'bottom' {
     return 'bottom';
   }
 

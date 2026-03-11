@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 :host {
   display: block;
   min-height: 100vh;
@@ -163,7 +165,7 @@
   transition: background 0.2s, transform 0.1s;
 
   &:hover {
-    background: lighten(#4169e1, 8%);
+    background: color.adjust(#4169e1, $lightness: 8%);
     transform: translateY(-1px);
   }
 

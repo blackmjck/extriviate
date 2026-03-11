@@ -13,6 +13,8 @@ export const MAX_SESSION_NAME_LENGTH = 100;
 // Upload limits
 export const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024; // 30 MB
 export const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
+export const MAX_IMAGE_SIZE_MBYTES = Math.round(MAX_IMAGE_SIZE_BYTES / (1024 * 1024));
+export const MAX_VIDEO_SIZE_MBYTES = Math.round(MAX_VIDEO_SIZE_BYTES / (1024 * 1024));
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 export const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm'] as const;
 export const ALLOWED_UPLOAD_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES] as const;

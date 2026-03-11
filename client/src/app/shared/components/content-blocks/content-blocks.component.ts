@@ -1,9 +1,9 @@
-import { Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import type { ContentBlock } from '@extriviate/shared';
 
 @Component({
   selector: 'app-content-blocks',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './content-blocks.component.html',
   styleUrl: './content-blocks.component.scss',
 })

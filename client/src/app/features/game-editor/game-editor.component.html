@@ -4,14 +4,25 @@
   } @else {
     <header class="editor__header">
       <button class="btn btn--ghost" (click)="goBack()">Back</button>
-      <h1 class="editor__title">Edit Game</h1>
-      <button
-        class="btn btn--primary"
-        [disabled]="saving() || !isDirty()"
-        (click)="saveGame()"
-      >
-        {{ saving() ? 'Saving...' : 'Save' }}
-      </button>
+      <h1 class="editor__title">{{ game()?.title ?? 'New Game' }}</h1>
+      <div class="editor__actions">
+        @if (autosaving()) {
+          <span class="autosave-indicator">
+            <span class="autosave-spinner"></span>
+            Autosaving...
+          </span>
+        }
+        @if (game()?.isPublished) {
+          <a [routerLink]="['/games', game()!.id, 'host']" class="btn btn--host">Host this game</a>
+        }
+        <button
+          class="btn btn--primary"
+          [disabled]="saving() || autosaving() || !isDirty()"
+          (click)="saveGame()"
+        >
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
     </header>
 
     @if (error()) {
@@ -32,12 +43,12 @@
         />
       </div>
       <div class="metadata__field metadata__field--toggle">
-        <label class="label" for="daily-doubles">Daily Doubles</label>
+        <label class="label" for="daily-doubles">Double Downs</label>
         <input
           id="daily-doubles"
           type="checkbox"
           [ngModel]="dailyDoublesEnabled()"
-          (ngModelChange)="dailyDoublesEnabled.set($event); onMetadataChange()"
+          (ngModelChange)="onDailyDoublesEnabledChange($event)"
         />
       </div>
     </section>
@@ -47,7 +58,12 @@
       <div class="board__grid">
         @for (slot of categorySlots(); track slot.position) {
           <div class="board__column">
-            <div class="board__category-header" (click)="openCategoryManager(slot.position)">
+            <div
+              tabindex="0"
+              class="board__category-header"
+              (click)="openCategoryManager(slot.position)"
+              (keyup)="openCategoryManager(slot.position)"
+            >
               @if (slot.gameCategory) {
                 <span class="board__category-name">{{ slot.gameCategory.category.name }}</span>
               } @else {
@@ -56,28 +72,101 @@
             </div>
 
             @for (row of questionRows; track row) {
-              <div class="board__cell">
-                @if (getQuestionAtSlot(slot, row); as question) {
+              @if (getQuestionAtSlot(slot, row); as question) {
+                <div
+                  tabindex="0"
+                  class="board__cell board__cell--filled"
+                  [class.board__cell--daily-double]="question.isDailyDouble"
+                  (click)="openQuestionPicker(slot.position, row)"
+                  (keyup)="openQuestionPicker(slot.position, row)"
+                >
                   <span class="board__point-value">{{ question.pointValue }}</span>
-                } @else {
+                  @if (question.isDailyDouble) {
+                    <span class="board__dd-badge">DD</span>
+                  }
+                  <button
+                    class="board__cell-remove"
+                    type="button"
+                    title="Remove question"
+                    (click)="$event.stopPropagation(); removeQuestion(slot.position, row)"
+                  >
+                    ✕
+                  </button>
+                </div>
+              } @else if (slot.gameCategory) {
+                <div
+                  tabindex="0"
+                  class="board__cell board__cell--empty"
+                  (click)="openQuestionPicker(slot.position, row)"
+                  (keyup)="openQuestionPicker(slot.position, row)"
+                >
+                  <span class="board__cell-add">+</span>
+                </div>
+              } @else {
+                <div class="board__cell board__cell--disabled">
                   <span class="board__cell-empty">--</span>
-                }
-              </div>
+                </div>
+              }
             }
           </div>
         }
       </div>
     </section>
 
+    <!-- Question Picker Overlay -->
+    @if (
+      showQuestionPicker() && getActivePickerCategoryId() !== null && activePickerRow() !== null
+    ) {
+      <div
+        tabindex="0"
+        class="overlay"
+        (click)="closeQuestionPicker()"
+        (keyup)="closeQuestionPicker()"
+      >
+        <div
+          tabindex="0"
+          class="overlay__panel"
+          (click)="$event.stopPropagation()"
+          (keyup)="$event.stopPropagation()"
+        >
+          <header class="overlay__header">
+            <h2>Row {{ activePickerRow() }} — Select Question</h2>
+            <button class="btn btn--ghost" (click)="closeQuestionPicker()">Close</button>
+          </header>
+          <app-question-picker
+            [categoryId]="getActivePickerCategoryId()!"
+            [rowPosition]="activePickerRow()!"
+            [excludedIds]="assignedQuestionIds()"
+            [dailyDoublesEnabled]="dailyDoublesEnabled()"
+            [canMarkDailyDouble]="canMarkDailyDouble()"
+            [currentIsDailyDouble]="getActiveSlotIsDailyDouble()"
+            (questionPicked)="onQuestionPicked($event)"
+            (dailyDoubleToggled)="onDailyDoubleToggled($event)"
+          />
+        </div>
+      </div>
+    }
+
     <!-- Category Manager Overlay -->
     @if (showCategoryManager()) {
-      <div class="overlay" (click)="closeCategoryManager()">
-        <div class="overlay__panel" (click)="$event.stopPropagation()">
+      <div
+        tabindex="0"
+        class="overlay"
+        (click)="closeCategoryManager()"
+        (keyup)="closeCategoryManager()"
+      >
+        <div
+          tabindex="0"
+          class="overlay__panel"
+          (click)="$event.stopPropagation()"
+          (keyup)="$event.stopPropagation()"
+        >
           <header class="overlay__header">
             <h2>Select Category</h2>
             <button class="btn btn--ghost" (click)="closeCategoryManager()">Close</button>
           </header>
           <app-category-manager
+            [excludedIds]="excludedCategoryIds()"
             (categorySelected)="onCategoryAssigned($event)"
           />
         </div>

@@ -68,7 +68,7 @@ export class AuthService {
     // This prevents timing attacks that could reveal whether
     // an email address has an account.
     const hash =
-      user?.passwordHash ??
+      (user as any)?.password_hash ??
       "$2b$12$invalidhashpadding000000000000000000000000000000000000000";
     const valid = await bcrypt.compare(data.password, hash);
 

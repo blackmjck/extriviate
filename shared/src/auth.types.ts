@@ -55,4 +55,4 @@ export interface OAuthIdentity {
 }
 
 // Import here to avoid circular reference - auth types reference user types
-import type { PublicUser, UserRole } from "./user.types.ts";
+import type { PublicUser, UserRole } from "./user.types.js";

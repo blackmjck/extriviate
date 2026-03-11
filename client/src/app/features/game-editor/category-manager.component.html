@@ -47,11 +47,19 @@
   } @else {
     <ul class="cat-list">
       @for (cat of categories(); track cat.id) {
-        <li class="cat-list__item">
-          <button class="cat-list__select" (click)="selectCategory(cat.id)">
+        <li class="cat-list__item" [class.cat-list__item--used]="excludedIds().has(cat.id)">
+          <button
+            class="cat-list__select"
+            [disabled]="excludedIds().has(cat.id)"
+            [title]="excludedIds().has(cat.id) ? 'Already used in another column' : ''"
+            (click)="selectCategory(cat)"
+          >
             <span class="cat-list__name">{{ cat.name }}</span>
             @if (cat.description) {
               <span class="cat-list__desc">{{ cat.description }}</span>
+            }
+            @if (excludedIds().has(cat.id)) {
+              <span class="cat-list__used-badge">In use</span>
             }
           </button>
           <div class="cat-list__actions">

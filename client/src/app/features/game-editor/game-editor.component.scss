@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 :host {
   display: block;
   min-height: 100vh;
@@ -47,7 +49,7 @@
     color: #fff;
 
     &:hover:not(:disabled) {
-      background: lighten(#4169e1, 8%);
+      background: color.adjust(#4169e1, $lightness: 8%);
     }
   }
 
@@ -144,7 +146,7 @@
     justify-content: center;
 
     &:hover {
-      background: lighten(#4169e1, 6%);
+      background: color.adjust(#4169e1, $lightness: 6%);
     }
   }
 
@@ -170,11 +172,65 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+
+    &--empty {
+      cursor: pointer;
+
+      &:hover {
+        border-color: rgba(65, 105, 225, 0.4);
+        background: rgba(65, 105, 225, 0.06);
+      }
+    }
+
+    &--filled {
+      cursor: pointer;
+
+      &:hover {
+        border-color: rgba(65, 105, 225, 0.4);
+
+        .board__cell-remove {
+          opacity: 1;
+        }
+      }
+    }
+
+    &--daily-double {
+      border: 2px solid #f5c842;
+      background: rgba(245, 200, 66, 0.07);
+      box-shadow: 0 0 8px rgba(245, 200, 66, 0.25);
+    }
+
+    &--disabled {
+      cursor: default;
+      opacity: 0.4;
+    }
+  }
+
+  &__cell-add {
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: rgba(65, 105, 225, 0.5);
+  }
+
+  &__cell-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    background: transparent;
+    border: none;
+    color: #c0392b;
+    font-size: 0.7rem;
+    line-height: 1;
+    padding: 2px 4px;
     cursor: pointer;
-    transition: border-color 0.15s;
+    opacity: 0;
+    border-radius: 3px;
+    transition: opacity 0.15s, background 0.15s;
 
     &:hover {
-      border-color: rgba(65, 105, 225, 0.3);
+      background: rgba(192, 57, 43, 0.15);
     }
   }
 
@@ -183,6 +239,17 @@
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--score-value, #f5c842);
+  }
+
+  &__dd-badge {
+    position: absolute;
+    bottom: 3px;
+    left: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #f5c842;
+    opacity: 0.8;
   }
 
   &__cell-empty {
@@ -227,6 +294,35 @@
       margin: 0;
     }
   }
+}
+
+// ---- Header Actions ----
+
+.editor__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.autosave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.autosave-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #555;
+  border-top-color: var(--accent, #4169e1);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 // ---- States ----

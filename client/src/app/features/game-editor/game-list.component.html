@@ -1,6 +1,11 @@
 <div class="game-list">
   <header class="game-list__header">
     <h1 class="game-list__title">My Games</h1>
+    <nav class="game-list__nav" aria-label="Creator navigation">
+      <a [routerLink]="['/categories']" class="btn btn--ghost btn--sm">Categories</a>
+      <a [routerLink]="['/questions']" class="btn btn--ghost btn--sm">Questions</a>
+      <a [routerLink]="['/profile']" class="btn btn--ghost btn--sm">Profile</a>
+    </nav>
     <button class="btn btn--primary" (click)="createGame()">Create Game</button>
   </header>
 
@@ -27,6 +32,9 @@
               </span>
             </div>
             <div class="game-card__actions">
+              @if (game.isPublished) {
+                <button class="btn btn--host" (click)="hostGame(game.id)">Host</button>
+              }
               <button class="btn btn--ghost" (click)="editGame(game.id)">Edit</button>
               <button class="btn btn--danger-ghost" (click)="deleteGame(game.id)">Delete</button>
             </div>

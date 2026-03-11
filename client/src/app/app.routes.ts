@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { gameEditorGuard } from './features/game-editor/game-editor.guard';
 
 export const routes: Routes = [
   // ---- Auth-required routes ----
@@ -12,14 +13,52 @@ export const routes: Routes = [
   {
     path: 'games/new',
     canActivate: [authGuard],
+    canDeactivate: [gameEditorGuard],
     loadComponent: () =>
       import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
   },
   {
-    path: 'games/:id',
+    path: 'games/:id/host',
     canActivate: [authGuard],
     loadComponent: () =>
+      import('./features/host-session/host-session.component').then((m) => m.HostSessionComponent),
+  },
+  {
+    path: 'games/:id',
+    canActivate: [authGuard],
+    canDeactivate: [gameEditorGuard],
+    loadComponent: () =>
       import('./features/game-editor/game-editor.component').then((m) => m.GameEditorComponent),
+  },
+  {
+    path: 'categories',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/categories/category-list.component').then((m) => m.CategoryListComponent),
+  },
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+  },
+  {
+    path: 'questions',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/question-editor/question-list.component').then((m) => m.QuestionListComponent),
+  },
+  {
+    path: 'questions/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/question-editor/question-editor.component').then((m) => m.QuestionEditorComponent),
+  },
+  {
+    path: 'questions/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/question-editor/question-editor.component').then((m) => m.QuestionEditorComponent),
   },
 
   // ---- Public routes ----

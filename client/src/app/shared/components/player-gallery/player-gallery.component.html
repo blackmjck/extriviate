@@ -1,4 +1,8 @@
-<div class="gallery" [class.layout-row]="layout() === 'row'" [class.layout-grid]="layout() === 'grid'">
+<div
+  class="gallery"
+  [class.layout-row]="layout() === 'row'"
+  [class.layout-grid]="layout() === 'grid'"
+>
   @for (player of players(); track player.playerId; let idx = $index) {
     <div
       class="player-card"
@@ -9,7 +13,7 @@
       <!-- Speech bubble (row layout only, active player with submitted answer) -->
       @if (showBubble(player)) {
         <div class="bubble-anchor">
-          <app-speech-bubble [text]="submittedAnswer()!" [tailSide]="getBubbleTailSide(idx)" />
+          <app-speech-bubble [text]="submittedAnswer()!" [tailSide]="getBubbleTailSide()" />
         </div>
       }
 

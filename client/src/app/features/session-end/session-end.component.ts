@@ -1,12 +1,11 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
-import type { SessionPlayer } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 
 @Component({
   selector: 'app-session-end',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DecimalPipe],
   templateUrl: './session-end.component.html',
   styleUrls: ['./session-end.component.scss'],
@@ -42,19 +41,27 @@ export class SessionEndComponent {
 
   getPodiumHeight(rank: number): string {
     switch (rank) {
-      case 1: return '160px';
-      case 2: return '120px';
-      case 3: return '88px';
-      default: return '60px';
+      case 1:
+        return '160px';
+      case 2:
+        return '120px';
+      case 3:
+        return '88px';
+      default:
+        return '60px';
     }
   }
 
   getMedalEmoji(rank: number): string {
     switch (rank) {
-      case 1: return '\u{1F947}';
-      case 2: return '\u{1F948}';
-      case 3: return '\u{1F949}';
-      default: return '';
+      case 1:
+        return '\u{1F947}';
+      case 2:
+        return '\u{1F948}';
+      case 3:
+        return '\u{1F949}';
+      default:
+        return '';
     }
   }
 

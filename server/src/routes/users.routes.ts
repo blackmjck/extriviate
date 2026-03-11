@@ -35,6 +35,32 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
     });
   });
 
+  // GET /api/users/me/stats
+  // Returns aggregated counts for the profile page.
+  fastify.get('/me/stats', { preHandler: [requireAuth] }, async (request, reply) => {
+    const userId = request.user.sub;
+    const result = await fastify.db.query(
+      `SELECT
+        (SELECT COUNT(*) FROM games WHERE creator_id = $1) AS games_created,
+        (SELECT COUNT(*) FROM categories WHERE creator_id = $1) AS categories_created,
+        (SELECT COUNT(*) FROM questions WHERE creator_id = $1) AS questions_created,
+        (SELECT COUNT(*) FROM session_players sp
+          JOIN game_sessions gs ON gs.id = sp.session_id
+          WHERE sp.user_id = $1 AND gs.status = 'completed') AS sessions_played`,
+      [userId]
+    );
+    const row = result.rows[0];
+    return reply.send({
+      success: true,
+      data: {
+        gamesCreated: Number(row.games_created),
+        categoriesCreated: Number(row.categories_created),
+        questionsCreated: Number(row.questions_created),
+        sessionsPlayed: Number(row.sessions_played),
+      },
+    });
+  });
+
   // PATCH /api/users/me
   // Updates the current user's display name.
   // PATCH is used rather than PUT because we're doing a partial update -

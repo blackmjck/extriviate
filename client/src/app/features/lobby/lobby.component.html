@@ -20,6 +20,18 @@
       <div class="error-banner">{{ errorMessage() }}</div>
     }
 
+    @if (showMediaPrompt()) {
+      <div class="media-prompt" role="region" aria-label="Camera and microphone">
+        <p class="media-prompt__text">
+          Enable your camera and microphone so other players can see and hear you?
+        </p>
+        <div class="media-prompt__actions">
+          <button class="btn-enable-media" (click)="enableMedia()">Enable Camera &amp; Mic</button>
+          <button class="btn-skip-media" (click)="skipMedia()">Skip</button>
+        </div>
+      </div>
+    }
+
     <div class="players-section">
       <div class="section-header">
         <h2 class="section-heading">

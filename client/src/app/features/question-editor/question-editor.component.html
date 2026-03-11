@@ -1,0 +1,76 @@
+<div class="qeditor">
+  @if (loading()) {
+    <div class="loading">Loading...</div>
+  } @else {
+    <header class="qeditor__header">
+      <button class="btn btn--ghost" (click)="goBack()">Back</button>
+      <h1 class="qeditor__title">{{ isNew() ? 'New Question' : 'Edit Question' }}</h1>
+      <button
+        class="btn btn--primary"
+        [disabled]="saving()"
+        (click)="save()"
+      >
+        {{ saving() ? 'Saving...' : 'Save' }}
+      </button>
+    </header>
+
+    @if (error()) {
+      <div class="error-banner">{{ error() }}</div>
+    }
+
+    <form class="qeditor__form" (ngSubmit)="save()">
+      <!-- Category -->
+      <div class="field">
+        <label class="label" for="q-category">Category</label>
+        <select
+          id="q-category"
+          class="select"
+          [ngModel]="categoryId()"
+          (ngModelChange)="categoryId.set($event ? +$event : null)"
+          name="category"
+        >
+          @for (cat of categories(); track cat.id) {
+            <option [value]="cat.id">{{ cat.name }}</option>
+          } @empty {
+            <option disabled value="">No categories — create one first</option>
+          }
+        </select>
+      </div>
+
+      <!-- Question content -->
+      <div class="field">
+        <app-content-block-editor
+          label="Question"
+          [blocks]="questionBlocks()"
+          (blocksChange)="questionBlocks.set($event)"
+        />
+      </div>
+
+      <!-- Answer content -->
+      <div class="field">
+        <app-content-block-editor
+          label="Answer"
+          [blocks]="answerBlocks()"
+          (blocksChange)="answerBlocks.set($event)"
+        />
+      </div>
+
+      <!-- Accepted answers -->
+      <div class="field">
+        <label class="label" for="q-accepted">
+          Accepted Answers
+          <span class="label__hint">(one per line — used for fuzzy matching)</span>
+        </label>
+        <textarea
+          id="q-accepted"
+          class="textarea"
+          rows="4"
+          placeholder="Alternative phrasings, abbreviations…"
+          [ngModel]="acceptedAnswersRaw()"
+          (ngModelChange)="acceptedAnswersRaw.set($event)"
+          name="acceptedAnswers"
+        ></textarea>
+      </div>
+    </form>
+  }
+</div>

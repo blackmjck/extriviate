@@ -1,33 +1,34 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import type {
-  GameSession,
-  JoinMethod,
-  JoinSessionResponse,
-  ApiResponse,
-} from '@extriviate/shared';
+import type { GameSession, JoinMethod } from '@extriviate/shared';
 import { AuthService } from '../../core/services/auth.service';
 import { GuestSessionService } from '../../core/services/guest-session.service';
 import { GameSocketService } from '../../core/services/game-socket.service';
-import { environment } from '../../../environments/environment';
+import { SessionService } from '../../core/services/session.service';
+import { isApiErrorResponse } from '../../shared/utils/helpers';
 
 @Component({
   selector: 'app-join',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
   templateUrl: './join.component.html',
   styleUrl: './join.component.scss',
 })
 export class JoinComponent implements OnInit {
-  private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly guestSession = inject(GuestSessionService);
   private readonly gameSocket = inject(GameSocketService);
+  private readonly sessionService = inject(SessionService);
 
   readonly session = signal<GameSession | null>(null);
   readonly joinMethod = signal<JoinMethod>('guest');
@@ -58,9 +59,7 @@ export class JoinComponent implements OnInit {
     }
 
     try {
-      const res = await firstValueFrom(
-        this.http.get<ApiResponse<GameSession>>(`${environment.apiUrl}/api/sessions/${code}`),
-      );
+      const res = await this.sessionService.getSession(code);
       this.session.set(res.data);
     } catch {
       this.errorMessage.set('Session not found or no longer available.');
@@ -82,28 +81,24 @@ export class JoinComponent implements OnInit {
     this.loading.set(true);
 
     try {
-      let body: Record<string, unknown>;
       const method = this.joinMethod();
+      const body =
+        method === 'guest'
+          ? ({ method: 'guest', displayName: this.guestName() } as const)
+          : method === 'login'
+            ? ({
+                method: 'login',
+                email: this.loginEmail(),
+                password: this.loginPassword(),
+              } as const)
+            : ({
+                method: 'signup',
+                email: this.signupEmail(),
+                password: this.signupPassword(),
+                displayName: this.signupName(),
+              } as const);
 
-      if (method === 'guest') {
-        body = { method: 'guest', displayName: this.guestName() };
-      } else if (method === 'login') {
-        body = { method: 'login', email: this.loginEmail(), password: this.loginPassword() };
-      } else {
-        body = {
-          method: 'signup',
-          email: this.signupEmail(),
-          password: this.signupPassword(),
-          displayName: this.signupName(),
-        };
-      }
-
-      const res = await firstValueFrom(
-        this.http.post<ApiResponse<JoinSessionResponse>>(
-          `${environment.apiUrl}/api/sessions/${session.id}/join`,
-          body,
-        ),
-      );
+      const res = await this.sessionService.joinSession(session.id, body);
 
       const { player, session: updatedSession, tokens } = res.data;
 
@@ -115,20 +110,22 @@ export class JoinComponent implements OnInit {
         }
         this.gameSocket.connect(updatedSession.id, tokens?.accessToken);
       } else {
-        // Authenticated user - tokens are stored by AuthService during login/signup
-        // but the join endpoint also returns them
+        // Authenticated user — store pre-issued tokens from the join response
+        // without firing a second POST /api/auth/login network request.
         if (tokens) {
-          this.auth.login(
-            method === 'login' ? this.loginEmail() : this.signupEmail(),
-            method === 'login' ? this.loginPassword() : this.signupPassword(),
-          );
+          await this.auth.storeTokensAndLoadUser(tokens);
         }
         this.gameSocket.connect(updatedSession.id, tokens?.accessToken);
       }
 
       await this.router.navigate(['/session', updatedSession.id]);
-    } catch (err: any) {
-      const message = err?.error?.error?.message ?? 'Failed to join session.';
+    } catch (err: unknown) {
+      let message = 'Failed to join session';
+      if (isApiErrorResponse(err)) {
+        message = err.error.error.message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       this.errorMessage.set(message);
     } finally {
       this.loading.set(false);

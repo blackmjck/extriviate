@@ -14,7 +14,9 @@
         <button
           class="cell"
           [class.answered]="isAnswered(question)"
-          [disabled]="isAnswered(question)"
+          [class.not-your-turn]="!isAnswered(question) && !canSelectQuestion()"
+          [disabled]="isAnswered(question) || !canSelectQuestion()"
+          [attr.aria-label]="getCellAriaLabel(question)"
           (click)="selectCell(question)"
         >
           @if (!isAnswered(question) && question) {

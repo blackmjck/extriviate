@@ -1,5 +1,5 @@
-import type { ContentBlock } from './upload.types.ts';
-import type { GameBoard } from './game.types.ts';
+import type { ContentBlock } from './upload.types.js';
+import type { GameBoard } from './game.types.js';
 
 // ---- Round State Machine ----
 

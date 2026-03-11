@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 :host {
   display: block;
   min-height: 100vh;
@@ -22,6 +24,13 @@
     font-weight: 700;
     color: var(--accent, #4169e1);
     margin: 0;
+    flex: 1;
+  }
+
+  &__nav {
+    display: flex;
+    gap: 8px;
+    margin-right: 8px;
   }
 }
 
@@ -41,12 +50,18 @@
     cursor: not-allowed;
   }
 
+  &--sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
   &--primary {
     background: var(--accent, #4169e1);
     color: #fff;
 
     &:hover:not(:disabled) {
-      background: lighten(#4169e1, 8%);
+      background: color.adjust(#4169e1, $lightness: 8%);
     }
   }
 
@@ -67,6 +82,16 @@
 
     &:hover:not(:disabled) {
       background: rgba(231, 76, 60, 0.1);
+    }
+  }
+
+  &--host {
+    background: transparent;
+    color: #f5c842;
+    border: 1px solid rgba(245, 200, 66, 0.4);
+
+    &:hover:not(:disabled) {
+      background: rgba(245, 200, 66, 0.1);
     }
   }
 }

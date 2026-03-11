@@ -1,9 +1,17 @@
-import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  inject,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { GameSocketService } from '../../core/services/game-socket.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { AuthService } from '../../core/services/auth.service';
 import { GuestSessionService } from '../../core/services/guest-session.service';
+import { WebRtcService } from '../../core/services/webrtc.service';
 import { LobbyComponent } from '../lobby/lobby.component';
 import { GameBoardComponent } from '../game-board/game-board.component';
 import { QuestionComponent } from '../question/question.component';
@@ -14,7 +22,7 @@ import { ConnectionStatusComponent } from '../../shared/components/connection-st
 
 @Component({
   selector: 'app-game-session',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LobbyComponent,
     GameBoardComponent,
@@ -33,19 +41,16 @@ export class GameSessionComponent implements OnInit, OnDestroy {
   private readonly gameState = inject(GameStateService);
   private readonly authService = inject(AuthService);
   private readonly guestSession = inject(GuestSessionService);
+  private readonly webRtc = inject(WebRtcService);
 
-  readonly sessionId = computed(() =>
-    parseInt(this.route.snapshot.paramMap.get('id') ?? '0', 10),
-  );
+  readonly sessionId = computed(() => parseInt(this.route.snapshot.paramMap.get('id') ?? '0', 10));
 
   readonly sessionStatus = this.gameState.sessionStatus;
   readonly board = this.gameState.board;
 
   readonly phase = computed(() => this.gameState.roundState()?.phase ?? 'idle');
 
-  readonly showDailyDoubleOverlay = computed(
-    () => this.phase() === 'daily_double_revealed',
-  );
+  readonly showDailyDoubleOverlay = computed(() => this.phase() === 'daily_double_revealed');
 
   readonly showQuestionOverlay = computed(() => {
     const p = this.phase();
@@ -65,14 +70,16 @@ export class GameSessionComponent implements OnInit, OnDestroy {
     // (e.g. page refresh, direct URL navigation).
     if (this.socketService.connectionState() === 'disconnected') {
       const id = this.sessionId();
-      const token = this.guestSession.hasSession()
+      const isGuestReconnect = this.guestSession.hasSession();
+      const token = isGuestReconnect
         ? (this.guestSession.getToken() ?? undefined)
         : (this.authService.getAccessToken() ?? undefined);
-      this.socketService.connect(id, token);
+      this.socketService.connect(id, token, isGuestReconnect);
     }
   }
 
   ngOnDestroy(): void {
+    this.webRtc.destroy();
     this.socketService.disconnect();
   }
 }

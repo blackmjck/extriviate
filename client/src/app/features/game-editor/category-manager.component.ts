@@ -1,24 +1,31 @@
-import { Component, inject, signal, OnInit, output } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  input,
+  output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
-import type { Category, ApiResponse, CreateCategoryRequest, UpdateCategoryRequest } from '@extriviate/shared';
-import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
+import type { Category } from '@extriviate/shared';
+import { CategoryService } from '../../core/services/category.service';
 
 @Component({
   selector: 'app-category-manager',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
   templateUrl: './category-manager.component.html',
   styleUrls: ['./category-manager.component.scss'],
 })
 export class CategoryManagerComponent implements OnInit {
-  private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
+  private readonly cats = inject(CategoryService);
 
-  /** Emits the selected category ID when the user picks one. */
-  readonly categorySelected = output<number>();
+  /** Category IDs already assigned to other board slots — hidden from the list. */
+  readonly excludedIds = input<Set<number>>(new Set());
+
+  /** Emits the selected category when the user picks one. */
+  readonly categorySelected = output<Category>();
 
   readonly categories = signal<Category[]>([]);
   readonly loading = signal(false);
@@ -38,13 +45,8 @@ export class CategoryManagerComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const res = await firstValueFrom(
-        this.http.get<ApiResponse<Category[]>>(
-          `${environment.apiUrl}/api/categories`,
-          { headers: this.auth.getAuthHeaders() },
-        ),
-      );
-      this.categories.set(res.data);
+      const res = await this.cats.getCategories();
+      this.categories.set(res.data.items);
     } catch {
       this.error.set('Failed to load categories.');
     } finally {
@@ -52,8 +54,8 @@ export class CategoryManagerComponent implements OnInit {
     }
   }
 
-  selectCategory(id: number): void {
-    this.categorySelected.emit(id);
+  selectCategory(cat: Category): void {
+    this.categorySelected.emit(cat);
   }
 
   openCreateForm(): void {
@@ -79,34 +81,16 @@ export class CategoryManagerComponent implements OnInit {
     const name = this.formName().trim();
     if (!name) return;
 
+    const description = this.formDescription().trim() || undefined;
+
     this.error.set(null);
     const current = this.editing();
 
     try {
       if (current) {
-        const body: UpdateCategoryRequest = {
-          name,
-          description: this.formDescription().trim() || undefined,
-        };
-        await firstValueFrom(
-          this.http.put<ApiResponse<Category>>(
-            `${environment.apiUrl}/api/categories/${current.id}`,
-            body,
-            { headers: this.auth.getAuthHeaders() },
-          ),
-        );
+        await this.cats.updateCategory(current.id, name, description);
       } else {
-        const body: CreateCategoryRequest = {
-          name,
-          description: this.formDescription().trim() || undefined,
-        };
-        await firstValueFrom(
-          this.http.post<ApiResponse<Category>>(
-            `${environment.apiUrl}/api/categories`,
-            body,
-            { headers: this.auth.getAuthHeaders() },
-          ),
-        );
+        await this.cats.createCategory(name, description);
       }
       this.cancelForm();
       this.loadCategories();
@@ -118,11 +102,7 @@ export class CategoryManagerComponent implements OnInit {
   async deleteCategory(id: number): Promise<void> {
     if (!confirm('Delete this category? Questions in it will not be removed.')) return;
     try {
-      await firstValueFrom(
-        this.http.delete(`${environment.apiUrl}/api/categories/${id}`, {
-          headers: this.auth.getAuthHeaders(),
-        }),
-      );
+      await this.cats.deleteCategory(id);
       this.loadCategories();
     } catch {
       this.error.set('Failed to delete category.');

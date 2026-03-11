@@ -1,7 +1,8 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GameStateService } from '../game-state.service.js';
-import type { SessionGameState, LivePlayer } from '../game-state.service.js';
-import type { GameBoard } from '@extriviate/shared';
+import type { SessionGameState } from '../game-state.service.js';
+import type { GameBoard, LivePlayer } from '@extriviate/shared';
+import type { WebSocket as WsWebSocket } from 'ws';
 import {
   RECONNECT_GRACE_PERIOD_MS,
   ANSWER_TIMER_DURATION_MS,
@@ -13,12 +14,12 @@ import {
 
 // ---- Minimal fake WebSocket ----
 
-function makeSocket(open = true): WebSocket {
+function makeSocket(open = true): WsWebSocket {
   return {
     readyState: open ? 1 : 3, // 1 = OPEN, 3 = CLOSED
     OPEN: 1,
     send: vi.fn(),
-  } as unknown as WebSocket;
+  } as unknown as WsWebSocket;
 }
 
 // ---- Minimal GameBoard fixture ----

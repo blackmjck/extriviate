@@ -358,7 +358,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
             return reply.status(400).send({
               success: false,
               error: {
-                message: `Maximum ${DAILY_DOUBLE_MAX} daily doubles allowed`,
+                message: `Maximum ${DAILY_DOUBLE_MAX} double downs allowed`,
                 code: 'TOO_MANY_DAILY_DOUBLES',
               },
             });

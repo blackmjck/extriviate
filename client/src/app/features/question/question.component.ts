@@ -1,22 +1,29 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import {
+  Component,
+  inject,
+  computed,
+  signal,
+  effect,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { GameStateService } from '../../core/services/game-state.service';
 import { GameSocketService } from '../../core/services/game-socket.service';
-import { AuthService } from '../../core/services/auth.service';
 import { SpeechRecognitionService } from '../../core/services/speech-recognition.service';
 import { ContentBlocksComponent } from '../../shared/components/content-blocks/content-blocks.component';
 
 @Component({
   selector: 'app-question',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, ContentBlocksComponent],
   templateUrl: './question.component.html',
   styleUrl: './question.component.scss',
 })
-export class QuestionComponent {
+export class QuestionComponent implements OnDestroy {
   private readonly gameState = inject(GameStateService);
   private readonly socketService = inject(GameSocketService);
-  private readonly authService = inject(AuthService);
   readonly speech = inject(SpeechRecognitionService);
 
   readonly answerText = signal('');
@@ -33,7 +40,7 @@ export class QuestionComponent {
   readonly submittedAnswer = computed(() => this.roundState()?.submittedAnswer);
   readonly isCorrect = computed(() => this.roundState()?.isCorrect);
 
-  readonly currentPlayerId = computed(() => this.authService.currentUser()?.id ?? null);
+  readonly currentPlayerId = computed(() => this.gameState.currentPlayerId());
 
   readonly isActivePlayer = computed(() => {
     const state = this.roundState();
@@ -49,6 +56,25 @@ export class QuestionComponent {
   );
 
   readonly showResult = computed(() => this.phase() === 'answer_evaluated');
+
+  constructor() {
+    // Clear timer whenever phase leaves a timer-relevant state
+    effect(() => {
+      const p = this.phase();
+      if (p !== 'buzzers_open' && p !== 'player_answering') {
+        this.clearTimer();
+      }
+    });
+
+    // Drive timer from server timer messages
+    this.socketService.messages$.pipe(takeUntilDestroyed()).subscribe((message) => {
+      if (message.type === 'timer_started') {
+        this.startTimer(message.durationMs);
+      } else if (message.type === 'timer_expired') {
+        this.clearTimer();
+      }
+    });
+  }
 
   buzz(): void {
     const playerId = this.currentPlayerId();
@@ -92,6 +118,10 @@ export class QuestionComponent {
     }, 1000);
   }
 
+  ngOnDestroy(): void {
+    this.clearTimer();
+  }
+
   clearTimer(): void {
     if (this.timerInterval !== null) {
       clearInterval(this.timerInterval);
@@ -99,5 +129,4 @@ export class QuestionComponent {
     }
     this.timerValue.set(null);
   }
-
 }

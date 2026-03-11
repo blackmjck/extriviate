@@ -1,9 +1,64 @@
-# Extriviate — Project Context for Claude Code
+# Claude Project Instructions
 
-This file gives Claude Code a complete mental model of the Extriviate project.
-Read it before writing any code. Sections are ordered from most to least fundamental.
+You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
----
+## TypeScript Best Practices
+
+- Use strict type checking
+- Prefer type inference when the type is obvious
+- Avoid the `any` type; use `unknown` when type is uncertain
+
+## Angular Best Practices
+
+- Always use standalone components over NgModules
+- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
+- Use signals for state management
+- Implement lazy loading for feature routes
+- Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
+- Use `NgOptimizedImage` for all static images.
+  - `NgOptimizedImage` does not work for inline base64 images.
+
+## Accessibility Requirements
+
+- It MUST pass all AXE checks.
+- It MUST follow all WCAG AA minimums, including focus management, color contrast, and ARIA attributes.
+
+## Components
+
+- Keep components small and focused on a single responsibility
+- Use `input()` and `output()` functions instead of decorators
+- Use `computed()` for derived state
+- Set `changeDetection: ChangeDetectionStrategy.OnPush` in `@Component` decorator
+- Prefer separate template files for all components
+- Prefer Reactive forms instead of Template-driven ones
+- Do NOT use `ngClass`, use `class` bindings instead
+- Do NOT use `ngStyle`, use `style` bindings instead
+- When using external templates/styles, use paths relative to the component TS file.
+
+## State Management
+
+- Use signals for local component state
+- Keep state transformations pure and predictable
+- Do NOT use `mutate` on signals, use `update` or `set` instead
+
+## Templates
+
+- Keep templates simple and avoid complex logic
+- Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
+- Use the async pipe to handle observables
+- Do not assume globals like (`new Date()`) are available.
+
+## Services
+
+- Design services around a single responsibility
+- Use the `providedIn: 'root'` option for singleton services
+- Use the `inject()` function instead of constructor injection
+
+## Testing
+
+- Use Angular's native Vitest setup for unit testing
+- Use Playwright for end to end functional tests
+- Target 80% line and function coverage for new code when writing tests
 
 ## What Is This?
 
@@ -103,8 +158,6 @@ extriviate/
 - **TypeScript everywhere.** No `any` unless interfacing with raw DB rows (cast immediately).
 - **Single quotes** everywhere (`.prettierrc`).
 - **Angular 2016 file naming:** `game-board.component.ts`, `game-state.service.ts`, etc.
-- **Angular patterns:** `signal()`/`computed()` for state, `inject()` for DI,
-  `@if`/`@for` control flow, standalone components only. No `NgModules`, no `Zone.js`.
 - **Fastify patterns:** `fp()` for plugins, dedicated pool client + `BEGIN/COMMIT/ROLLBACK`
   for multi-statement transactions, `COALESCE` for partial updates, check PG error
   codes `23505` (duplicate) and `23503` (FK violation) before rethrowing.
@@ -355,7 +408,7 @@ Set up via `ng add @angular/pwa`. Key requirements:
 - Safe area insets (`env(safe-area-inset-*)`) applied to `.game-container`.
 - `OrientationService` exposes `isPortrait` and `isSmallScreen` signals.
 - Buzz button: `width/height: min(30vw, 120px)`, `border-radius: 50%`,
-  `touch-action: manipulation`, use `(touchstart)` + `event.preventDefault()`.
+  `touch-action: manipulation`, use `(pointerdown)` + `event.preventDefault()`.
 
 ---
 
@@ -488,92 +541,46 @@ Score display: Courier New, monospace
 
 ## Gap Analysis: Extriviate — What Exists vs. What Should
 
-### Critical (game cannot be played at all)
+### Task List
 
-1. **No active game page or route**
-
-All gameplay components exist (`GameBoardComponent`, `QuestionComponent`, `DailyDoubleComponent`, `HostControlsComponent`) but no parent "active session" container component exists to compose them, and no route in `app.routes.ts` points to one. `session/:id` currently routes directly to `LobbyComponent` and stays there forever.
-
-2. **Lobby never transitions to the game**
-
-`LobbyComponent` sets status to `active` via REST but never watches `sessionStatus` (the signal is in `GameStateService`) and never navigates anywhere. The game cannot start from the player's perspective.
-
-3. **SessionEndComponent is not routed or triggered**
-
-`SessionEndComponent` exists but there is no route for it in `app.routes.ts` and nothing in the client watches for `sessionStatus === 'completed'` to navigate there.
-
-4. **Timer messages are dead-wired**
-
-`timer_started` and `timer_expired` fall into the no-op `case` group in `game-state.service.ts:135-136`. `QuestionComponent.startTimer()` is defined but never called — the countdown timer never runs.
-
-5. **Guest player identity is broken for all gameplay**
-
-`QuestionComponent.currentPlayerId` and `DailyDoubleComponent.currentPlayerId` both derive from `authService.currentUser()?.id`, which is `null` for guests. Guests can never buzz in, submit an answer, or declare a wager. `GameStateService.isHost()` has the same flaw — a guest host will never see host controls.
-
-### Significant (functionality is present but incorrect or incomplete)
-
-6. **`HostControlsComponent.evaluateAnswer()` calls the wrong protocol**
-
-It sends `release_buzzers`/`lock_buzzers` WebSocket messages to simulate evaluation. CLAUDE.md specifies user-hosted evaluation uses `POST /api/sessions/:id/evaluate` (REST). The WebSocket path never updates scores or broadcasts an `answer_result`, so scores are never updated in user-hosted mode.
-
-7. **`GameBoardComponent` doesn't enforce question-selection turn order**
-
-Any player can click any unanswered cell at any time. `selectCell()` doesn't check whether the local player matches `questionSelecterId`. Server-side the route may reject it, but the client has no guard.
-
-8. **`GameBoardComponent.answeredIds` uses a local signal, not server state**
-
-Answered questions are tracked in a local `Set`. On reconnect the `full_state_sync` does not repopulate this set, so previously answered cells reappear as available. The `isAnswered()` method should derive from `question.isAnswered` (server-provided via the board state) rather than a local accumulator.
-
-9. **Adaptive game board layout not built**
-
-`CLAUDE.md` explicitly lists this as not yet built. The board is a static 6×6 grid. No orientation prompt (despite `OrientationService` existing), no compact portrait mode, no mobile-optimized touch targets. NOTES.md section VI has the full design spec.
-
-### Minor (polish/completeness)
-
-10. **`connection-status` component is never rendered**
-
-`shared/components/connection-status` exists but doesn't appear used in any template. The reconnecting/disconnected state from `GameSocketService` is never surfaced to the user.
-
-11. **No orientation prompt UI**
-
-`OrientationService` provides `isPortrait`/`isSmallScreen` signals but no component renders a "please rotate your device" prompt for mobile players.
-
-12. **`QuestionComponent` buzz button uses `(click)` not `(touchstart)`**
-
-`CLAUDE.md` and `NOTES.md` both specify the buzz button must use `(touchstart)` + `event.preventDefault()` to avoid the 300ms delay. The current template uses `(click)`.
-
-13. **AI evaluation flag exists, always false** — intentional deferral, no action needed.
-
-### Prioritized Task List
-
-| #   | Task                                                                                                       | Blocking?                             |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| 1   | Create active-game container component + routes (composes board, question, DD, host-controls, session-end) | Yes — nothing works without this      |
-| 2   | Wire lobby → game navigation on `sessionStatus` change                                                     | Yes                                   |
-| 3   | Wire game → session-end navigation on `sessionStatus === 'completed'`                                      | Yes                                   |
-| 4   | Fix guest player identity (`currentPlayerId`, `isHost`) to use `GuestSessionService`                       | Yes — guests can't play               |
-| 5   | Subscribe to `timer_started`/`timer_expired` and drive `QuestionComponent` timer                           | Yes — timer never runs                |
-| 6   | Fix `HostControlsComponent.evaluateAnswer()` to call `POST /evaluate` REST endpoint                        | Yes — user-hosted scores never update |
-| 7   | Add question-selection guard in `GameBoardComponent` (only questionSelecter can click)                     | High                                  |
-| 8   | Replace `answeredIds` local signal with server-driven `isAnswered` from `full_state_sync`                  | High                                  |
-| 9   | Adaptive/responsive game board layout (portrait compact mode + orientation prompt)                         | High — NOTES.md has full spec         |
-| 10  | Show `connection-status` component in the active game shell                                                | Medium                                |
-| 11  | Change buzz button to `(touchstart)` + `event.preventDefault()`                                            | Low                                   |
-| 12  | Set up Vitest testing for the `/server` files                                                              | Low                                   |
-| 13  | Set up Vitest/Playwright testing (unit and e2e) for the `/client` files                                    | Low                                   |
-
-### Task List Completion Status
-
-- [x] 1. Create active-game container component + routes **(completed)**
-- [x] 2. Wire lobby -> game navigation on `sessionStatus` change **(completed)**
-- [ ] 3. Wire game -> session-end navigation on `sessionStatus === 'completed'`
-- [ ] 4. Fix guest player identity (`currentPlayerId`, `isHost`) to use `GuestSessionService`
-- [ ] 5. Subscribe to `timer_started`/`timer_expired` and drive `QuestionComponent` timer
-- [ ] 6. Fix `HostControlsComponent.evaluateAnswer()` to call `POST /evaluate` REST endpoint
-- [ ] 7. Add question-selection guard in `GameBoardComponent` (only questionSelecter can click)
-- [ ] 8. Replace `answeredIds` local signal with server-driven `isAnswered` from `full_state_sync`
-- [ ] 9. Adaptive/responsive game board layout (portrait compact mode + orientation prompt)
-- [ ] 10. Show `connection-status` component in the active game
-- [ ] 11. Change buzz button to `(touchstart)` + `event.preventDefault()`
+- [x] 1. Create active-game container component + routes **(completed)** — `GameSessionComponent` composes all views via `@switch` on `sessionStatus`
+- [x] 2. Wire lobby → game navigation on `sessionStatus` change **(completed)** — `GameSessionComponent` template automatically switches to `GameBoardComponent` when status is `'active'`
+- [x] 3. Wire game → session-end navigation on `sessionStatus === 'completed'` **(completed)** — `GameSessionComponent` renders `SessionEndComponent` automatically when status is `'completed'`
+- [x] 4. Fix guest player identity (`currentPlayerId`, `isHost`) to use `GuestSessionService` **(completed)** — `GameStateService.currentPlayerId` computed signal checks `guestSessionService.getPlayerId()` as fallback
+- [x] 5. Subscribe to `timer_started`/`timer_expired` and drive `QuestionComponent` timer **(completed)** — `QuestionComponent` subscribes to `socketService.messages$` and calls `startTimer()`/`clearTimer()`
+- [x] 6. Fix `HostControlsComponent.evaluateAnswer()` to call `POST /evaluate` REST endpoint **(completed)** — now calls `/api/sessions/:id/evaluate` correctly
+- [ ] 7. Add question-selection guard in `GameBoardComponent` (only `questionSelecterId` can click) — server rejects invalid selections but client has no guard; any player can click
+- [ ] 8. Replace `answeredIds` local `Set` signal with server-driven `question.isAnswered` from `full_state_sync` — local signal drifts on reconnect; `isAnswered()` has a fallback but the local accumulator is still the primary path
+- [ ] 9. Adaptive/responsive game board layout: portrait compact mode + orientation prompt UI — `OrientationService` signals exist but no prompt component renders; board is a static 6×6 grid with no mobile layout
+- [x] 10. Show `connection-status` component in the active game **(completed)** — `<app-connection-status />` is rendered at the top of `GameSessionComponent` template
+- [x] 11. Change buzz button from `(click)` to `(pointerdown)` + `event.preventDefault()` — avoids 300ms tap delay on mobile; functionality is correct but latency is suboptimal
 - [x] 12. Set up Vitest testing for the `/server` files **(completed)**
-- [x] 13. Set up Vitest/Playwright testing (unit and e2e) for the `/client` files
+- [x] 13. Set up Vitest/Playwright testing (unit and e2e) for the `/client` files **(completed)**
+- [ ] 14. Add "Host Game" button to game list / editor and implement `POST /api/sessions` session-creation flow — blocking: no one can host without this
+- [ ] 15. Implement lobby camera/mic permission prompt; call `startLocalStream()` on lobby entry; persist preference in `localStorage` — blocking: peer video/audio is dead code without this
+- [x] 16. Add standalone `/categories` route with full CRUD (`CategoryListComponent`) — enhancement
+- [x] 17. Add `/profile` route with `ProfileComponent`, `GET /api/users/me/stats` server endpoint, and nav links to editor views — enhancement
+
+---
+
+## Additional Feature Gap Analysis
+
+### Not Implemented
+
+#### 14. Host a session from a saved game
+
+Implementation requires:
+
+- "Host Game" button on `GameListComponent` (and optionally `GameEditorComponent`) for published games
+- A session-setup dialog or page (session name, mode: `computer_hosted` | `user_hosted`, turn-based toggle)
+- `POST /api/sessions` call with `{ gameId, name, mode, turnBased }`, then navigate to `/session/:id` as host
+
+#### 15. Lobby camera/microphone permission prompt
+
+Implementation requires:
+
+- Call `webRtcService.startLocalStream()` on lobby entry (ideally after an explicit user prompt explaining why)
+- Prompt card in `LobbyComponent` with "Enable Camera & Mic" / "Skip" options
+- Persist choice to `localStorage` (`extriviate_media_pref: 'enabled' | 'disabled'`) and skip the prompt on subsequent joins
+- Graceful fallback when browser denies permission (suppress media controls, continue without video)
+- After stream is established, `MediaControlsComponent` buttons become active and `WebRtcService` can begin ICE negotiation

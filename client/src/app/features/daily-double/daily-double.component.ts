@@ -1,13 +1,12 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DAILY_DOUBLE_MIN_WAGER } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 import { GameSocketService } from '../../core/services/game-socket.service';
-import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-daily-double',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
   templateUrl: './daily-double.component.html',
   styleUrl: './daily-double.component.scss',
@@ -15,7 +14,6 @@ import { AuthService } from '../../core/services/auth.service';
 export class DailyDoubleComponent {
   private readonly gameState = inject(GameStateService);
   private readonly socketService = inject(GameSocketService);
-  private readonly authService = inject(AuthService);
 
   readonly wagerAmount = signal<number>(DAILY_DOUBLE_MIN_WAGER);
 
@@ -23,7 +21,7 @@ export class DailyDoubleComponent {
 
   readonly isRevealed = computed(() => this.roundState()?.phase === 'daily_double_revealed');
 
-  readonly currentPlayerId = computed(() => this.authService.currentUser()?.id ?? null);
+  readonly currentPlayerId = computed(() => this.gameState.currentPlayerId());
 
   readonly isActivePlayer = computed(() => {
     const state = this.roundState();
@@ -46,9 +44,7 @@ export class DailyDoubleComponent {
 
   readonly minWager = DAILY_DOUBLE_MIN_WAGER;
 
-  readonly maxWager = computed(() =>
-    Math.max(this.playerScore(), this.highestBoardValue()),
-  );
+  readonly maxWager = computed(() => Math.max(this.playerScore(), this.highestBoardValue()));
 
   submitWager(): void {
     const playerId = this.currentPlayerId();

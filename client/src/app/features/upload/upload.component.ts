@@ -1,20 +1,26 @@
-import { Component, inject, signal, computed, output } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import type { ApiResponse, PresignResponse, UploadConfirmResponse } from '@extriviate/shared';
-import { ALLOWED_UPLOAD_TYPES, MAX_IMAGE_SIZE_BYTES, MAX_VIDEO_SIZE_BYTES } from '@extriviate/shared';
-import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import {
+  ALLOWED_UPLOAD_TYPES,
+  MAX_IMAGE_SIZE_MBYTES,
+  MAX_VIDEO_SIZE_MBYTES,
+} from '@extriviate/shared';
+import { UploadService } from '../../core/services/upload.service';
 
 @Component({
   selector: 'app-upload',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './upload.component.html',
   styleUrls: ['./upload.component.scss'],
 })
 export class UploadComponent {
-  private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
+  private readonly uploadService = inject(UploadService);
 
   /** Emits the public URL of the uploaded file when the upload completes. */
   readonly uploaded = output<string>();
@@ -59,17 +65,16 @@ export class UploadComponent {
 
   private async handleFile(file: File): Promise<void> {
     // Validate type
-    if (!ALLOWED_UPLOAD_TYPES.includes(file.type as any)) {
+    if (!(ALLOWED_UPLOAD_TYPES as unknown as string[]).includes(file.type)) {
       this.error.set(`Unsupported file type: ${file.type}`);
       return;
     }
 
     // Validate size
     const isVideo = file.type.startsWith('video/');
-    const maxSize = isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+    const maxSize = isVideo ? MAX_VIDEO_SIZE_MBYTES : MAX_IMAGE_SIZE_MBYTES;
     if (file.size > maxSize) {
-      const limitMb = Math.round(maxSize / (1024 * 1024));
-      this.error.set(`File too large. Maximum size is ${limitMb} MB.`);
+      this.error.set(`File too large. Maximum size is ${maxSize} MB.`);
       return;
     }
 
@@ -80,28 +85,19 @@ export class UploadComponent {
 
     try {
       // Step 1: Get presigned URL
-      const presignRes = await firstValueFrom(
-        this.http.post<ApiResponse<PresignResponse>>(
-          `${environment.apiUrl}/api/uploads/presign`,
-          { mimeType: file.type },
-          { headers: this.auth.getAuthHeaders() },
-        ),
-      );
+      const presignRes = await this.uploadService.presign(file.type);
       const { url: presignedUrl, key } = presignRes.data;
       this.progress.set(0.1);
 
       // Step 2: Upload to presigned URL with progress tracking
-      await this.uploadWithProgress(presignedUrl, file);
+      await this.uploadService.uploadToPresignedUrl(presignedUrl, file, (fraction) => {
+        // Map upload progress to 0.1 - 0.9 range
+        this.progress.set(0.1 + fraction * 0.8);
+      });
       this.progress.set(0.9);
 
       // Step 3: Confirm upload
-      const confirmRes = await firstValueFrom(
-        this.http.post<ApiResponse<UploadConfirmResponse>>(
-          `${environment.apiUrl}/api/uploads/confirm`,
-          { key, mimeType: file.type, sizeBytes: file.size },
-          { headers: this.auth.getAuthHeaders() },
-        ),
-      );
+      const confirmRes = await this.uploadService.confirm(key, file.type, file.size);
       this.progress.set(1);
       this.uploaded.emit(confirmRes.data.publicUrl);
     } catch {
@@ -111,32 +107,5 @@ export class UploadComponent {
     }
   }
 
-  private uploadWithProgress(url: string, file: File): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', url);
-      xhr.setRequestHeader('Content-Type', file.type);
 
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          // Map upload progress to 0.1 - 0.9 range
-          const uploadFraction = e.loaded / e.total;
-          this.progress.set(0.1 + uploadFraction * 0.8);
-        }
-      });
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
-        } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
-        }
-      });
-
-      xhr.addEventListener('error', () => reject(new Error('Upload network error')));
-      xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
-
-      xhr.send(file);
-    });
-  }
 }

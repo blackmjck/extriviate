@@ -1,23 +1,27 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import type { Game, ApiResponse, PaginatedResponse } from '@extriviate/shared';
-import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import type { Game } from '@extriviate/shared';
+import { GameService } from '../../core/services/game.service';
 
 const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-game-list',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   templateUrl: './game-list.component.html',
   styleUrls: ['./game-list.component.scss'],
 })
 export class GameListComponent implements OnInit {
-  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly auth = inject(AuthService);
+  private readonly gameService = inject(GameService);
 
   readonly games = signal<Game[]>([]);
   readonly total = signal(0);
@@ -38,15 +42,7 @@ export class GameListComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const res = await firstValueFrom(
-        this.http.get<ApiResponse<PaginatedResponse<Game>>>(
-          `${environment.apiUrl}/api/games`,
-          {
-            params: { limit: PAGE_SIZE, offset: this.offset() },
-            headers: this.auth.getAuthHeaders(),
-          },
-        ),
-      );
+      const res = await this.gameService.getGames(this.offset(), PAGE_SIZE);
       this.games.set(res.data.items);
       this.total.set(res.data.total);
     } catch {
@@ -71,17 +67,17 @@ export class GameListComponent implements OnInit {
   }
 
   editGame(id: number): void {
-    this.router.navigate(['/games', id, 'edit']);
+    this.router.navigate(['/games', id]);
+  }
+
+  hostGame(id: number): void {
+    void this.router.navigate(['/games', id, 'host']);
   }
 
   async deleteGame(id: number): Promise<void> {
     if (!confirm('Are you sure you want to delete this game?')) return;
     try {
-      await firstValueFrom(
-        this.http.delete(`${environment.apiUrl}/api/games/${id}`, {
-          headers: this.auth.getAuthHeaders(),
-        }),
-      );
+      await this.gameService.deleteGame(id);
       this.loadGames();
     } catch {
       this.error.set('Failed to delete game.');

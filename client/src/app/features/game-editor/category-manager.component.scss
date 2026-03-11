@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 :host {
   display: block;
 }
@@ -34,7 +36,7 @@
     color: #fff;
 
     &:hover {
-      background: lighten(#4169e1, 8%);
+      background: color.adjust(#4169e1, $lightness: 8%);
     }
   }
 
@@ -123,6 +125,10 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   }
 
+  &__item--used {
+    opacity: 0.55;
+  }
+
   &__select {
     flex: 1;
     display: flex;
@@ -137,8 +143,12 @@
     cursor: pointer;
     transition: background 0.15s;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: rgba(65, 105, 225, 0.1);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
     }
   }
 
@@ -150,6 +160,18 @@
   &__desc {
     font-size: 0.75rem;
     color: #888;
+  }
+
+  &__used-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 1px 5px;
+    align-self: flex-start;
   }
 
   &__actions {

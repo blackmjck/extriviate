@@ -1,0 +1,70 @@
+<div class="picker">
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <!-- Point value control -->
+  <div class="picker__pv-row">
+    <label class="label" for="point-value">Point value</label>
+    <input
+      id="point-value"
+      class="picker__pv-input"
+      type="number"
+      min="1"
+      step="100"
+      [ngModel]="pointValue()"
+      (ngModelChange)="pointValue.set(+$event)"
+      name="pointValue"
+    />
+  </div>
+
+  @if (dailyDoublesEnabled()) {
+    <div class="picker__dd-row">
+      <label class="picker__dd-label" for="daily-double-toggle">
+        <input
+          id="daily-double-toggle"
+          type="checkbox"
+          [ngModel]="markAsDailyDouble()"
+          (ngModelChange)="onDailyDoubleChange($event)"
+          [disabled]="!canMarkDailyDouble()"
+          name="dailyDouble"
+        />
+        <span>Double Down</span>
+        @if (!canMarkDailyDouble()) {
+          <span class="picker__dd-limit">(limit reached)</span>
+        }
+      </label>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="loading-text">Loading questions...</p>
+  } @else {
+    <ul class="picker__list">
+      @for (q of visibleQuestions(); track q.id) {
+        <li class="picker__item">
+          <p class="picker__preview">{{ questionPreview(q) }}</p>
+          <button class="btn btn--primary btn--sm" type="button" (click)="select(q)">Select</button>
+        </li>
+      } @empty {
+        <li class="picker__empty">
+          No questions in this category yet.
+        </li>
+      }
+    </ul>
+
+    @if (totalPages() > 1) {
+      <div class="picker__pagination">
+        <button class="btn btn--ghost btn--xs" [disabled]="!hasPrev()" (click)="prevPage()">←</button>
+        <span class="picker__page">{{ currentPage() }} / {{ totalPages() }}</span>
+        <button class="btn btn--ghost btn--xs" [disabled]="!hasNext()" (click)="nextPage()">→</button>
+      </div>
+    }
+  }
+
+  <div class="picker__footer">
+    <button class="btn btn--ghost btn--sm" type="button" (click)="createNew()">
+      + Create new question in this category
+    </button>
+  </div>
+</div>

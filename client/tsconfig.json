@@ -4,6 +4,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "strict": true,
+    "lib": ["dom", "DOM.Iterable", "es2022"],
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
@@ -13,7 +14,9 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    "typeRoots": ["../node_modules/@types", "./node_modules/@types"],
+    "types": ["dom-speech-recognition"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

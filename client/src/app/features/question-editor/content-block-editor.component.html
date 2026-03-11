@@ -1,0 +1,114 @@
+<div class="cbe">
+  <p class="cbe__label">{{ label() }}</p>
+
+  @for (block of blocks(); track $index) {
+    <div class="cbe__block">
+      <div class="cbe__block-controls">
+        <button
+          type="button"
+          class="cbe__ctrl"
+          title="Move up"
+          [disabled]="$index === 0"
+          (click)="moveUp($index)"
+        >↑</button>
+        <button
+          type="button"
+          class="cbe__ctrl"
+          title="Move down"
+          [disabled]="$index === blocks().length - 1"
+          (click)="moveDown($index)"
+        >↓</button>
+        <button
+          type="button"
+          class="cbe__ctrl cbe__ctrl--remove"
+          title="Remove block"
+          (click)="remove($index)"
+        >✕</button>
+      </div>
+
+      @if (block.type === 'text') {
+        <div class="cbe__block-body">
+          <span class="cbe__type-badge">Text</span>
+          <textarea
+            class="cbe__textarea"
+            rows="3"
+            placeholder="Enter text…"
+            [ngModel]="block.value"
+            (ngModelChange)="updateText($index, $event)"
+            [name]="'text-' + $index"
+          ></textarea>
+        </div>
+      }
+
+      @if (block.type === 'image') {
+        <div class="cbe__block-body">
+          <span class="cbe__type-badge">Image</span>
+          <div class="cbe__url-row">
+            <input
+              class="cbe__input"
+              type="url"
+              placeholder="Image URL"
+              [ngModel]="block.url"
+              (ngModelChange)="updateImageUrl($index, $event)"
+              [name]="'img-url-' + $index"
+            />
+            <input
+              class="cbe__input cbe__input--alt"
+              type="text"
+              placeholder="Alt text (optional)"
+              [ngModel]="block.alt ?? ''"
+              (ngModelChange)="updateImageAlt($index, $event)"
+              [name]="'img-alt-' + $index"
+            />
+          </div>
+          <div class="cbe__upload-row">
+            <span class="cbe__or">or upload:</span>
+            <app-upload (uploaded)="onUploaded($index, $event)" />
+          </div>
+          @if (block.url) {
+            <img class="cbe__preview" [src]="block.url" alt="preview" />
+          }
+        </div>
+      }
+
+      @if (block.type === 'video') {
+        <div class="cbe__block-body">
+          <span class="cbe__type-badge">Video</span>
+          <div class="cbe__url-row">
+            <input
+              class="cbe__input"
+              type="url"
+              placeholder="Video URL"
+              [ngModel]="block.url"
+              (ngModelChange)="updateVideoUrl($index, $event)"
+              [name]="'vid-url-' + $index"
+            />
+            <input
+              class="cbe__input cbe__input--caption"
+              type="text"
+              placeholder="Caption (optional)"
+              [ngModel]="block.caption ?? ''"
+              (ngModelChange)="updateVideoCaption($index, $event)"
+              [name]="'vid-cap-' + $index"
+            />
+          </div>
+          <div class="cbe__upload-row">
+            <span class="cbe__or">or upload:</span>
+            <app-upload (uploaded)="onUploaded($index, $event)" />
+          </div>
+          @if (block.url) {
+            <video class="cbe__preview" [src]="block.url" controls></video>
+          }
+        </div>
+      }
+    </div>
+  } @empty {
+    <p class="cbe__empty">No blocks yet. Add one below.</p>
+  }
+
+  <div class="cbe__add-row">
+    <button type="button" class="btn btn--ghost btn--sm" (click)="addText()">+ Text</button>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="addImage()">+ Image</button>
+    <button type="button" class="btn btn--ghost btn--sm" (click)="addVideo()">+ Video</button>
+  </div>
+</div>

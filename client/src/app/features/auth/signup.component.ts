@@ -1,11 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { isApiErrorResponse } from '../../shared/utils/helpers';
 
 @Component({
   selector: 'app-signup',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, RouterLink],
   templateUrl: './signup.component.html',
   styleUrl: './signup.component.scss',
@@ -27,8 +28,13 @@ export class SignupComponent {
     try {
       await this.auth.signup(this.email(), this.password(), this.displayName());
       await this.router.navigate(['/']);
-    } catch (err: any) {
-      const message = err?.error?.error?.message ?? 'Signup failed. Please try again.';
+    } catch (err: unknown) {
+      let message = 'Signup failed. Please try again.';
+      if (isApiErrorResponse(err)) {
+        message = err.error.error.message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       this.errorMessage.set(message);
     } finally {
       this.loading.set(false);

@@ -35,6 +35,11 @@ export class AuthService {
     return res.data.user;
   }
 
+  async storeTokensAndLoadUser(tokens: AuthTokens): Promise<void> {
+    this.storeTokens(tokens);
+    await this.loadUser();
+  }
+
   logout(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -56,6 +61,8 @@ export class AuthService {
   async loadUser(): Promise<void> {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (!token) {
+      // No access token — try to recover via refresh token before giving up.
+      await this.tryRefreshAndLoad();
       return;
     }
     try {
@@ -66,7 +73,23 @@ export class AuthService {
       );
       this.currentUser.set(res.data);
     } catch {
-      this.currentUser.set(null);
+      // Access token rejected (likely expired) — try to refresh before logging out.
+      await this.tryRefreshAndLoad();
+    }
+  }
+
+  /** Attempts a token refresh, then re-fetches the current user. On any failure, logs out. */
+  private async tryRefreshAndLoad(): Promise<void> {
+    try {
+      await this.refreshToken();
+      const res = await firstValueFrom(
+        this.http.get<ApiResponse<PublicUser>>('/api/users/me', {
+          headers: this.getAuthHeaders(),
+        }),
+      );
+      this.currentUser.set(res.data);
+    } catch {
+      this.logout();
     }
   }
 

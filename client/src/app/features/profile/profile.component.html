@@ -1,0 +1,72 @@
+<div class="profile-page">
+  <header class="profile-page__header">
+    <a routerLink="/" class="btn btn--ghost">← Games</a>
+    <h1 class="profile-page__title">My Profile</h1>
+  </header>
+
+  @if (user(); as u) {
+    <div class="profile-card">
+      @if (!editingName()) {
+        <div class="profile-card__name-row">
+          <span class="profile-card__name">{{ u.displayName }}</span>
+          <button class="btn btn--ghost btn--sm" (click)="startEditName()">Edit Name</button>
+        </div>
+      } @else {
+        <form class="profile-card__name-form" [formGroup]="nameForm" (ngSubmit)="saveDisplayName()">
+          <label class="profile-card__name-label" for="profile-display-name">Display name</label>
+          <div class="profile-card__name-row">
+            <input
+              id="profile-display-name"
+              class="profile-card__name-input"
+              type="text"
+              formControlName="displayName"
+              maxlength="50"
+              autocomplete="nickname"
+              [attr.aria-invalid]="nameForm.get('displayName')?.invalid && nameForm.get('displayName')?.touched ? 'true' : null"
+            />
+            <div class="profile-card__name-actions">
+              <button class="btn btn--primary btn--sm" type="submit" [disabled]="savingName() || nameForm.invalid">
+                @if (savingName()) { Saving… } @else { Save }
+              </button>
+              <button class="btn btn--ghost btn--sm" type="button" (click)="cancelEditName()">Cancel</button>
+            </div>
+          </div>
+          @if (nameForm.get('displayName')?.invalid && nameForm.get('displayName')?.touched) {
+            <span class="profile-card__field-error" role="alert">Display name is required.</span>
+          }
+          @if (nameError()) {
+            <span class="profile-card__field-error" role="alert">{{ nameError() }}</span>
+          }
+        </form>
+      }
+      <div class="profile-card__role">{{ u.role }}</div>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="loading-text">Loading stats…</p>
+  } @else if (stats(); as s) {
+    <div class="stats-grid">
+      <a routerLink="/" class="stat-card">
+        <span class="stat-card__value">{{ s.gamesCreated }}</span>
+        <span class="stat-card__label">Games Created</span>
+      </a>
+      <a routerLink="/categories" class="stat-card">
+        <span class="stat-card__value">{{ s.categoriesCreated }}</span>
+        <span class="stat-card__label">Categories</span>
+      </a>
+      <a routerLink="/questions" class="stat-card">
+        <span class="stat-card__value">{{ s.questionsCreated }}</span>
+        <span class="stat-card__label">Questions</span>
+      </a>
+      <div class="stat-card">
+        <span class="stat-card__value">{{ s.sessionsPlayed }}</span>
+        <span class="stat-card__label">Sessions Played</span>
+      </div>
+    </div>
+  }
+</div>

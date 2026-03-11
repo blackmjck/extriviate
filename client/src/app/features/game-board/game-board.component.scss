@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 :host {
   display: block;
   width: 100%;
@@ -57,7 +59,7 @@
     transform 0.1s ease;
 
   &:hover:not(:disabled) {
-    background: lighten(#4169e1, 8%);
+    background: color.adjust(#4169e1, $lightness: 8%);
     transform: scale(1.03);
   }
 
@@ -70,6 +72,11 @@
     border-color: transparent;
     opacity: 0.3;
     cursor: default;
+  }
+
+  &.not-your-turn {
+    cursor: not-allowed;
+    opacity: 0.65;
   }
 
   &:disabled {

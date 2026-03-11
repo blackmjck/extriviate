@@ -1,0 +1,60 @@
+<div class="qlist">
+  <header class="qlist__header">
+    <h1 class="qlist__title">Questions</h1>
+    <button class="btn btn--primary" (click)="createQuestion()">New Question</button>
+  </header>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  <!-- Category filter -->
+  <div class="qlist__filter">
+    <label class="label" for="filter-cat">Category</label>
+    <select
+      id="filter-cat"
+      class="select"
+      [ngModel]="filterCategoryId() ?? ''"
+      (ngModelChange)="onFilterChange($event)"
+      name="filterCategory"
+    >
+      <option value="">All categories</option>
+      @for (cat of categories(); track cat.id) {
+        <option [value]="cat.id">{{ cat.name }}</option>
+      }
+    </select>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Loading questions...</div>
+  } @else {
+    <ul class="qlist__items">
+      @for (q of questions(); track q.id) {
+        <li class="qlist__item">
+          <div class="qlist__item-meta">
+            <span class="qlist__category">{{ categoryName(q.categoryId) }}</span>
+          </div>
+          <p class="qlist__preview">{{ questionPreview(q) }}</p>
+          <div class="qlist__item-actions">
+            <button class="btn btn--ghost btn--sm" (click)="editQuestion(q.id)">Edit</button>
+            <button class="btn btn--danger-ghost btn--sm" (click)="deleteQuestion(q.id)">Delete</button>
+          </div>
+        </li>
+      } @empty {
+        <li class="qlist__empty">
+          No questions yet.
+          <button class="btn btn--ghost btn--sm" (click)="createQuestion()">Create one</button>
+        </li>
+      }
+    </ul>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="qlist__pagination">
+        <button class="btn btn--ghost btn--sm" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+        <span class="qlist__page-info">{{ currentPage() }} / {{ totalPages() }}</span>
+        <button class="btn btn--ghost btn--sm" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+      </div>
+    }
+  }
+</div>
