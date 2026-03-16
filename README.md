@@ -45,14 +45,34 @@ npm install
 npm run dev
 
 # Or run individually
-npm run dev -w @extriviate/server
-npm run dev -w @extriviate/client
+npm run start:server
+npm run start:client
 ```
 
 ### Build
 
 ```bash
 npm run build
+```
+
+### Database
+
+```bash
+npm run db:migrate -w @extriviate/server
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run individually
+npm run test:server
+npm run test:client
+
+# End-to-end
+npm run e2e
 ```
 
 ### Environment Variables
