@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  margin-top: auto; // pushes footer to bottom in the app's flex column
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 12px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.copyright {
+  font-size: 0.75rem;
+  color: var(--text-hint);
+  font-style: normal; // <small> inherits no italic, but reset explicitly
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  padding: 8px 4px;
+  min-height: 44px;
+  font-size: 0.75rem;
+  font-family: var(--font-ui);
+  color: var(--text-hint);
+  cursor: pointer;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--text-subtle);
+  }
+}
+
+.nav-link {
+  display: inline-block;
+  padding: 6px 0;
+  font-size: 0.75rem;
+  color: var(--text-hint);
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--text-subtle);
+  }
+}

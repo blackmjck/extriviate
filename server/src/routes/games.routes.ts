@@ -33,14 +33,21 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { limit = 20, offset = 0 } = request.query;
 
+      const totalQuestions = GAME_CATEGORY_COUNT * GAME_QUESTION_ROWS;
+
       const [items, count] = await Promise.all([
         fastify.db.query(
-          `SELECT id, title, daily_doubles_enabled, is_published, created_at, updated_at
-           FROM games
-           WHERE creator_id = $1
-           ORDER BY updated_at DESC
+          `SELECT g.id, g.title, g.daily_doubles_enabled, g.is_published, g.created_at, g.updated_at,
+                  (
+                    g.title <> '' AND
+                    (SELECT COUNT(*) FROM game_categories gc WHERE gc.game_id = g.id) = $4 AND
+                    (SELECT COUNT(*) FROM game_questions gq WHERE gq.game_id = g.id AND gq.point_value > 0) = $5
+                  ) AS is_complete
+           FROM games g
+           WHERE g.creator_id = $1
+           ORDER BY g.updated_at DESC
            LIMIT $2 OFFSET $3`,
-          [request.user.sub, limit, offset]
+          [request.user.sub, limit, offset, GAME_CATEGORY_COUNT, totalQuestions]
         ),
         fastify.db.query('SELECT COUNT(*) FROM games WHERE creator_id = $1', [
           request.user.sub,
@@ -52,6 +59,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
         title: row.title,
         dailyDoublesEnabled: row.daily_doubles_enabled,
         isPublished: row.is_published,
+        isComplete: row.is_complete,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       }));
@@ -169,9 +177,18 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
         questions: questionsByCategory.get(row.id) ?? [],
       }));
 
+      const isComplete =
+        game.title.trim().length > 0 &&
+        categories.length === GAME_CATEGORY_COUNT &&
+        categories.every(
+          (c) =>
+            c.questions.length === GAME_QUESTION_ROWS &&
+            c.questions.every((q: any) => q.pointValue > 0),
+        );
+
       return reply.send({
         success: true,
-        data: { game, categories },
+        data: { game: { ...game, isComplete }, categories },
       });
     }
   );
@@ -238,6 +255,46 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { title, dailyDoublesEnabled, isPublished } = request.body;
+
+      // When publishing, verify the game is complete before allowing it.
+      if (isPublished === true) {
+        const totalQuestions = GAME_CATEGORY_COUNT * GAME_QUESTION_ROWS;
+        const [catCount, qCount, gameRow] = await Promise.all([
+          fastify.db.query(
+            'SELECT COUNT(*) FROM game_categories WHERE game_id = $1',
+            [request.params.id],
+          ),
+          fastify.db.query(
+            'SELECT COUNT(*) FROM game_questions WHERE game_id = $1 AND point_value > 0',
+            [request.params.id],
+          ),
+          fastify.db.query(
+            'SELECT title FROM games WHERE id = $1 AND creator_id = $2',
+            [request.params.id, request.user.sub],
+          ),
+        ]);
+
+        if (gameRow.rows.length === 0) {
+          return reply.status(404).send({
+            success: false,
+            error: { message: 'Game not found', code: 'NOT_FOUND' },
+          });
+        }
+
+        const effectiveTitle = (title ?? gameRow.rows[0].title ?? '').trim();
+        const cats = parseInt(catCount.rows[0].count, 10);
+        const qs = parseInt(qCount.rows[0].count, 10);
+
+        if (!effectiveTitle || cats < GAME_CATEGORY_COUNT || qs < totalQuestions) {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              message: 'Game must have a title, all 6 categories, and all 30 questions with point values before publishing.',
+              code: 'GAME_NOT_COMPLETE',
+            },
+          });
+        }
+      }
 
       const result = await fastify.db.query(
         `UPDATE games

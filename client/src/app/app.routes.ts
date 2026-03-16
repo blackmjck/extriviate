@@ -63,6 +63,11 @@ export const routes: Routes = [
 
   // ---- Public routes ----
   {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),

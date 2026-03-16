@@ -1,18 +1,87 @@
 :root {
+  /* Backgrounds */
   --bg-primary: #0a0a14;
   --bg-secondary: #12122a;
   --bg-card: #1a1a3e;
+  --bg-overlay: #12121e;
+
+  /* Accent */
   --accent: #4169e1;
   --accent-hover: #5a7ff5;
+  --accent-light: #5578e8;
+  --accent-dim: rgba(65, 105, 225, 0.1);
+  --accent-border: rgba(65, 105, 225, 0.3);
+
+  /* Semantic */
   --score-value: #f5c842;
+  --warning: #f5c842;
+  --danger: #e74c3c;
+  --danger-dim: rgba(231, 76, 60, 0.15);
+  --danger-border: rgba(231, 76, 60, 0.3);
+  --success: #2ecc71;
+  --destructive: #c0392b;
+  --published: #27ae60;
+
+  /* Text */
   --text-primary: #e8e8f0;
   --text-secondary: #9898b0;
-  --danger: #e14141;
-  --success: #41e169;
+  --text-muted: #e0e0e0;
+  --text-subtle: #999;
+  --text-hint: #797979; // #666 was 3.41:1; #797979 achieves 4.5:1 on --bg-primary
+  --error-text: #fca5a5;
 
+  /* Typography — families */
   --font-question: Georgia, serif;
   --font-ui: 'Trebuchet MS', sans-serif;
   --font-score: 'Courier New', monospace;
+  --font-display: 'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+
+  /* Surfaces — theme-aware replacements for hardcoded rgba(255,255,255,n) */
+  --surface-1: rgba(255, 255, 255, 0.04);      /* card / panel background */
+  --surface-2: rgba(255, 255, 255, 0.06);      /* input / elevated panel background */
+  --border-subtle: rgba(255, 255, 255, 0.08);  /* standard card border */
+  --border-moderate: rgba(255, 255, 255, 0.12);/* input / form border */
+  --border-strong: rgba(255, 255, 255, 0.15);  /* prominent border (dashed zones etc.) */
+}
+
+[data-theme='light'] {
+  /* Backgrounds */
+  --bg-primary:   #f4f4fa;
+  --bg-secondary: #eaeaf5;
+  --bg-card:      #ffffff;
+  --bg-overlay:   #ededf8;
+
+  /* Accent — darkened for WCAG AA on light surfaces */
+  --accent:        #2f57d4;
+  --accent-hover:  #2348bf;
+  --accent-light:  #4169e1;
+  --accent-dim:    rgba(47, 87, 212, 0.08);
+  --accent-border: rgba(47, 87, 212, 0.25);
+
+  /* Semantic */
+  --score-value: #a87c00;
+  --warning:     #a87c00;
+  --danger:        #c0392b;
+  --danger-dim:    rgba(192, 57, 43, 0.1);
+  --danger-border: rgba(192, 57, 43, 0.25);
+  --success:       #1a8f4e;
+  --destructive:   #922b21;
+  --published:     #1a6b3a;
+
+  /* Text */
+  --text-primary:   #1a1a2e;
+  --text-secondary: #4a4a72;
+  --text-muted:     #2e2e48;
+  --text-subtle:    #6b6b8a;
+  --text-hint:      #767676; // #9898b0 was 2.61:1; #767676 achieves 4.5:1 on --bg-primary
+  --error-text:     #c0392b;
+
+  /* Surfaces — light-mode overrides */
+  --surface-1: rgba(0, 0, 0, 0.04);
+  --surface-2: rgba(0, 0, 0, 0.05);
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-moderate: rgba(0, 0, 0, 0.18);
+  --border-strong: rgba(0, 0, 0, 0.25);
 }
 
 *,
@@ -44,6 +113,15 @@ body {
   padding-right: max(1rem, env(safe-area-inset-right));
 }
 
+// Global focus indicator — satisfies WCAG 2.4.7 (AA).
+// Components that set outline: none on inputs must supply their own visible
+// focus style (border-color change is sufficient and has higher specificity
+// than this rule, so those components are unaffected).
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -54,4 +132,128 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+// ---- Buttons ----
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: var(--accent);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--accent-light);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-dim);
+    }
+  }
+
+  &--danger-ghost {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-dim);
+    }
+  }
+
+  &--host {
+    background: transparent;
+    color: var(--score-value);
+    border: 1px solid rgba(245, 200, 66, 0.4);
+
+    &:hover:not(:disabled) {
+      background: rgba(245, 200, 66, 0.1);
+    }
+  }
+
+  &--publish {
+    background: transparent;
+    color: var(--success);
+    border: 1px solid rgba(46, 204, 113, 0.35);
+
+    &:hover:not(:disabled) {
+      background: rgba(46, 204, 113, 0.1);
+    }
+  }
+
+  &--sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+// ---- Creator layout ----
+
+.creator-nav {
+  display: flex;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+// ---- Shared page states ----
+
+.error-banner {
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 64px 0;
+  color: var(--text-subtle);
+  font-size: 0.95rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 0;
+  color: var(--text-subtle);
+
+  p {
+    margin-bottom: 20px;
+    font-size: 1rem;
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+
+  &__info {
+    font-size: 0.875rem;
+    color: var(--text-subtle);
+  }
 }

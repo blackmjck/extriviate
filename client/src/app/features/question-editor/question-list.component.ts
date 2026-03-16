@@ -6,18 +6,19 @@ import {
   OnInit,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import type { Category, QuestionWithAnswer } from '@extriviate/shared';
 import { QuestionService } from '../../core/services/question.service';
 import { CategoryService } from '../../core/services/category.service';
+import { ContentBlocksComponent } from '../../shared/components/content-blocks/content-blocks.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-question-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [RouterLink, FormsModule, ContentBlocksComponent],
   templateUrl: './question-list.component.html',
   styleUrls: ['./question-list.component.scss'],
 })
@@ -26,6 +27,7 @@ export class QuestionListComponent implements OnInit {
   private readonly q = inject(QuestionService);
   private readonly cats = inject(CategoryService);
 
+  readonly visible = signal<Set<number>>(new Set<number>());
   readonly questions = signal<QuestionWithAnswer[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly total = signal(0);
@@ -82,6 +84,25 @@ export class QuestionListComponent implements OnInit {
   prevPage(): void {
     this.offset.update((o) => Math.max(0, o - PAGE_SIZE));
     this.loadQuestions();
+  }
+
+  isVisible(id: number): boolean {
+    return this.visible().has(id);
+  }
+
+  toggleVisibility(id: number): void {
+    const hide = this.visible().has(id);
+    console.log(`${hide ? 'Hide' : 'Show'} question id ${id}`);
+
+    this.visible.update((list) => {
+      if (hide) {
+        const replacement = new Set(list);
+        replacement.delete(id);
+        return replacement;
+      } else {
+        return new Set([...list, id]);
+      }
+    });
   }
 
   createQuestion(): void {

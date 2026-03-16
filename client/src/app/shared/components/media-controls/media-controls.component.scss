@@ -13,9 +13,9 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8e8f0;
+  border: 2px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -31,16 +31,16 @@
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--border-moderate);
     border-color: rgba(255, 255, 255, 0.25);
   }
 
   &.off {
-    background: rgba(225, 65, 65, 0.2);
-    border-color: rgba(225, 65, 65, 0.5);
+    background: var(--danger-dim);
+    border-color: var(--danger-border);
 
     &:hover {
-      background: rgba(225, 65, 65, 0.3);
+      background: rgba(231, 76, 60, 0.25);
     }
   }
 }

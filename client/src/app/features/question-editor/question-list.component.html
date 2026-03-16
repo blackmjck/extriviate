@@ -1,6 +1,11 @@
 <div class="qlist">
   <header class="qlist__header">
+    <a routerLink="/" class="btn btn--ghost">← Games</a>
     <h1 class="qlist__title">Questions</h1>
+    <nav class="creator-nav" aria-label="Creator navigation">
+      <a [routerLink]="['/categories']" class="btn btn--ghost btn--sm">Categories</a>
+      <a [routerLink]="['/profile']" class="btn btn--ghost btn--sm">Profile</a>
+    </nav>
     <button class="btn btn--primary" (click)="createQuestion()">New Question</button>
   </header>
 
@@ -30,15 +35,34 @@
   } @else {
     <ul class="qlist__items">
       @for (q of questions(); track q.id) {
-        <li class="qlist__item">
+        <li
+          class="qlist__item"
+          tabindex="0"
+          (click)="toggleVisibility(q.id)"
+          (keyup.space)="toggleVisibility(q.id)"
+        >
           <div class="qlist__item-meta">
             <span class="qlist__category">{{ categoryName(q.categoryId) }}</span>
           </div>
-          <p class="qlist__preview">{{ questionPreview(q) }}</p>
+          <p class="qlist__preview">
+            @if (!isVisible(q.id)) {
+              {{ questionPreview(q) }}
+            }
+          </p>
           <div class="qlist__item-actions">
             <button class="btn btn--ghost btn--sm" (click)="editQuestion(q.id)">Edit</button>
-            <button class="btn btn--danger-ghost btn--sm" (click)="deleteQuestion(q.id)">Delete</button>
+            <button class="btn btn--danger-ghost btn--sm" (click)="deleteQuestion(q.id)">
+              Delete
+            </button>
           </div>
+          @if (isVisible(q.id)) {
+            <div class="details">
+              <p>Question:</p>
+              <app-content-blocks [blocks]="q.content"></app-content-blocks>
+              <p>Answer:</p>
+              <app-content-blocks [blocks]="q.answer.content"></app-content-blocks>
+            </div>
+          }
         </li>
       } @empty {
         <li class="qlist__empty">
@@ -51,9 +75,13 @@
     <!-- Pagination -->
     @if (totalPages() > 1) {
       <div class="qlist__pagination">
-        <button class="btn btn--ghost btn--sm" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+        <button class="btn btn--ghost btn--sm" [disabled]="!hasPrev()" (click)="prevPage()">
+          Previous
+        </button>
         <span class="qlist__page-info">{{ currentPage() }} / {{ totalPages() }}</span>
-        <button class="btn btn--ghost btn--sm" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+        <button class="btn btn--ghost btn--sm" [disabled]="!hasNext()" (click)="nextPage()">
+          Next
+        </button>
       </div>
     }
   }

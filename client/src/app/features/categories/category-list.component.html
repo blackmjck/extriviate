@@ -2,6 +2,10 @@
   <header class="cat-list-page__header">
     <a routerLink="/" class="btn btn--ghost">← Games</a>
     <h1 class="cat-list-page__title">My Categories</h1>
+    <nav class="creator-nav" aria-label="Creator navigation">
+      <a [routerLink]="['/questions']" class="btn btn--ghost btn--sm">Questions</a>
+      <a [routerLink]="['/profile']" class="btn btn--ghost btn--sm">Profile</a>
+    </nav>
     @if (!showForm()) {
       <button class="btn btn--primary" (click)="openCreateForm()">New Category</button>
     } @else {
@@ -54,7 +58,7 @@
   }
 
   @if (loading()) {
-    <p class="loading-text">Loading categories…</p>
+    <div class="loading">Loading categories…</div>
   } @else {
     @if (categories().length === 0) {
       <div class="empty-state">

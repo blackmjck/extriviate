@@ -22,6 +22,15 @@
         >
           {{ saving() ? 'Saving...' : 'Save' }}
         </button>
+        @if (!game()?.isPublished) {
+          <button
+            class="btn btn--publish"
+            [disabled]="!isReady() || publishing() || saving() || autosaving()"
+            (click)="publishGame()"
+          >
+            {{ publishing() ? 'Publishing...' : 'Publish' }}
+          </button>
+        }
       </div>
     </header>
 

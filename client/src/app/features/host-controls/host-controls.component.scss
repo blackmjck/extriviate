@@ -3,8 +3,8 @@
 }
 
 .host-panel {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -20,7 +20,7 @@
   letter-spacing: 0.06em;
   margin: 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .phase-status {
@@ -37,7 +37,7 @@
 }
 
 .phase-value {
-  color: var(--score-value, #f5c842);
+  color: var(--score-value);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -70,29 +70,29 @@
   }
 
   &.release {
-    background: var(--accent, #4169e1);
+    background: var(--accent);
     color: #fff;
   }
 
   &.lock {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-subtle);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-strong);
   }
 
   &.correct {
-    background: #2ecc71;
+    background: var(--success);
     color: #fff;
   }
 
   &.wrong {
-    background: #e74c3c;
+    background: var(--danger);
     color: #fff;
   }
 }
 
 .evaluation-section {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-1);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -111,7 +111,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-question);
 }
 
 .eval-buttons {

@@ -1,0 +1,16 @@
+<div class="footer-inner">
+  <small class="copyright">&copy; {{ year }} Extriviate</small>
+
+  <button
+    type="button"
+    class="theme-toggle"
+    (click)="themeService.toggle()"
+    [attr.aria-label]="toggleAriaLabel()"
+  >
+    {{ toggleLabel() }}
+  </button>
+
+  <nav aria-label="Legal">
+    <a routerLink="/privacy" class="nav-link">Privacy Policy</a>
+  </nav>
+</div>

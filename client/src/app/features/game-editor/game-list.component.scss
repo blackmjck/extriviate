@@ -1,10 +1,8 @@
-@use 'sass:color';
-
 :host {
   display: block;
   min-height: 100vh;
-  background: var(--bg-primary, #0a0a14);
-  color: #e0e0e0;
+  background: var(--bg-primary);
+  color: var(--text-muted);
   padding: 40px 24px;
 }
 
@@ -22,77 +20,9 @@
   &__title {
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--accent, #4169e1);
+    color: var(--accent);
     margin: 0;
     flex: 1;
-  }
-
-  &__nav {
-    display: flex;
-    gap: 8px;
-    margin-right: 8px;
-  }
-}
-
-// ---- Buttons ----
-
-.btn {
-  padding: 10px 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  &--sm {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    text-decoration: none;
-  }
-
-  &--primary {
-    background: var(--accent, #4169e1);
-    color: #fff;
-
-    &:hover:not(:disabled) {
-      background: color.adjust(#4169e1, $lightness: 8%);
-    }
-  }
-
-  &--ghost {
-    background: transparent;
-    color: var(--accent, #4169e1);
-    border: 1px solid rgba(65, 105, 225, 0.3);
-
-    &:hover:not(:disabled) {
-      background: rgba(65, 105, 225, 0.1);
-    }
-  }
-
-  &--danger-ghost {
-    background: transparent;
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-
-    &:hover:not(:disabled) {
-      background: rgba(231, 76, 60, 0.1);
-    }
-  }
-
-  &--host {
-    background: transparent;
-    color: #f5c842;
-    border: 1px solid rgba(245, 200, 66, 0.4);
-
-    &:hover:not(:disabled) {
-      background: rgba(245, 200, 66, 0.1);
-    }
   }
 }
 
@@ -105,8 +35,8 @@
 }
 
 .game-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 20px;
   display: flex;
@@ -115,7 +45,7 @@
   transition: border-color 0.15s;
 
   &:hover {
-    border-color: rgba(65, 105, 225, 0.3);
+    border-color: var(--accent-border);
   }
 
   &__body {
@@ -129,7 +59,7 @@
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
-    color: #fff;
+    color: var(--text-primary);
   }
 
   &__status {
@@ -137,10 +67,10 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #888;
+    color: var(--text-subtle);
 
     &--published {
-      color: #27ae60;
+      color: var(--published);
     }
   }
 
@@ -148,49 +78,4 @@
     display: flex;
     gap: 8px;
   }
-}
-
-// ---- Pagination ----
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 32px;
-
-  &__info {
-    font-size: 0.875rem;
-    color: #999;
-  }
-}
-
-// ---- States ----
-
-.loading {
-  text-align: center;
-  padding: 64px 0;
-  color: #999;
-  font-size: 0.95rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 64px 0;
-  color: #999;
-
-  p {
-    margin-bottom: 20px;
-    font-size: 1rem;
-  }
-}
-
-.error-banner {
-  background: rgba(231, 76, 60, 0.15);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 0.9rem;
 }

@@ -73,6 +73,7 @@ export interface Game {
   title: string;
   dailyDoublesEnabled: boolean;
   isPublished: boolean;
+  isComplete?: boolean; // true when title, all 6 categories, and all 30 questions with point values are set
   requireQuestionFormat: boolean; // "What is…" / "Who is…" required
   useAiEvaluation: boolean; // always false for now — AI layer deferred
   createdAt: string;

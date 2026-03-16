@@ -1,10 +1,8 @@
-@use 'sass:color';
-
 :host {
   display: block;
   min-height: 100vh;
-  background: var(--bg-primary, #0a0a14);
-  color: #e0e0e0;
+  background: var(--bg-primary);
+  color: var(--text-muted);
   padding: 48px 24px;
 }
 
@@ -20,7 +18,7 @@
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--accent, #4169e1);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0;
@@ -59,15 +57,15 @@
   }
 
   &__score {
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-score);
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--score-value, #f5c842);
+    color: var(--score-value);
   }
 
   &__bar {
     width: 100%;
-    background: var(--accent, #4169e1);
+    background: var(--accent);
     border-radius: 6px 6px 0 0;
     display: flex;
     align-items: flex-end;
@@ -83,7 +81,7 @@
   }
 
   &__slot--rank-1 .podium__bar {
-    background: var(--accent, #4169e1);
+    background: var(--accent);
   }
 
   &__slot--rank-2 .podium__bar {
@@ -105,8 +103,8 @@
   th {
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-    color: #999;
+    border-bottom: 2px solid var(--border-strong);
+    color: var(--text-subtle);
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.75rem;
@@ -117,7 +115,7 @@
     transition: background 0.15s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--surface-1);
     }
 
     &--top3 {
@@ -126,7 +124,7 @@
 
     td {
       padding: 10px 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid var(--surface-2);
     }
   }
 
@@ -142,9 +140,9 @@
   &__score {
     width: 100px;
     text-align: right;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-score);
     font-weight: 700;
-    color: var(--score-value, #f5c842);
+    color: var(--score-value);
   }
 }
 
@@ -156,7 +154,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
-  background: var(--accent, #4169e1);
+  background: var(--accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -165,7 +163,7 @@
   transition: background 0.2s, transform 0.1s;
 
   &:hover {
-    background: color.adjust(#4169e1, $lightness: 8%);
+    background: var(--accent-light);
     transform: translateY(-1px);
   }
 

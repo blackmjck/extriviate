@@ -28,6 +28,7 @@ export class GameListComponent implements OnInit {
   readonly offset = signal(0);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly publishingIds = signal(new Set<number>());
 
   readonly currentPage = computed(() => Math.floor(this.offset() / PAGE_SIZE) + 1);
   readonly totalPages = computed(() => Math.ceil(this.total() / PAGE_SIZE));
@@ -72,6 +73,24 @@ export class GameListComponent implements OnInit {
 
   hostGame(id: number): void {
     void this.router.navigate(['/games', id, 'host']);
+  }
+
+  async publishGame(id: number): Promise<void> {
+    if (this.publishingIds().has(id)) return;
+    this.error.set(null);
+    this.publishingIds.update((s) => new Set([...s, id]));
+    try {
+      await this.gameService.updateGame(id, { isPublished: true });
+      this.games.update((gs) => gs.map((g) => (g.id === id ? { ...g, isPublished: true } : g)));
+    } catch {
+      this.error.set('Failed to publish game.');
+    } finally {
+      this.publishingIds.update((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   async deleteGame(id: number): Promise<void> {

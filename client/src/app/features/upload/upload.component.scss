@@ -1,5 +1,3 @@
-@use 'sass:color';
-
 :host {
   display: block;
 }
@@ -13,23 +11,23 @@
 // ---- Drop Zone ----
 
 .drop-zone {
-  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border: 2px dashed var(--border-strong);
   border-radius: 12px;
   padding: 40px 24px;
   text-align: center;
   transition: border-color 0.2s, background 0.2s;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface-1);
 
   &--active {
-    border-color: var(--accent, #4169e1);
-    background: rgba(65, 105, 225, 0.08);
+    border-color: var(--accent);
+    background: var(--accent-dim);
   }
 
   &--uploading {
     cursor: default;
     border-style: solid;
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-subtle);
   }
 
   &__prompt {
@@ -41,18 +39,18 @@
 
   &__icon {
     font-size: 2rem;
-    color: #666;
+    color: var(--text-hint);
     line-height: 1;
   }
 
   &__text {
     font-size: 0.95rem;
-    color: #aaa;
+    color: var(--text-subtle);
   }
 
   &__or {
     font-size: 0.75rem;
-    color: #666;
+    color: var(--text-hint);
     text-transform: uppercase;
     letter-spacing: 1px;
   }
@@ -63,13 +61,13 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: #fff;
-    background: var(--accent, #4169e1);
+    background: var(--accent);
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.15s;
 
     &:hover {
-      background: color.adjust(#4169e1, $lightness: 8%);
+      background: var(--accent-light);
     }
   }
 
@@ -89,7 +87,7 @@
 
   &__file-name {
     font-size: 0.85rem;
-    color: #ccc;
+    color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -97,10 +95,10 @@
   }
 
   &__percent {
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-score);
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--score-value, #f5c842);
+    color: var(--score-value);
   }
 }
 
@@ -109,13 +107,13 @@
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-subtle);
   border-radius: 4px;
   overflow: hidden;
 
   &__fill {
     height: 100%;
-    background: var(--accent, #4169e1);
+    background: var(--accent);
     border-radius: 4px;
     transition: width 0.2s ease-out;
   }
@@ -124,9 +122,9 @@
 // ---- Error ----
 
 .error-banner {
-  background: rgba(231, 76, 60, 0.15);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 0.85rem;

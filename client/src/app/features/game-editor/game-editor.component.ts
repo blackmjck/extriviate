@@ -61,6 +61,22 @@ export class GameEditorComponent implements OnInit, OnDestroy {
   readonly activePickerRow = signal<number | null>(null);
 
   readonly isDirty = signal(false);
+  readonly publishing = signal(false);
+
+  /** True when the game has a title, all 6 categories filled, and all 30 questions with point values. */
+  readonly isReady = computed(() => {
+    if (!this.title().trim()) return false;
+    const slots = this.board();
+    return (
+      slots.length === GAME_CATEGORY_COUNT &&
+      slots.every(
+        (s) =>
+          s.gameCategory !== null &&
+          s.gameCategory.questions.length === GAME_QUESTION_ROWS &&
+          s.gameCategory.questions.every((q) => q.pointValue > 0),
+      )
+    );
+  });
 
   readonly questionRows = Array.from({ length: GAME_QUESTION_ROWS }, (_, i) => i + 1);
   readonly categorySlots = computed(() => this.board());
@@ -395,6 +411,22 @@ export class GameEditorComponent implements OnInit, OnDestroy {
       this.error.set('Failed to save game.');
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  async publishGame(): Promise<void> {
+    if (!this.isReady() || this.game()?.isPublished || this.publishing()) return;
+    // Flush any pending autosave so the server sees the latest board before the publish guard runs.
+    await this.autosaveNow();
+    this.publishing.set(true);
+    this.error.set(null);
+    try {
+      await this.gameService.updateGame(this.game()!.id, { isPublished: true });
+      this.game.update((g) => (g ? { ...g, isPublished: true } : g));
+    } catch {
+      this.error.set('Failed to publish game.');
+    } finally {
+      this.publishing.set(false);
     }
   }
 
