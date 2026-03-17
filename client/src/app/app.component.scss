@@ -4,3 +4,9 @@
   min-height: 100dvh;
   background: var(--bg-primary);
 }
+
+main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}

@@ -2,12 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { provideRouter, RouterOutlet } from '@angular/router';
 import { App } from './app.component';
-import { ThemeService, type Theme } from './core/services/theme.service';
+import { ThemeService, type ActiveTheme } from './core/services/theme.service';
 
-function makeMockThemeService(initialTheme: Theme = 'dark') {
+function makeMockThemeService(initialTheme: ActiveTheme = 'dark') {
   return {
-    theme: signal<Theme>(initialTheme).asReadonly(),
-    toggle: vi.fn(),
+    activeTheme: signal<ActiveTheme>(initialTheme).asReadonly(),
     setTheme: vi.fn(),
   };
 }

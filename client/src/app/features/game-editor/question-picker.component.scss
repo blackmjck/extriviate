@@ -162,7 +162,7 @@
 
   &--primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     flex-shrink: 0;
 
     &:hover:not(:disabled) {

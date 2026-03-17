@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { ThemeService } from './theme.service';
+import { ThemeService, type ActiveTheme } from './theme.service';
 
 const STORAGE_KEY = 'extriviate_theme';
 
@@ -13,7 +13,6 @@ function setupMatchMedia(matches: boolean) {
     }),
     removeEventListener: vi.fn(),
   };
-  // jsdom does not implement matchMedia — define it before spying
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     configurable: true,
@@ -49,100 +48,129 @@ describe('ThemeService', () => {
   // -- resolveInitialTheme ----------------------------------------------------
 
   describe('resolveInitialTheme', () => {
-    it('returns stored "dark" from localStorage even when system prefers light', () => {
+    it('restores "dark" from localStorage', () => {
       localStorage.setItem(STORAGE_KEY, 'dark');
       const { service } = setup(false);
-      expect(service.theme()).toBe('dark');
+      expect(service.activeTheme()).toBe('dark');
     });
 
-    it('returns stored "light" from localStorage even when system prefers dark', () => {
+    it('restores "light" from localStorage', () => {
       localStorage.setItem(STORAGE_KEY, 'light');
       const { service } = setup(true);
-      expect(service.theme()).toBe('light');
+      expect(service.activeTheme()).toBe('light');
     });
 
-    it('falls back to "dark" from prefers-color-scheme when nothing is stored', () => {
+    it('restores "quiz-show" from localStorage', () => {
+      localStorage.setItem(STORAGE_KEY, 'quiz-show');
+      const { service } = setup();
+      expect(service.activeTheme()).toBe('quiz-show');
+    });
+
+    it('restores "showcase" from localStorage', () => {
+      localStorage.setItem(STORAGE_KEY, 'showcase');
+      const { service } = setup();
+      expect(service.activeTheme()).toBe('showcase');
+    });
+
+    it('restores "glitzy" from localStorage', () => {
+      localStorage.setItem(STORAGE_KEY, 'glitzy');
+      const { service } = setup();
+      expect(service.activeTheme()).toBe('glitzy');
+    });
+
+    it('falls back to "dark" from system preference when nothing is stored', () => {
       const { service } = setup(true);
-      expect(service.theme()).toBe('dark');
+      expect(service.activeTheme()).toBe('dark');
     });
 
-    it('falls back to "light" from prefers-color-scheme when nothing is stored', () => {
+    it('falls back to "light" from system preference when nothing is stored', () => {
       const { service } = setup(false);
-      expect(service.theme()).toBe('light');
+      expect(service.activeTheme()).toBe('light');
+    });
+
+    it('falls back to system preference when stored value is unrecognised', () => {
+      localStorage.setItem(STORAGE_KEY, 'unknown-value');
+      const { service } = setup(true);
+      expect(service.activeTheme()).toBe('dark');
     });
   });
 
   // -- DOM effect -------------------------------------------------------------
 
   describe('DOM effect', () => {
-    it('sets data-theme="light" on <html> when theme is light', () => {
+    it('sets data-theme="" when theme is dark', () => {
+      localStorage.setItem(STORAGE_KEY, 'dark');
+      setup();
+      TestBed.flushEffects();
+      expect(document.documentElement.dataset['theme']).toBe('');
+    });
+
+    it('sets data-theme="light" when theme is light', () => {
       localStorage.setItem(STORAGE_KEY, 'light');
       setup();
       TestBed.flushEffects();
       expect(document.documentElement.dataset['theme']).toBe('light');
     });
 
-    it('sets data-theme="" on <html> when theme is dark', () => {
-      localStorage.setItem(STORAGE_KEY, 'dark');
+    it('sets data-theme="quiz-show" when theme is quiz-show', () => {
+      localStorage.setItem(STORAGE_KEY, 'quiz-show');
       setup();
       TestBed.flushEffects();
-      expect(document.documentElement.dataset['theme']).toBe('');
-    });
-  });
-
-  // -- toggle() ---------------------------------------------------------------
-
-  describe('toggle()', () => {
-    it('switches from dark to light and saves to localStorage', () => {
-      localStorage.setItem(STORAGE_KEY, 'dark');
-      const { service } = setup();
-      service.toggle();
-      expect(service.theme()).toBe('light');
-      expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
+      expect(document.documentElement.dataset['theme']).toBe('quiz-show');
     });
 
-    it('switches from light to dark and saves to localStorage', () => {
-      localStorage.setItem(STORAGE_KEY, 'light');
-      const { service } = setup();
-      service.toggle();
-      expect(service.theme()).toBe('dark');
-      expect(localStorage.getItem(STORAGE_KEY)).toBe('dark');
+    it('sets data-theme="showcase" when theme is showcase', () => {
+      localStorage.setItem(STORAGE_KEY, 'showcase');
+      setup();
+      TestBed.flushEffects();
+      expect(document.documentElement.dataset['theme']).toBe('showcase');
+    });
+
+    it('sets data-theme="glitzy" when theme is glitzy', () => {
+      localStorage.setItem(STORAGE_KEY, 'glitzy');
+      setup();
+      TestBed.flushEffects();
+      expect(document.documentElement.dataset['theme']).toBe('glitzy');
     });
   });
 
   // -- setTheme() -------------------------------------------------------------
 
   describe('setTheme()', () => {
-    it('sets the theme signal and writes to localStorage', () => {
-      const { service } = setup(false);
-      service.setTheme('light');
-      expect(service.theme()).toBe('light');
-      expect(localStorage.getItem(STORAGE_KEY)).toBe('light');
-    });
+    const themes: ActiveTheme[] = ['dark', 'light', 'quiz-show', 'showcase', 'glitzy'];
+
+    for (const theme of themes) {
+      it(`sets activeTheme to "${theme}" and persists to localStorage`, () => {
+        const { service } = setup();
+        service.setTheme(theme);
+        expect(service.activeTheme()).toBe(theme);
+        expect(localStorage.getItem(STORAGE_KEY)).toBe(theme);
+      });
+    }
   });
 
   // -- system preference change -----------------------------------------------
 
   describe('system preference change', () => {
-    it('updates theme to dark when system changes to dark and no stored preference', () => {
+    it('switches to dark when system changes to dark and no stored preference', () => {
       const { service, triggerChange } = setup(false);
-      expect(service.theme()).toBe('light');
+      expect(service.activeTheme()).toBe('light');
       triggerChange(true);
-      expect(service.theme()).toBe('dark');
+      expect(service.activeTheme()).toBe('dark');
     });
 
-    it('updates theme to light when system changes to light and no stored preference', () => {
+    it('switches to light when system changes to light and no stored preference', () => {
       const { service, triggerChange } = setup(true);
-      expect(service.theme()).toBe('dark');
+      expect(service.activeTheme()).toBe('dark');
       triggerChange(false);
-      expect(service.theme()).toBe('light');
+      expect(service.activeTheme()).toBe('light');
     });
 
-    it('does not override theme when a stored preference exists', () => {
-      localStorage.setItem(STORAGE_KEY, 'light');
+    it('does not override a stored preference on system change', () => {
+      localStorage.setItem(STORAGE_KEY, 'showcase');
       const { service, triggerChange } = setup(false);
       triggerChange(true);
-      expect(service.theme()).toBe('light');
+      expect(service.activeTheme()).toBe('showcase');
     });
   });
 });

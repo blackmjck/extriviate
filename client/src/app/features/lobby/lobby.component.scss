@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  // min-height: 100vh
   padding: 1rem;
   background-color: var(--bg-primary);
   font-family: var(--font-ui);
@@ -52,7 +52,9 @@
   border-radius: 12px;
   background: var(--surface-1);
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 
   &:hover {
     border-color: var(--accent);
@@ -108,7 +110,7 @@
   border: none;
   border-radius: 6px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 0.875rem;
   font-weight: 600;
   font-family: var(--font-ui);
@@ -157,7 +159,6 @@
   }
 }
 
-
 .lobby-actions {
   text-align: center;
 }
@@ -168,12 +169,14 @@
   border: none;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  color: #fff;
+  color: var(--on-accent);
   font-size: 1.125rem;
   font-weight: 700;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition:
+    opacity 0.2s,
+    transform 0.1s;
   box-shadow: 0 4px 16px var(--accent-border);
 
   &:hover:not(:disabled) {

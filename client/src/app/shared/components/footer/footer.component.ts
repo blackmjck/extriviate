@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ThemeService } from '../../../core/services/theme.service';
+import { ThemeService, type ActiveTheme } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-footer',
@@ -15,11 +15,15 @@ export class FooterComponent {
 
   readonly year = new Date().getFullYear();
 
-  protected readonly toggleLabel = computed(() =>
-    this.themeService.theme() === 'dark' ? 'Light mode' : 'Dark mode',
-  );
+  readonly themeOptions: { value: ActiveTheme; label: string }[] = [
+    { value: 'dark',      label: 'Dark' },
+    { value: 'light',     label: 'Light' },
+    { value: 'quiz-show', label: 'Quiz Show' },
+    { value: 'showcase',  label: 'Showcase' },
+    { value: 'glitzy',    label: 'Glitzy' },
+  ];
 
-  protected readonly toggleAriaLabel = computed(() =>
-    this.themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
-  );
+  protected onThemeChange(event: Event): void {
+    this.themeService.setTheme((event.target as HTMLSelectElement).value as ActiveTheme);
+  }
 }

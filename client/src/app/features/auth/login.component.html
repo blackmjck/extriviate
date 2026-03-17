@@ -36,6 +36,13 @@
         />
       </div>
 
+      <ngx-turnstile
+        [siteKey]="CF_SITE_KEY"
+        theme="auto"
+        (resolved)="onCaptcha($event)"
+        (errored)="onCaptcha($event, true)"
+      ></ngx-turnstile>
+
       <button type="submit" class="btn-primary" [disabled]="loading()">
         @if (loading()) {
           Signing in...
@@ -45,8 +52,6 @@
       </button>
     </form>
 
-    <p class="auth-link">
-      Don't have an account? <a routerLink="/signup">Sign up</a>
-    </p>
+    <p class="auth-link">Don't have an account? <a routerLink="/signup">Sign up</a></p>
   </div>
 </div>

@@ -3,9 +3,16 @@ import { authGuard } from './core/guards/auth.guard';
 import { gameEditorGuard } from './features/game-editor/game-editor.guard';
 
 export const routes: Routes = [
-  // ---- Auth-required routes ----
+  // ---- Public landing ----
   {
     path: '',
+    loadComponent: () =>
+      import('./features/home/home.component').then((m) => m.HomeComponent),
+  },
+
+  // ---- Auth-required routes ----
+  {
+    path: 'games',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/game-editor/game-list.component').then((m) => m.GameListComponent),
@@ -71,6 +78,11 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'logout',
+    loadComponent: () =>
+      import('./features/auth/logout.component').then((m) => m.LogoutComponent),
   },
   {
     path: 'signup',

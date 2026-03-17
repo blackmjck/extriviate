@@ -1,0 +1,44 @@
+<div class="home-page">
+  <section class="hero" aria-labelledby="hero-heading">
+    <h1 id="hero-heading" class="hero__title">Extriviate</h1>
+    <p class="hero__tagline">The multiplayer trivia game show experience.</p>
+  </section>
+
+  <section class="join-section" aria-labelledby="join-heading">
+    <h2 id="join-heading" class="join-section__heading">Join a Game</h2>
+    <form class="join-form" [formGroup]="joinForm" (ngSubmit)="onJoin()" novalidate>
+      <div class="form-group">
+        <label class="form-group__label" for="session-code">Session Code</label>
+        <div class="form-group__input-row">
+          <input
+            id="session-code"
+            class="form-group__input"
+            type="text"
+            formControlName="code"
+            placeholder="ABC123"
+            maxlength="6"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            [attr.aria-describedby]="codeInvalid() ? 'code-error' : null"
+            [attr.aria-invalid]="codeInvalid() ? 'true' : null"
+          />
+          <button type="submit" class="btn btn--primary join-form__submit">Join</button>
+        </div>
+        @if (codeInvalid()) {
+          <span id="code-error" class="form-group__error" role="alert">
+            Please enter a valid 6-character session code.
+          </span>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="creator-cta" aria-label="Game creator actions">
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/games" class="btn btn--ghost creator-cta__btn">Create / Edit Games</a>
+    } @else {
+      <a routerLink="/login" class="btn btn--ghost creator-cta__btn">Sign In to Create Games</a>
+    }
+  </section>
+</div>

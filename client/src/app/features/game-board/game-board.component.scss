@@ -19,7 +19,7 @@
 
 .category-header {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 12px 8px;
   text-align: center;
   font-weight: 700;
@@ -83,7 +83,7 @@
 }
 
 .point-value {
-  color: var(--score-value);
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 1.4rem;
   font-family: var(--font-display);

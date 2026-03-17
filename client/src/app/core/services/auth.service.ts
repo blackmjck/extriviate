@@ -41,6 +41,17 @@ export class AuthService {
   }
 
   logout(): void {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (token) {
+      // Fire-and-forget: blacklist the JWT on the server.
+      this.http
+        .post('/api/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+        .subscribe({
+          error: () => {
+            // Ignore errors — token expires in 15m naturally.
+          },
+        });
+    }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     this.currentUser.set(null);

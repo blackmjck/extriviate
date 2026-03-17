@@ -29,7 +29,7 @@
 .timer {
   font-size: 3rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   transition: color 0.2s ease;
 
@@ -96,7 +96,7 @@
   border-radius: 8px;
   border: 2px solid var(--accent);
   background: var(--surface-2);
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   outline: none;
 
@@ -112,7 +112,7 @@
   border-radius: 50%;
   border: 2px solid var(--accent);
   background: transparent;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   touch-action: manipulation;
   display: flex;
@@ -135,7 +135,7 @@
   border-radius: 8px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;

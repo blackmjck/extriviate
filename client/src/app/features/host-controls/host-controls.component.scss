@@ -13,7 +13,7 @@
 }
 
 .panel-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -30,7 +30,7 @@
 }
 
 .phase-label {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-subtle);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -71,23 +71,23 @@
 
   &.release {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
 
   &.lock {
     background: var(--border-subtle);
-    color: #fff;
+    color: var(--text-primary);
     border: 1px solid var(--border-strong);
   }
 
   &.correct {
     background: var(--success);
-    color: #fff;
+    color: var(--on-success);
   }
 
   &.wrong {
     background: var(--danger);
-    color: #fff;
+    color: var(--on-danger);
   }
 }
 

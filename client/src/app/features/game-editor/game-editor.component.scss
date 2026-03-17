@@ -1,6 +1,6 @@
 :host {
   display: block;
-  min-height: 100vh;
+  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
   padding: 32px 24px;
@@ -92,7 +92,7 @@
 
   &__category-header {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     text-align: center;
     padding: 14px 8px;
     border-radius: 8px 8px 4px 4px;
@@ -135,7 +135,9 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
 
     &--empty {
       cursor: pointer;
@@ -190,7 +192,9 @@
     cursor: pointer;
     opacity: 0;
     border-radius: 3px;
-    transition: opacity 0.15s, background 0.15s;
+    transition:
+      opacity 0.15s,
+      background 0.15s;
 
     &:hover {
       background: rgba(192, 57, 43, 0.15);
@@ -285,7 +289,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ---- States ----

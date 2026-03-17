@@ -1,6 +1,6 @@
 :host {
   display: block;
-  min-height: 100vh;
+  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
   padding: 48px 24px;
@@ -77,7 +77,7 @@
   &__rank {
     font-size: 1.5rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--on-accent);
   }
 
   &__slot--rank-1 .podium__bar {
@@ -153,14 +153,16 @@
   padding: 14px 40px;
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-accent);
   background: var(--accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 1px;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
 
   &:hover {
     background: var(--accent-light);

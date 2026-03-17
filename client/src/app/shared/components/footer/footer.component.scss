@@ -1,11 +1,11 @@
 :host {
   display: block;
-  margin-top: auto; // pushes footer to bottom in the app's flex column
 }
 
 .footer-inner {
   display: flex;
   align-items: center;
+  font-size: 0.75rem;
   justify-content: center;
   gap: 3rem;
   padding: 12px 24px;
@@ -19,8 +19,8 @@
   font-style: normal; // <small> inherits no italic, but reset explicitly
 }
 
-.theme-toggle {
-  background: none;
+.theme-select {
+  background: transparent;
   border: none;
   padding: 8px 4px;
   min-height: 44px;
@@ -29,6 +29,11 @@
   color: var(--text-hint);
   cursor: pointer;
   transition: color 0.15s;
+
+  option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
 
   &:hover {
     color: var(--text-subtle);

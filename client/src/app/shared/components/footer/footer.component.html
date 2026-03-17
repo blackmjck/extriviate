@@ -1,14 +1,16 @@
 <div class="footer-inner">
   <small class="copyright">&copy; {{ year }} Extriviate</small>
 
-  <button
-    type="button"
-    class="theme-toggle"
-    (click)="themeService.toggle()"
-    [attr.aria-label]="toggleAriaLabel()"
-  >
-    {{ toggleLabel() }}
-  </button>
+  <label for="theme-select">
+    Theme:
+    <select id="theme-select" class="theme-select" (change)="onThemeChange($event)">
+      @for (option of themeOptions; track option.value) {
+        <option [value]="option.value" [selected]="themeService.activeTheme() === option.value">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+  </label>
 
   <nav aria-label="Legal">
     <a routerLink="/privacy" class="nav-link">Privacy Policy</a>

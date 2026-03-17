@@ -1,6 +1,6 @@
 :host {
   display: block;
-  min-height: 100vh;
+  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
   padding: 40px 24px;
@@ -123,7 +123,9 @@
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 
   input[type='radio'] {
     display: none;
@@ -161,11 +163,14 @@
   font-family: inherit;
   font-size: 0.85rem;
   padding: 0.3rem 0.9rem;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 
   &--on {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
 }

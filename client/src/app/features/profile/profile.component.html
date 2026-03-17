@@ -1,10 +1,11 @@
 <div class="profile-page">
   <header class="profile-page__header">
-    <a routerLink="/" class="btn btn--ghost">← Games</a>
+    <a routerLink="/games" class="btn btn--ghost">← Games</a>
     <h1 class="profile-page__title">My Profile</h1>
     <nav class="creator-nav" aria-label="Creator navigation">
       <a [routerLink]="['/categories']" class="btn btn--ghost btn--sm">Categories</a>
       <a [routerLink]="['/questions']" class="btn btn--ghost btn--sm">Questions</a>
+      <a [routerLink]="['/logout']" class="btn btn--ghost btn--sm">Sign out</a>
     </nav>
   </header>
 
@@ -55,7 +56,7 @@
     <div class="loading">Loading stats…</div>
   } @else if (stats(); as s) {
     <div class="stats-grid">
-      <a routerLink="/" class="stat-card">
+      <a routerLink="/games" class="stat-card">
         <span class="stat-card__value">{{ s.gamesCreated }}</span>
         <span class="stat-card__label">Games Created</span>
       </a>

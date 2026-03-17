@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  // min-height: 100vh
   padding: 1rem;
   background-color: var(--bg-primary);
   font-family: var(--font-ui);
@@ -90,12 +90,14 @@
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 1rem;
   font-weight: 600;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition:
+    opacity 0.2s,
+    transform 0.1s;
 
   &:hover:not(:disabled) {
     opacity: 0.9;
