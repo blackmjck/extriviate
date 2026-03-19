@@ -10,6 +10,7 @@ import {
   ANSWER_REVEAL_DURATION_MS,
   DAILY_DOUBLE_MIN_WAGER,
   TEXT_MAX_LOCK_MS,
+  MAX_READY_WAIT_MS,
 } from '@extriviate/shared';
 
 // ---- Minimal fake WebSocket ----
@@ -189,6 +190,19 @@ describe('GameStateService', () => {
       vi.runAllTimers();
       // If timers were cleared, the state is gone and no error thrown
       expect(service.getSession(1)).toBeUndefined();
+    });
+
+    test('removeSession cancels disconnection timers so removal callbacks never fire', () => {
+      const state = makeState(service);
+      service.addPlayer(state, makePlayer({ playerId: 10 }), makeSocket());
+      const onRemoval = vi.fn();
+      service.handleDisconnect(state, 10, onRemoval);
+      expect(state.disconnectedPlayers.has(10)).toBe(true);
+
+      service.removeSession(1);
+      vi.advanceTimersByTime(RECONNECT_GRACE_PERIOD_MS);
+
+      expect(onRemoval).not.toHaveBeenCalled();
     });
 
     test('removeSession is a no-op for unknown id', () => {
@@ -681,6 +695,17 @@ describe('GameStateService', () => {
       expect(state.roundState.buzzerLockReason).toBe('host_controlled');
     });
 
+    test('lockBuzzers clears a running buzz timer', () => {
+      const state = makeState(service, { mode: 'user_hosted' });
+      selectTextQuestion(service, state);
+      service.releaseBuzzers(state);
+      expect(state.buzzTimer).not.toBeNull();
+
+      service.lockBuzzers(state);
+
+      expect(state.buzzTimer).toBeNull();
+    });
+
     test('buzz window timeout triggers round_timeout', () => {
       const state = makeState(service);
       openBuzzers(service, state);
@@ -828,6 +853,21 @@ describe('GameStateService', () => {
 
       expect(result.pointDelta).toBe(-500);
       expect(result.roundOver).toBe(true);
+    });
+
+    test('DD correct answer adds the declared wager and sets questionSelecterId to the answerer', () => {
+      const state = makeState(service);
+      service.addPlayer(state, makePlayer({ playerId: 5, score: 1000 }), makeSocket());
+      service.selectQuestion(state, 1, 1, 1, 200, true, [{ type: 'text', value: 'Q' }], [], 5);
+      service.declareWager(state, 5, 500);
+      state.roundState.phase = 'player_answering';
+
+      const result = service.applyEvaluationResult(state, 5, true);
+
+      expect(result.pointDelta).toBe(500); // wager, not pointValue (200)
+      expect(result.newScore).toBe(1500);
+      expect(result.roundOver).toBe(true);
+      expect(state.roundState.questionSelecterId).toBe(5);
     });
 
     test('correct answer sets questionSelecterId to answering player', () => {
@@ -989,6 +1029,82 @@ describe('GameStateService', () => {
       const result = service.handlePlayerReady(state, 2); // only 1 of 2
       expect(result).toBe(false);
     });
+
+    test('disconnected player is excluded from ready count; 1 connected player ready releases buzzers', () => {
+      const state = makeState(service, { mode: 'computer_hosted' });
+      service.addPlayer(state, makePlayer({ playerId: 2 }), makeSocket());
+      service.addPlayer(state, makePlayer({ playerId: 3, displayName: 'Bob', isDisconnected: true }), makeSocket());
+
+      service.selectQuestion(
+        state, 1, 1, 1, 200, false,
+        [{ type: 'image', url: 'http://x.com/img.png', alt: '' }],
+        [], 1,
+      );
+
+      // Only player 2 is active; player 3 is disconnected and should not block release.
+      const allReady = service.handlePlayerReady(state, 2);
+
+      expect(allReady).toBe(true);
+      expect(state.roundState.phase).toBe('buzzers_open');
+    });
+
+    test('MAX_READY_WAIT_MS fallback timer releases buzzers even if not all players are ready', () => {
+      const state = makeState(service, { mode: 'computer_hosted' });
+      service.addPlayer(state, makePlayer({ playerId: 2 }), makeSocket());
+      service.addPlayer(state, makePlayer({ playerId: 3, displayName: 'Bob' }), makeSocket());
+
+      service.selectQuestion(
+        state, 1, 1, 1, 200, false,
+        [{ type: 'image', url: 'http://x.com/img.png', alt: '' }],
+        [], 1,
+      );
+      expect(state.roundState.phase).toBe('question_revealed');
+
+      vi.advanceTimersByTime(MAX_READY_WAIT_MS);
+
+      expect(state.roundState.phase).toBe('buzzers_open');
+    });
+  });
+
+  // ---- handleVideoEnded ----
+
+  describe('handleVideoEnded', () => {
+    test('returns false for unknown player', () => {
+      const state = makeState(service);
+      expect(service.handleVideoEnded(state, 999)).toBe(false);
+    });
+
+    test('all active players signal video_ended → releases buzzers', () => {
+      const state = makeState(service, { mode: 'computer_hosted' });
+      service.addPlayer(state, makePlayer({ playerId: 2 }), makeSocket());
+      service.addPlayer(state, makePlayer({ playerId: 3, displayName: 'Bob' }), makeSocket());
+
+      service.selectQuestion(
+        state, 1, 1, 1, 200, false,
+        [{ type: 'video', url: 'http://x.com/vid.mp4' }],
+        [], 1,
+      );
+
+      service.handleVideoEnded(state, 2);
+      const allDone = service.handleVideoEnded(state, 3);
+
+      expect(allDone).toBe(true);
+      expect(state.roundState.phase).toBe('buzzers_open');
+    });
+
+    test('only one of two players signals → returns false', () => {
+      const state = makeState(service, { mode: 'computer_hosted' });
+      service.addPlayer(state, makePlayer({ playerId: 2 }), makeSocket());
+      service.addPlayer(state, makePlayer({ playerId: 3, displayName: 'Bob' }), makeSocket());
+
+      service.selectQuestion(
+        state, 1, 1, 1, 200, false,
+        [{ type: 'video', url: 'http://x.com/vid.mp4' }],
+        [], 1,
+      );
+
+      expect(service.handleVideoEnded(state, 2)).toBe(false);
+    });
   });
 
   // ---- buildFullStateSync ----
@@ -1023,6 +1139,18 @@ describe('GameStateService', () => {
       const sync = service.buildFullStateSync(state);
 
       expect(sync.roundState.answerContent).not.toBeNull();
+    });
+
+    test('does not mutate state.roundState.answerContent when stripping it from the sync payload', () => {
+      const state = makeState(service);
+      const originalContent = [{ type: 'text' as const, value: 'Secret answer' }];
+      state.roundState.answerContent = originalContent;
+      state.roundState.phase = 'player_answering';
+
+      const sync = service.buildFullStateSync(state);
+
+      expect(sync.roundState.answerContent).toBeNull();
+      expect(state.roundState.answerContent).toBe(originalContent); // original reference preserved
     });
 
     test('players array is derived from Map values', () => {
@@ -1117,6 +1245,20 @@ describe('GameStateService', () => {
 
       service.broadcast(state, { type: 'buzzers_released' });
 
+      expect(closedSocket.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendTo', () => {
+    test('sends to an open socket and silently skips a closed socket', () => {
+      const openSocket = makeSocket(true);
+      const closedSocket = makeSocket(false);
+      const msg = { type: 'buzzers_released' } as const;
+
+      service.sendTo(openSocket, msg);
+      service.sendTo(closedSocket, msg);
+
+      expect(openSocket.send).toHaveBeenCalledOnce();
       expect(closedSocket.send).not.toHaveBeenCalled();
     });
   });

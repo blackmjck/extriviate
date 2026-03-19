@@ -1,4 +1,5 @@
 import Fastify, { FastifyInstance } from 'fastify';
+import fastifyCookie from '@fastify/cookie';
 import dbPlugin from './plugins/db.plugin.js';
 import redisPlugin from './plugins/redis.plugin.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
@@ -20,6 +21,11 @@ export async function buildApp(): Promise<FastifyInstance> {
       // 'debug' in development shows every request detail.
       // 'info' in production reduces log noise and cost.
     },
+    // Tells Fastify to read the real client IP from the X-Forwarded-For header.
+    // Required because Render routes all traffic through a reverse proxy.
+    // Without this, request.ip is always the proxy's internal address, and
+    // every user would share the same rate-limit counter.
+    trustProxy: true,
   });
 
   // ---- Infrastructure plugins ----
@@ -32,6 +38,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   // makes Fastify verify this ordering is correct at startup
   await fastify.register(corsPlugin);
   await fastify.register(websocketPlugin);
+  await fastify.register(fastifyCookie, {
+    secret: config.jwt.secret, // signs cookies to prevent tampering
+  });
 
   // ---- Routes ----
   // Each route group is registered under /api with a feature prefix.

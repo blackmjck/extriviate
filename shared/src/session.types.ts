@@ -1,13 +1,13 @@
-import type { GameBoard } from "./game.types.js";
-import type { PublicUser } from "./user.types.js";
-import type { SessionMode } from "./game-session.types.js";
+import type { GameBoard } from './game.types.js';
+import type { PublicUser } from './user.types.js';
+import type { SessionMode } from './game-session.types.js';
 
 // The status lifecycle of a game session.
 // 'lobby' - session created, host is waiting for players to join
 // 'active' - game is in progress
 // 'paused' - game temporarily paused (e.g. host disconnected in user_hosted mode)
 // 'completed' - game has ended, scores are final
-export type SessionStatus = "lobby" | "active" | "paused" | "completed";
+export type SessionStatus = 'lobby' | 'active' | 'paused' | 'completed';
 
 // A game session record - created when a host starts a game
 export interface GameSession {
@@ -36,15 +36,15 @@ export interface SessionPlayer {
 
 // The join method a player used to join a session
 // Used by the client to determine which join flow to show
-export type JoinMethod = "guest" | "login" | "signup";
+export type JoinMethod = 'guest' | 'login' | 'signup';
 
 // Request body sent when a player joins a session via the short URL
 // Exactly one of guestDisplayName, loginCredentials, or signupData must be provided
 // enforced by the discriminated union below
 export type JoinSessionRequest =
-  | { method: "guest"; displayName: string }
-  | { method: "login"; email: string; password: string }
-  | { method: "signup"; email: string; password: string; displayName: string };
+  | { method: 'guest'; displayName: string }
+  | { method: 'login'; email: string; password: string }
+  | { method: 'signup'; email: string; password: string; displayName: string };
 
 // Response returned after successfully joining a session
 export interface JoinSessionResponse {
@@ -52,7 +52,8 @@ export interface JoinSessionResponse {
   session: GameSession;
   // Token is included if the player logged in or signed up during join.
   // Null for guests - they have no persistent account session.
-  tokens: { accessToken: string; refreshToken: string } | null;
+  tokens: { accessToken: string; refreshToken: string } | null; // null for guests
+  guestToken: string | null; // null for registered users
 }
 
 // Request body to create a new session from a saved game
@@ -75,15 +76,15 @@ export interface LiveSessionState {
 // WebSocket message types - all messages between client and server
 // during a live session use this discriminated union.
 export type SessionMessage =
-  | { type: "player_joined"; player: SessionPlayer }
-  | { type: "player_left"; playerId: number }
-  | { type: "question_opened"; gameCategoryId: number; rowPosition: number }
+  | { type: 'player_joined'; player: SessionPlayer }
+  | { type: 'player_left'; playerId: number }
+  | { type: 'question_opened'; gameCategoryId: number; rowPosition: number }
   | {
-      type: "question_answered";
+      type: 'question_answered';
       questionId: number;
       playerId: number;
       correct: boolean;
     }
-  | { type: "score_updated"; playerId: number; newScore: number }
-  | { type: "session_ended"; players: SessionPlayer[] }
-  | { type: "error"; message: string };
+  | { type: 'score_updated'; playerId: number; newScore: number }
+  | { type: 'session_ended'; players: SessionPlayer[] }
+  | { type: 'error'; message: string };

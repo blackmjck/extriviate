@@ -36,6 +36,19 @@
         />
       </div>
 
+      <input
+        type="email"
+        id="confirm-email"
+        name="confirm_email"
+        tabindex="-1"
+        class="hp"
+        aria-hidden="true"
+        autocomplete="off"
+        (input)="setHP($event)"
+        (change)="setHP($event)"
+        (blur)="setHP($event)"
+      />
+
       <div class="form-group">
         <label for="password">Password</label>
         <input
@@ -48,19 +61,33 @@
           required
           autocomplete="new-password"
         />
+        @if (password().length) {
+          <app-password-strength-meter
+            [password]="password()"
+            (pass)="measureStrength($event)"
+          ></app-password-strength-meter>
+        }
       </div>
 
-      <button type="submit" class="btn-primary" [disabled]="loading()">
-        @if (loading()) {
+      <ngx-turnstile
+        class="turnstile"
+        [siteKey]="CF_SITE_KEY"
+        theme="auto"
+        (resolved)="onCaptcha($event)"
+        (errored)="onCaptcha($event, true)"
+      ></ngx-turnstile>
+
+      <button type="submit" class="btn-primary" [disabled]="disabled()">
+        @if (showWorking()) {
           Creating account...
+        } @else if (showLoading()) {
+          Loading...
         } @else {
           Sign Up
         }
       </button>
     </form>
 
-    <p class="auth-link">
-      Already have an account? <a routerLink="/login">Sign in</a>
-    </p>
+    <p class="auth-link">Already have an account? <a routerLink="/login">Sign in</a></p>
   </div>
 </div>

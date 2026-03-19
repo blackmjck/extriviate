@@ -1,4 +1,4 @@
-import "dotenv/config";
+import 'dotenv/config';
 // dotenv/config is the side-effect import that loads .env into process.env
 // It must be imported before anything else that reads process.env
 
@@ -16,36 +16,43 @@ function optionalVar(name: string, fallback: string): string {
 
 export const config = {
   server: {
-    port: parseInt(optionalVar("PORT", "3000"), 10),
-    host: optionalVar("HOST", "0.0.0.0"),
+    port: parseInt(optionalVar('PORT', '3000'), 10),
+    host: optionalVar('HOST', '0.0.0.0'),
     // 0.0.0.0 binds to all network interfaces - required on Render
-    nodeEnv: optionalVar("NODE_ENV", "development"),
+    nodeEnv: optionalVar('NODE_ENV', 'development'),
   },
   db: {
-    url: requireEnvVar("DATABASE_URL"),
+    url: requireEnvVar('DATABASE_URL'),
   },
   redis: {
-    url: optionalVar("REDIS_URL", ""),
+    url: optionalVar('REDIS_URL', ''),
     // Optional - if not set, the server runs without Redis.
     // The only degradation is that logout does not immediately invalidate
     // tokens; they expire naturally (access: 15m, refresh: 7d).
   },
   jwt: {
-    secret: requireEnvVar("JWT_SECRET"),
-    accessExpiry: optionalVar("JWT_ACCESS_EXPIRY", "15m"),
-    refreshExpiry: optionalVar("JWT_REFRESH_EXPIRY", "7d"),
+    secret: requireEnvVar('JWT_SECRET'),
+    accessExpiry: optionalVar('JWT_ACCESS_EXPIRY', '15m'),
+    refreshExpiry: optionalVar('JWT_REFRESH_EXPIRY', '7d'),
   },
   r2: {
-    accountId: requireEnvVar("R2_ACCOUNT_ID"),
-    accessKeyId: requireEnvVar("R2_ACCESS_KEY_ID"),
-    secretAccessKey: requireEnvVar("R2_SECRET_ACCESS_KEY"),
-    bucketName: requireEnvVar("R2_BUCKET_NAME"),
-    publicBaseUrl: requireEnvVar("R2_PUBLIC_BASE_URL"),
+    accountId: requireEnvVar('R2_ACCOUNT_ID'),
+    accessKeyId: requireEnvVar('R2_ACCESS_KEY_ID'),
+    secretAccessKey: requireEnvVar('R2_SECRET_ACCESS_KEY'),
+    bucketName: requireEnvVar('R2_BUCKET_NAME'),
+    publicBaseUrl: requireEnvVar('R2_PUBLIC_BASE_URL'),
     // e.g. https://pub-YOURHASH.r2.dev
     // Kept as a config value rather than hardcoded as it can vary per environment
   },
+  turnstile: {
+    siteKey: requireEnvVar('CF_TURNSTILE_SITE_KEY'),
+    secretKey: requireEnvVar('CF_TURNSTILE_SECRET_KEY'),
+  },
+  resend: {
+    apiKey: requireEnvVar('RESEND_API_KEY'),
+  },
   client: {
-    url: optionalVar("CLIENT_URL", "http://localhost:4200"),
+    url: optionalVar('CLIENT_URL', 'http://localhost:4200'),
     // Used by CORS to allow requests from the Angular dev server
   },
 } as const;

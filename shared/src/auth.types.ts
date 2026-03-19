@@ -9,10 +9,15 @@ export interface JwtPayload {
   jti?: string; // JWT ID - unique identifier used to key the Redis blacklist
 }
 
-// The token pair returned on successful login or token refresh
+// The token pair returned on successful login or token refresh (used in generateTokens)
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+}
+
+// The refresh token is sent as an HttpOnly cookie, so it never appears here
+export interface AccessTokenResponse {
+  accessToken: string;
 }
 
 // Request body for email/password signup.
@@ -20,29 +25,31 @@ export interface SignUpRequest {
   email: string;
   password: string;
   displayName: string;
+  turnstileToken?: string;
 }
 
 // Request body for email/password login
 export interface LoginRequest {
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 // Response body returned after a successful login or signup
 export interface AuthResponse {
   user: PublicUser;
-  tokens: AuthTokens;
+  tokens: AccessTokenResponse;
 }
 
-// Request body for refreshing an access token using a refresh token
-export interface RefreshRequest {
-  refreshToken: string;
+// Response body returned after a successful isPasswordPwned check
+export interface PwnedResponse {
+  pwned: boolean;
 }
 
 // Supported external OAuth providers.
 // Typed as a union so adding a new provider (e.g. 'amazon') is a single change here
 // and TypeScript will flag anywhere that needs updating
-export type OAuthProvider = "google" | "facebook" | "github";
+export type OAuthProvider = 'google' | 'facebook' | 'github';
 
 // Stored record of a linked OAuth identity for a user account.
 // A single user account can have multiple OAuth providers linked to it
@@ -55,4 +62,4 @@ export interface OAuthIdentity {
 }
 
 // Import here to avoid circular reference - auth types reference user types
-import type { PublicUser, UserRole } from "./user.types.js";
+import type { PublicUser, UserRole } from './user.types.js';

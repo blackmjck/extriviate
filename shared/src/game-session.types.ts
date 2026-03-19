@@ -17,10 +17,10 @@ export type RoundPhase =
 
 // Why buzzers are currently locked. Determines how they get released.
 export type BuzzerLockReason =
-  | 'reading_time'       // text content — timer-based release
-  | 'awaiting_ready'     // image content — all players must send player_ready
-  | 'video_playing'      // video content — all players must send video_ended
-  | 'host_controlled';   // user_hosted mode — host releases manually
+  | 'reading_time' // text content — timer-based release
+  | 'awaiting_ready' // image content — all players must send player_ready
+  | 'video_playing' // video content — all players must send video_ended
+  | 'host_controlled'; // user_hosted mode — host releases manually
 
 // The complete round state broadcast to all clients on every phase change.
 // Clients replace their local round state entirely — no diffing.
@@ -32,14 +32,14 @@ export interface RoundStatePayload {
   pointValue: number | null;
   isDailyDouble: boolean;
   questionContent: ContentBlock[] | null;
-  answerContent: ContentBlock[] | null;     // revealed after round ends
+  answerContent: ContentBlock[] | null; // revealed after round ends
   buzzerLockReason: BuzzerLockReason | null;
-  activePlayerId: number | null;            // who is answering / selecting
-  questionSelecterId: number | null;        // who picks the next question
-  submittedAnswer: string | null;           // the text the player submitted
-  wager: number | null;                     // daily double wager amount
-  buzzQueue: number[];                      // ordered list of player IDs who buzzed
-  isCorrect: boolean | null;                // result of the last evaluation
+  activePlayerId: number | null; // who is answering / selecting
+  questionSelecterId: number | null; // who picks the next question
+  submittedAnswer: string | null; // the text the player submitted
+  wager: number | null; // daily double wager amount
+  buzzQueue: number[]; // ordered list of player IDs who buzzed
+  isCorrect: boolean | null; // result of the last evaluation
 }
 
 // ---- Live Player State ----
@@ -56,7 +56,7 @@ export interface LivePlayer {
   avatarUrl: string | null;
   cameraActive: boolean;
   audioMuted: boolean;
-  peerId: string | null;       // WebRTC peer ID (random UUID)
+  peerId: string | null; // WebRTC peer ID (random UUID)
 }
 
 // Tracks a disconnected player during the grace period before removal.
@@ -64,7 +64,7 @@ export interface DisconnectedPlayer {
   playerId: number;
   displayName: string;
   removalTimer: ReturnType<typeof setTimeout>;
-  disconnectedAt: number;     // Date.now() timestamp
+  disconnectedAt: number; // Date.now() timestamp
 }
 
 // ---- Session Mode ----
@@ -81,7 +81,13 @@ export type GameplayMessage =
   | { type: 'buzzers_locked'; reason: BuzzerLockReason }
   | { type: 'buzz_received'; playerId: number; position: number }
   | { type: 'answer_submitted'; playerId: number; answer: string }
-  | { type: 'answer_result'; playerId: number; correct: boolean; pointDelta: number; newScore: number }
+  | {
+      type: 'answer_result';
+      playerId: number;
+      correct: boolean;
+      pointDelta: number;
+      newScore: number;
+    }
   | { type: 'timer_started'; timerType: 'buzz' | 'answer' | 'lock'; durationMs: number }
   | { type: 'timer_expired'; timerType: 'buzz' | 'answer' | 'lock' }
   | { type: 'player_disconnected'; playerId: number }
@@ -112,6 +118,7 @@ export interface FullStateSyncPayload {
 
 // All messages clients can send to the server over WebSocket.
 export type ClientGameMessage =
+  | { type: 'auth'; token: string }
   | { type: 'reconnect_guest'; guestToken: string }
   | { type: 'buzz'; playerId: number }
   | { type: 'answer_submitted'; playerId: number; answer: string }
@@ -129,7 +136,7 @@ export type ClientGameMessage =
 
 // The payload inside a signed guest session token.
 export interface GuestTokenPayload {
-  sub: string;          // 'guest:{playerId}'
+  sub: string; // 'guest:{playerId}'
   sessionId: number;
   playerId: number;
   type: 'guest_session';

@@ -1,78 +1,113 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import type { PublicUser, ApiResponse, AuthResponse, AuthTokens } from '@extriviate/shared';
-
-const ACCESS_TOKEN_KEY = 'extriviate_access_token';
-const REFRESH_TOKEN_KEY = 'extriviate_refresh_token';
+import {
+  type PublicUser,
+  type ApiResponse,
+  type AuthResponse,
+  type AuthTokens,
+  PwnedResponse,
+} from '@extriviate/shared';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
 
+  // The access token lives only in memory. It is gone on page reload -
+  // that's intentional. loadUser() silently restores it via the HttpOnly cookie.
+  private accessToken: string | null = null;
+
   readonly currentUser = signal<PublicUser | null>(null);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
 
-  async login(email: string, password: string): Promise<PublicUser> {
+  // This checks against the HIBP service to see if the password is potentially unsafe (i.e. has been exposed in a breach).
+  // It returns either `true` (unsafe password), `false` (password is safe), or `undefined` (server error)
+  async checkPwnedPassword(password: string): Promise<boolean | undefined> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<ApiResponse<PwnedResponse>>('/api/auth/check-password', { password }),
+      );
+
+      // If there is a valid response, send it on
+      return res.data.pwned;
+    } catch {
+      // Failure here means either a local server error or an HIBP server error.
+      // Either way, it means we can't evaluate the password in this request for good or ill.
+      return undefined;
+    }
+  }
+
+  async login(email: string, password: string, turnstileToken: string): Promise<PublicUser> {
     const res = await firstValueFrom(
-      this.http.post<ApiResponse<AuthResponse>>('/api/auth/login', { email, password }),
+      this.http.post<ApiResponse<AuthResponse>>('/api/auth/login', {
+        email,
+        password,
+        turnstileToken,
+      }),
     );
-    this.storeTokens(res.data.tokens);
+    // Store only the access token. The refresh token is in the HttpOnly cookie -
+    // we never see it here; the browser handles it automatically.
+    this.accessToken = res.data.tokens.accessToken;
     this.currentUser.set(res.data.user);
     return res.data.user;
   }
 
-  async signup(email: string, password: string, displayName: string): Promise<PublicUser> {
+  async signup(
+    email: string,
+    password: string,
+    displayName: string,
+    turnstileToken: string,
+  ): Promise<PublicUser> {
     const res = await firstValueFrom(
       this.http.post<ApiResponse<AuthResponse>>('/api/auth/signup', {
         email,
         password,
         displayName,
+        turnstileToken,
       }),
     );
-    this.storeTokens(res.data.tokens);
+    this.accessToken = res.data.tokens.accessToken;
     this.currentUser.set(res.data.user);
     return res.data.user;
   }
 
-  async storeTokensAndLoadUser(tokens: AuthTokens): Promise<void> {
-    this.storeTokens(tokens);
-    await this.loadUser();
-  }
-
   logout(): void {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const token = this.accessToken;
     if (token) {
-      // Fire-and-forget: blacklist the JWT on the server.
+      // Fire-and-forget: blacklist both tokens on the server.
+      // If this request fails, the access token still expires in <15m
+      // and the refresh token will be rejected on next use (it won't be
+      // in localStorage anymore, so only an attacker with a stale copy
+      // could try it - and even that window is now <7d, not infinite).
+      // The server clears the HttpOnly cookie and blacklists the tokens.
+      // withCredentials: true is required so the browser sends the refresh
+      // token cookie along with this request.
       this.http
-        .post('/api/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+        .post('/api/auth/logout', {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        })
         .subscribe({
           error: () => {
-            // Ignore errors — token expires in 15m naturally.
+            // Ignore errors
           },
         });
     }
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    this.accessToken = null;
     this.currentUser.set(null);
   }
 
   async refreshToken(): Promise<void> {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) {
-      this.logout();
-      return;
-    }
     const res = await firstValueFrom(
-      this.http.post<ApiResponse<AuthTokens>>('/api/auth/refresh', { refreshToken }),
+      this.http.post<ApiResponse<AuthTokens>>('/api/auth/refresh', {}, { withCredentials: true }),
     );
-    this.storeTokens(res.data);
+    this.accessToken = res.data.accessToken;
   }
 
   async loadUser(): Promise<void> {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!token) {
-      // No access token — try to recover via refresh token before giving up.
+    if (!this.accessToken) {
+      // No access token in memory — try a silent refresh using the cookie.
+      // If the cookie is absent or expired, this will throw and we'll log out.
       await this.tryRefreshAndLoad();
       return;
     }
@@ -105,16 +140,10 @@ export class AuthService {
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return this.accessToken;
   }
 
   getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  private storeTokens(tokens: AuthTokens): void {
-    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    return this.accessToken ? { Authorization: `Bearer ${this.accessToken}` } : {};
   }
 }

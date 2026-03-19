@@ -1,278 +1,193 @@
 import { describe, test, expect } from 'vitest';
 import { evaluateAnswer } from '../evaluation.service.js';
 
-// Shorthand builder so individual tests stay readable.
-function evaluate(
-  submittedAnswer: string,
-  correctAnswer: string,
-  options: { acceptedAnswers?: string[]; requireQuestionFormat?: boolean } = {},
-) {
-  return evaluateAnswer({
-    submittedAnswer,
-    correctAnswer,
-    acceptedAnswers: options.acceptedAnswers ?? [],
-    requireQuestionFormat: options.requireQuestionFormat ?? false,
-  });
-}
+// ---------------------------------------------------------------------------
+// No mocks — evaluation.service.ts is pure computation with no I/O.
+// All internal helpers (normalize, levenshteinDistance, fuzzyMatch,
+// tokenOverlap, tokenize) are unexported; they are exercised indirectly
+// through evaluateAnswer().
+// ---------------------------------------------------------------------------
 
-// ---- requireQuestionFormat ----
+/** Shared base — spread and override per assertion to reduce boilerplate. */
+const base = { acceptedAnswers: [] as string[], requireQuestionFormat: false };
 
-describe('requireQuestionFormat', () => {
-  test('rejects answer missing question format prefix', () => {
-    const result = evaluate('Paris', 'Paris', { requireQuestionFormat: true });
-    expect(result.correct).toBe(false);
-    expect(result.method).toBe('no_match');
-  });
+// ---------------------------------------------------------------------------
 
-  test('accepts "What is Paris"', () => {
-    const result = evaluate('What is Paris', 'Paris', { requireQuestionFormat: true });
-    expect(result.correct).toBe(true);
-  });
+describe('evaluateAnswer', () => {
+  // -------------------------------------------------------------------------
 
-  test('accepts "Who is Marie Curie"', () => {
-    const result = evaluate('Who is Marie Curie', 'Marie Curie', { requireQuestionFormat: true });
-    expect(result.correct).toBe(true);
-  });
+  describe('requireQuestionFormat gate', () => {
+    test('blocks answers missing the required Jeopardy prefix; accepts all valid prefix/verb pairs; skips check when false', () => {
+      const withFormat = { ...base, correctAnswer: 'France', requireQuestionFormat: true };
 
-  test('accepts "What are the Beatles" (plural verb)', () => {
-    const result = evaluate('What are the Beatles', 'Beatles', { requireQuestionFormat: true });
-    expect(result.correct).toBe(true);
-  });
+      // Missing prefix → immediate no_match, even though content would exactly match.
+      expect(evaluateAnswer({ ...withFormat, submittedAnswer: 'France' }))
+        .toEqual({ correct: false, method: 'no_match' });
 
-  test('accepts "Where is Paris" format', () => {
-    const result = evaluate('Where is Paris', 'Paris', { requireQuestionFormat: true });
-    expect(result.correct).toBe(true);
-  });
+      // Second word not in the allowed verb list → pattern fails.
+      expect(evaluateAnswer({ ...withFormat, submittedAnswer: 'What about France?' }))
+        .toEqual({ correct: false, method: 'no_match' });
 
-  test('does not enforce format when flag is false', () => {
-    const result = evaluate('Paris', 'Paris', { requireQuestionFormat: false });
-    expect(result.correct).toBe(true);
-  });
-});
+      // All six pronouns and all seven verbs from QUESTION_FORMAT_PATTERN.
+      const validPrefixes = [
+        'What is France?', 'Who is France?', 'Where is France?',
+        'When is France?', 'Why is France?', 'How is France?',
+        'What are France?', 'What was France?', 'What were France?',
+        'What do France?', 'What does France?', 'What did France?',
+        'WHAT IS France?', // pattern is case-insensitive
+      ];
+      for (const submittedAnswer of validPrefixes) {
+        expect(
+          evaluateAnswer({ ...withFormat, submittedAnswer }).correct,
+          `expected format check to pass for: ${submittedAnswer}`,
+        ).toBe(true);
+      }
 
-// ---- Layer 1: Exact match ----
+      // requireQuestionFormat: false → no prefix needed.
+      expect(evaluateAnswer({ ...base, correctAnswer: 'France', submittedAnswer: 'France' }))
+        .toEqual({ correct: true, method: 'exact' });
 
-describe('layer 1: exact match after normalization', () => {
-  test('identical strings match', () => {
-    const result = evaluate('Napoleon Bonaparte', 'Napoleon Bonaparte');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
+      // normalize() strips the format prefix unconditionally (line 77 runs regardless of the flag),
+      // so "What is France?" submitted with the flag off still produces an exact match.
+      expect(evaluateAnswer({ ...base, correctAnswer: 'France', submittedAnswer: 'What is France?' }))
+        .toEqual({ correct: true, method: 'exact' });
+    });
   });
 
-  test('case-insensitive match', () => {
-    const result = evaluate('napoleon Bonaparte', 'Napoleon Bonaparte');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
+  // -------------------------------------------------------------------------
+
+  describe('Layer 1 — exact match after normalization', () => {
+    test('normalizes case, articles, punctuation, format prefix, numbers, and whitespace before exact matching', () => {
+      // Helper: assert exact match for a submitted/correct pair.
+      const exact = (submitted: string, correct: string) =>
+        expect(evaluateAnswer({ ...base, submittedAnswer: submitted, correctAnswer: correct }))
+          .toEqual({ correct: true, method: 'exact' });
+
+      exact('FRANCE', 'france');                          // step 2: case folding
+      exact('France!', 'France');                         // step 3: punctuation stripped
+      exact('The United States', 'United States');        // step 4: article removed from submitted
+      exact('United States', 'The United States');        // step 4: article removed from correct
+      exact('What is France?', 'France');                 // step 1: format prefix stripped by normalize()
+      exact('World War 2', 'world war 2');                // numbers preserved; only case differs
+      exact('  france  ', 'france');                      // step 5: trim + whitespace collapse
+      exact('well-known author', 'wellknown author');     // hyphen removed (non-alphanumeric char)
+    });
   });
 
-  test('strips leading article "the"', () => {
-    const result = evaluate('the Great Wall', 'Great Wall');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
+  // -------------------------------------------------------------------------
+
+  describe('Layer 2 — accepted answers fuzzy match', () => {
+    test('returns accepted_fuzzy on first matching accepted answer; iterates entire list; skips when list is empty', () => {
+      // Exact match on an accepted answer (not the primary) → accepted_fuzzy.
+      // The list is iterated in order: "water" is tried first —
+      //   normalize("H2O")="h2o" vs normalize("water")="water": distance=5, maxLen=5, threshold=2 → fail.
+      // "H2O" is tried second —
+      //   "h2o" vs "h2o": distance=0 ≤ 1 → pass → accepted_fuzzy.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'H2O',
+        correctAnswer: 'dihydrogen monoxide',
+        acceptedAnswers: ['water', 'H2O'],
+      })).toEqual({ correct: true, method: 'accepted_fuzzy' });
+
+      // One-character typo against an accepted answer.
+      // "watr" vs "water": distance=1, maxLen=5 ≤ 8, threshold=2 → pass.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'watr',
+        correctAnswer: 'dihydrogen monoxide',
+        acceptedAnswers: ['water'],
+      })).toEqual({ correct: true, method: 'accepted_fuzzy' });
+
+      // Empty acceptedAnswers → Layer 2 skipped → falls through to Layer 3.
+      // "pariss" vs "paris": distance=1, maxLen=6 ≤ 8, threshold=2 → primary_fuzzy.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'pariss',
+        correctAnswer: 'Paris',
+        acceptedAnswers: [],
+      })).toEqual({ correct: true, method: 'primary_fuzzy' });
+    });
   });
 
-  test('strips leading article "a"', () => {
-    const result = evaluate('a Bicycle', 'Bicycle');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
+  // -------------------------------------------------------------------------
+
+  describe('Layer 3 — primary answer fuzzy match', () => {
+    test('applies three distance tiers: ≤1 edit for maxLen≤4, ≤2 for maxLen≤8, ≤20% of length otherwise', () => {
+      const fuzzy = (submitted: string, correct: string) =>
+        evaluateAnswer({ ...base, submittedAnswer: submitted, correctAnswer: correct });
+
+      // --- Tier 1: maxLen ≤ 4, threshold = 1 ---
+      // "rome" vs "nome": 1 substitution (r→n). maxLen=4, distance=1 ≤ 1. PASS.
+      expect(fuzzy('rome', 'nome')).toEqual({ correct: true, method: 'primary_fuzzy' });
+      // "rome" vs "sore": 2 substitutions (r→s, m→r). maxLen=4, distance=2 > 1. FAIL.
+      expect(fuzzy('rome', 'sore')).toEqual({ correct: false, method: 'no_match' });
+
+      // --- Tier 2: maxLen ≤ 8, threshold = 2 ---
+      // "napoleon" vs "napoln": delete 'e' and one 'o'. maxLen=8, distance=2 ≤ 2. PASS.
+      expect(fuzzy('napoleon', 'napoln')).toEqual({ correct: true, method: 'primary_fuzzy' });
+      // "napoleon" vs "napln": delete 'o','e','o'. maxLen=8, distance=3 > 2. FAIL.
+      expect(fuzzy('napoleon', 'napln')).toEqual({ correct: false, method: 'no_match' });
+
+      // --- Tier 3: maxLen > 8, threshold = floor(maxLen × 0.2) ---
+      // "thermometer" vs "thermometur": 1 substitution (e→u at position 9).
+      // maxLen=11, floor(11×0.2)=2, distance=1 ≤ 2. PASS.
+      expect(fuzzy('thermometer', 'thermometur')).toEqual({ correct: true, method: 'primary_fuzzy' });
+      // "thermometer" vs "thermotr": delete 'm','e','e'. maxLen=11, threshold=2, distance=3 > 2. FAIL.
+      expect(fuzzy('thermometer', 'thermotr')).toEqual({ correct: false, method: 'no_match' });
+    });
   });
 
-  test('strips leading article "an"', () => {
-    const result = evaluate('an elephant', 'Elephant');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
+  // -------------------------------------------------------------------------
+
+  describe('Layer 4 — token overlap', () => {
+    test('returns token_overlap when ≥80% of correct content tokens appear in submitted; short-circuits false for empty correct tokens', () => {
+      // 100% of correct tokens present, but submitted has enough extra words that
+      // Levenshtein distance >> threshold, so Layer 3 fails first.
+      // normalize("Marie Curie") = "marie curie" → tokenize → ["marie","curie"].
+      // normalize(submitted) = "it was marie curie who discovered that" (38 chars).
+      // Layer 3: maxLen=38, threshold=floor(7.6)=7, distance≥27 > 7 → FAIL.
+      // Layer 4: both "marie" and "curie" are in submittedTokens → 2/2 = 100% ≥ 80%.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'It was marie curie who discovered that',
+        correctAnswer: 'Marie Curie',
+      })).toEqual({ correct: true, method: 'token_overlap' });
+
+      // 3/5 = 60% — below the ≥80% threshold.
+      // correctTokens: ["great","barrier","reef","australia","coral"] (5 non-stop tokens).
+      // submittedTokens: Set(["coral","reef","australia"]).
+      // Matches: reef ✓, australia ✓, coral ✓ → 3/5 = 60% < 80%.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'coral reef australia',
+        correctAnswer: 'great barrier reef australia coral',
+      })).toEqual({ correct: false, method: 'no_match' });
+
+      // All tokens in correct answer are stop words → correctTokens = [] → early return false.
+      // normalize("is of the") = "is of" (article "the" stripped).
+      // tokenize("is of") → "is" and "of" are both in STOP_WORDS → [].
+      // Line 137: if (correctTokens.length === 0) return false.
+      expect(evaluateAnswer({
+        ...base,
+        submittedAnswer: 'anything',
+        correctAnswer: 'is of the',
+      })).toEqual({ correct: false, method: 'no_match' });
+    });
   });
 
-  test('strips punctuation', () => {
-    const result = evaluate("Marie Curie!", 'Marie Curie');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
+  // -------------------------------------------------------------------------
 
-  test('strips Jeopardy prefix before comparison', () => {
-    // "What is" gets stripped from submitted; both normalize to same
-    const result = evaluate('What is Paris', 'Paris');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-
-  test('collapses extra whitespace', () => {
-    const result = evaluate('New   York', 'New York');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-
-  test('completely wrong answer does not match', () => {
-    const result = evaluate('Tokyo', 'Paris');
-    expect(result.correct).toBe(false);
-  });
-
-  test('empty submitted answer does not match non-empty correct', () => {
-    const result = evaluate('', 'Paris');
-    expect(result.correct).toBe(false);
-  });
-
-  test('empty submitted and empty correct both normalize to match', () => {
-    // Both normalize to "" → exact match
-    const result = evaluate('', '');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-});
-
-// ---- Layer 2: Accepted answers fuzzy ----
-
-describe('layer 2: accepted list fuzzy match', () => {
-  test('exact match in accepted list returns accepted_fuzzy', () => {
-    // This will be caught by fuzzyMatch with distance=0, which passes every threshold
-    const result = evaluate('NYC', 'New York City', { acceptedAnswers: ['NYC'] });
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('accepted_fuzzy');
-  });
-
-  test('one-edit match against accepted answer (short string)', () => {
-    // "colour" vs "color" — distance 1, maxLen 6 ≤ 8 → threshold 2
-    const result = evaluate('colour', 'color', { acceptedAnswers: ['color'] });
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('accepted_fuzzy');
-  });
-
-  test('skips layer 2 when accepted list is empty', () => {
-    // Wrong answer, empty accepted list — should fall through to layer 3
-    const result = evaluate('colorr', 'blue', { acceptedAnswers: [] });
-    expect(result.correct).toBe(false);
-  });
-
-  test('too many edits against accepted answer fails layer 2', () => {
-    // "completely wrong" vs "right" — distance way above threshold
-    const result = evaluate('completely wrong', 'right', { acceptedAnswers: ['right'] });
-    // Falls through to layers 3/4 which will also fail
-    expect(result.correct).toBe(false);
-  });
-});
-
-// ---- Layer 3: Primary answer fuzzy ----
-
-describe('layer 3: primary answer fuzzy match', () => {
-  test('one-edit typo matches (short word, ≤4 chars, threshold 1)', () => {
-    // "rme" vs "rome" — normalized both; distance 1, maxLen 4 → threshold 1
-    const result = evaluate('Rome', 'Rime');
-    // 'rome' vs 'rime': distance 1, maxLen 4 ≤ 4 → threshold 1 → match
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('primary_fuzzy');
-  });
-
-  test('two-edit typo matches (medium word, ≤8 chars, threshold 2)', () => {
-    // "Einsten" vs "Einstein" (missing 'i') — distance 1 actually, let's use distance 2
-    // "Einstien" vs "Einstein" — transposition+extra = 2 edits, maxLen 8 ≤ 8 → threshold 2
-    const result = evaluate('Einstien', 'Einstein');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('primary_fuzzy');
-  });
-
-  test('20% threshold applies for longer strings', () => {
-    // "Shakespear" vs "Shakespeare" — distance 1, maxLen 11 → 20% = 2.2 → floor 2 → passes
-    const result = evaluate('Shakespear', 'Shakespeare');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('primary_fuzzy');
-  });
-
-  test('answer beyond 20% threshold fails layer 3', () => {
-    // "Michelangela" vs "Michelangelo" — distance 1, maxLen 12 → floor(12*0.2)=2 → passes
-    // Use something clearly outside threshold instead
-    // "abcdefghij" vs "zyxwvutsrq" — 10 edits, maxLen 10 → threshold 2 → fails
-    const result = evaluate('abcdefghij', 'zyxwvutsrq');
-    expect(result.correct).toBe(false);
-  });
-});
-
-// ---- Layer 4: Token overlap ----
-
-describe('layer 4: token overlap (≥80% of correct tokens present)', () => {
-  test('all correct tokens present returns token_overlap', () => {
-    // Correct: "Battle of Hastings" → tokens: ['battle', 'hastings'] (stop words removed)
-    // Submitted: "the Battle of Hastings in 1066" → tokens: ['battle', 'hastings', '1066']
-    const result = evaluate('The Battle of Hastings in 1066', 'Battle of Hastings');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('token_overlap');
-  });
-
-  test('80% threshold: 4/5 correct tokens present passes', () => {
-    // Correct tokens: ['manhattan', 'project', 'nuclear', 'weapons', 'wwii'] (5 tokens)
-    // Submitted tokens include 4 of them → 80% → passes
-    const result = evaluate(
-      'The Manhattan Project was about nuclear weapons',
-      'The Manhattan Project nuclear weapons WWII',
-    );
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('token_overlap');
-  });
-
-  test('below 80% threshold fails all layers', () => {
-    // Correct: "Charles Darwin theory evolution natural selection" → 5 tokens
-    // Submitted: only 1/5 → 20% → fails
-    const result = evaluate('Darwin', 'Charles Darwin theory evolution natural selection');
-    expect(result.correct).toBe(false);
-    expect(result.method).toBe('no_match');
-  });
-
-  test('stop words are excluded from token comparison', () => {
-    // "is the a an the" all stop words → correctTokens is empty → returns false (no tokens)
-    const result = evaluate('something', 'is the a an');
-    expect(result.correct).toBe(false);
-  });
-});
-
-// ---- method field ----
-
-describe('method discriminant', () => {
-  test('returns exact when layer 1 matches', () => {
-    expect(evaluate('Paris', 'Paris').method).toBe('exact');
-  });
-
-  test('returns accepted_fuzzy when layer 2 matches', () => {
-    expect(evaluate('NY', 'New York City', { acceptedAnswers: ['NY'] }).method).toBe('accepted_fuzzy');
-  });
-
-  test('returns primary_fuzzy when layer 3 matches', () => {
-    // "Rime" vs "Rome" — one character off
-    expect(evaluate('Rime', 'Rome').method).toBe('primary_fuzzy');
-  });
-
-  test('returns token_overlap when layer 4 matches', () => {
-    const result = evaluate('Battle of Hastings year 1066', 'Battle of Hastings');
-    expect(result.method).toBe('token_overlap');
-  });
-
-  test('returns no_match when all layers fail', () => {
-    expect(evaluate('completely wrong answer here', 'Paris').method).toBe('no_match');
-  });
-});
-
-// ---- Edge cases ----
-
-describe('edge cases', () => {
-  test('single character correct answer — exact match', () => {
-    const result = evaluate('A', 'A');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-
-  test('numbers are preserved after normalization', () => {
-    const result = evaluate('1969', '1969');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-
-  test('hyphenated words normalized correctly', () => {
-    // Hyphens are punctuation and get stripped → "well known" vs "well known"
-    const result = evaluate('well-known', 'well-known');
-    expect(result.correct).toBe(true);
-    expect(result.method).toBe('exact');
-  });
-
-  test('submitted answer with only stop words fails all layers', () => {
-    const result = evaluate('the a an', 'Paris');
-    expect(result.correct).toBe(false);
+  describe('no_match fallback', () => {
+    test('returns { correct: false, method: "no_match" } when all four layers fail', () => {
+      // "blurble" shares no normalized prefix, no fuzzy proximity, and no token overlap
+      // with "photosynthesis" or any of the accepted answers.
+      expect(evaluateAnswer({
+        submittedAnswer: 'blurble',
+        correctAnswer: 'photosynthesis',
+        acceptedAnswers: ['chlorophyll', 'chloroplast', 'sunlight'],
+        requireQuestionFormat: false,
+      })).toEqual({ correct: false, method: 'no_match' });
+    });
   });
 });

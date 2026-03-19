@@ -30,32 +30,29 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
   // ---- REST Routes ----
 
   // GET /api/sessions/:joinCode — preview session before joining
-  fastify.get<{ Params: { joinCode: string } }>(
-    '/:joinCode',
-    async (request, reply) => {
-      const session = await sessionService.findByJoinCode(request.params.joinCode);
-      if (!session) {
-        return reply.status(404).send({
-          success: false,
-          error: { message: 'Session not found or already ended', code: 'NOT_FOUND' },
-        });
-      }
-
-      const players = await sessionService.getPlayers(session.id);
-      return reply.send({
-        success: true,
-        data: {
-          session: {
-            id: session.id,
-            name: (session as any).name,
-            status: (session as any).status,
-            joinCode: (session as any).join_code,
-          },
-          playerCount: players.length,
-        },
+  fastify.get<{ Params: { joinCode: string } }>('/:joinCode', async (request, reply) => {
+    const session = await sessionService.findByJoinCode(request.params.joinCode);
+    if (!session) {
+      return reply.status(404).send({
+        success: false,
+        error: { message: 'Session not found or already ended', code: 'NOT_FOUND' },
       });
     }
-  );
+
+    const players = await sessionService.getPlayers(session.id);
+    return reply.send({
+      success: true,
+      data: {
+        session: {
+          id: session.id,
+          name: (session as any).name,
+          status: (session as any).status,
+          joinCode: (session as any).join_code,
+        },
+        playerCount: players.length,
+      },
+    });
+  });
 
   // POST /api/sessions — create a new session (auth required)
   fastify.post<{ Body: CreateSessionRequest }>(
@@ -123,11 +120,11 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           sessionService.markQuestionAnswered(gameId, questionId);
           const s = gameStateService.getSession(session.id);
           if (s) gameStateService.markBoardQuestionAnswered(s, questionId);
-        },
+        }
       );
 
       // Add the host as the first player
-      const hostPlayer = await sessionService.addPlayer(session.id, request.user.email ?? 'Host', userId);
+      const hostPlayer = await sessionService.addPlayer(session.id, request.user.email, userId);
       const state = gameStateService.getSession(session.id)!;
       // Host LivePlayer entry will be created when they connect via WebSocket
 
@@ -414,7 +411,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
         foundQuestion.isDailyDouble,
         questionContent,
         answerContent,
-        selecterId,
+        selecterId
       );
 
       // Broadcast round state update
@@ -486,7 +483,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ---- WebSocket ----
 
-  fastify.get<{ Params: { id: string }; Querystring: { token?: string } }>(
+  fastify.get<{ Params: { id: string } }>(
     '/:id/ws',
     { websocket: true },
     async (socket: WebSocket, request) => {
@@ -498,62 +495,19 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
         return;
       }
 
-      // Authenticate via query token
-      let userId: number | null = null;
-      let isHost = false;
-
-      if (request.query.token) {
-        try {
-          const payload = fastify.jwt.verify<any>(request.query.token);
-          const blacklisted = await fastify.isTokenBlacklisted(payload.jti);
-          if (!blacklisted) {
-            userId = parseInt(payload.sub, 10);
-            isHost = state.hostPlayerId === userId;
-          }
-        } catch {
-          // Invalid token — will be treated as unauthenticated
+      // Auth timeout
+      // The client must send either { type: 'auth' } or { type: 'reconnect_guest' }
+      // as its very first message. If it doesn't arrive within 5 seconds, we close
+      // the connection. This prevents anonymous sockets from sitting open and
+      // consuming server resources without ever identifying themselves.
+      const authTimeout = setTimeout(() => {
+        if (!state.socketIdentities.has(socket)) {
+          socket.close(4001, 'Authentication timeout');
         }
-      }
+      }, 5000);
 
-      // If authenticated, register player socket immediately
-      if (userId !== null) {
-        const existingPlayer = await sessionService.findPlayerByUserId(sessionId, userId);
-        if (existingPlayer) {
-          const reconnected = gameStateService.handleReconnect(state, existingPlayer.id, socket);
-          if (reconnected) {
-            // Send full state sync to reconnected player
-            gameStateService.sendTo(socket, {
-              type: 'full_state_sync',
-              state: gameStateService.buildFullStateSync(state),
-            });
-            gameStateService.broadcast(state, {
-              type: 'player_reconnected',
-              playerId: existingPlayer.id,
-            }, socket);
-          } else {
-            // First connection — create LivePlayer
-            const livePlayer: LivePlayer = {
-              playerId: existingPlayer.id,
-              displayName: (existingPlayer as any).display_name ?? (existingPlayer as any).displayName ?? 'Player',
-              score: (existingPlayer as any).final_score ?? (existingPlayer as any).finalScore ?? 0,
-              isHost,
-              isReady: false,
-              isDisconnected: false,
-              avatarMode: 'none',
-              avatarUrl: null,
-              cameraActive: false,
-              audioMuted: true,
-              peerId: null,
-            };
-            gameStateService.addPlayer(state, livePlayer, socket);
-
-            gameStateService.sendTo(socket, {
-              type: 'full_state_sync',
-              state: gameStateService.buildFullStateSync(state),
-            });
-          }
-        }
-      }
+      // Clear the timeout whenever the socket closes
+      socket.once('close', () => clearTimeout(authTimeout));
 
       // ---- Message Handler ----
       socket.on('message', async (raw: Buffer) => {
@@ -562,6 +516,75 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           msg = JSON.parse(raw.toString());
         } catch {
           return; // ignore malformed messages
+        }
+
+        // Registered user auth
+        // The client sends this as the very first message after onopen fires.
+        if (msg.type === 'auth') {
+          // Ignore if this socket is already registered (duplicate auth attempt)
+          if (state.socketIdentities.has(socket)) return;
+
+          try {
+            const payload = fastify.jwt.verify<any>(msg.token);
+            const blacklisted = await fastify.isTokenBlacklisted(payload.jti);
+            if (blacklisted) {
+              socket.close(4001, 'Token revoked');
+              return;
+            }
+
+            const userId = parseInt(payload.sub, 10);
+            const isHost = state.hostPlayerId === userId;
+            const existingPlayer = await sessionService.findPlayerByUserId(sessionId, userId);
+
+            if (!existingPlayer) {
+              socket.close(4001, 'Player not found in session');
+              return;
+            }
+
+            clearTimeout(authTimeout); // legitimate auth arrived, cancel the timeout
+
+            const reconnected = gameStateService.handleReconnect(state, existingPlayer.id, socket);
+            if (reconnected) {
+              gameStateService.sendTo(socket, {
+                type: 'full_state_sync',
+                state: gameStateService.buildFullStateSync(state),
+              });
+              gameStateService.broadcast(
+                state,
+                {
+                  type: 'player_reconnected',
+                  playerId: existingPlayer.id,
+                },
+                socket
+              );
+            } else {
+              const livePlayer: LivePlayer = {
+                playerId: existingPlayer.id,
+                displayName:
+                  (existingPlayer as any).display_name ??
+                  (existingPlayer as any).displayName ??
+                  'Player',
+                score:
+                  (existingPlayer as any).final_score ?? (existingPlayer as any).finalScore ?? 0,
+                isHost,
+                isReady: false,
+                isDisconnected: false,
+                avatarMode: 'none',
+                avatarUrl: null,
+                cameraActive: false,
+                audioMuted: true,
+                peerId: null,
+              };
+              gameStateService.addPlayer(state, livePlayer, socket);
+              gameStateService.sendTo(socket, {
+                type: 'full_state_sync',
+                state: gameStateService.buildFullStateSync(state),
+              });
+            }
+          } catch {
+            socket.close(4001, 'Invalid token');
+          }
+          return;
         }
 
         // Handle guest reconnect as the first message
@@ -573,16 +596,22 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
               return;
             }
 
+            clearTimeout(authTimeout); // legitimate auth arrived
+
             const reconnected = gameStateService.handleReconnect(state, payload.playerId, socket);
             if (reconnected) {
               gameStateService.sendTo(socket, {
                 type: 'full_state_sync',
                 state: gameStateService.buildFullStateSync(state),
               });
-              gameStateService.broadcast(state, {
-                type: 'player_reconnected',
-                playerId: payload.playerId,
-              }, socket);
+              gameStateService.broadcast(
+                state,
+                {
+                  type: 'player_reconnected',
+                  playerId: payload.playerId,
+                },
+                socket
+              );
             } else {
               // Guest connecting for the first time via token
               const players = await sessionService.getPlayers(sessionId);
@@ -590,7 +619,8 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
               if (dbPlayer) {
                 const livePlayer: LivePlayer = {
                   playerId: dbPlayer.id,
-                  displayName: (dbPlayer as any).display_name ?? (dbPlayer as any).displayName ?? 'Guest',
+                  displayName:
+                    (dbPlayer as any).display_name ?? (dbPlayer as any).displayName ?? 'Guest',
                   score: (dbPlayer as any).final_score ?? (dbPlayer as any).finalScore ?? 0,
                   isHost: false,
                   isReady: false,
@@ -613,6 +643,11 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
             socket.close(4001, 'Invalid guest token');
           }
           return;
+        }
+
+        // Guard: reject all other messages from unregistered sockets
+        if (!state.socketIdentities.has(socket)) {
+          return; // not yet authenticated -> silently drop
         }
 
         // For all other messages, verify identity
@@ -692,7 +727,9 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
               });
 
               const result = gameStateService.applyEvaluationResult(
-                state, msg.playerId, evalResult.correct,
+                state,
+                msg.playerId,
+                evalResult.correct
               );
 
               gameStateService.broadcast(state, {
@@ -794,12 +831,16 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
             if (player) {
               player.cameraActive = msg.cameraActive;
               player.audioMuted = msg.audioMuted;
-              gameStateService.broadcast(state, {
-                type: 'media_state_update',
-                playerId: msg.playerId,
-                cameraActive: msg.cameraActive,
-                audioMuted: msg.audioMuted,
-              }, socket);
+              gameStateService.broadcast(
+                state,
+                {
+                  type: 'media_state_update',
+                  playerId: msg.playerId,
+                  cameraActive: msg.cameraActive,
+                  audioMuted: msg.audioMuted,
+                },
+                socket
+              );
             }
             break;
           }

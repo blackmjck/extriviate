@@ -38,3 +38,22 @@ export const JWT_REFRESH_EXPIRY = '7d'; // longer-lived refresh token
 
 // Session join
 export const SESSION_CODE_LENGTH = 6; // e.g. "A3F9K2" - the short join code
+
+// CloudFlare Turnstile Widget Testing Keys
+export const CF_TEST_SITEKEYS = {
+  PASS_VISIBLE: '1x00000000000000000000AA', // always passes while showing the widget
+  PASS_INVISIBLE: '1x00000000000000000000BB', // always passes without showing the widget
+  FAIL_VISIBLE: '2x00000000000000000000AB', // always fails while showing the widget
+  FAIL_INVISIBLE: '2x00000000000000000000BB', // always fails without showing the widget
+  CHALLENGE_VISIBLE: '3x00000000000000000000FF', // forces the interactive challenge
+};
+export const CF_SECRET_TEST_KEYS = {
+  PASS: '1x0000000000000000000000000000000AA', // always passes (with the appropriate site key)
+  FAIL: '2x0000000000000000000000000000000AA', // always fails (with any site key)
+  FAIL_DUPLICATE: '3x0000000000000000000000000000000AA', // always fails and sends the "token already spent" error (`"timeout-or-duplicate"`)
+};
+export const CF_VERIFY_API = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+// Account lockout - brute force protection for the login endpoint
+export const MAX_LOGIN_ATTEMPTS = 10; // failures before lockout kicks in
+export const LOGIN_LOCKOUT_DURATION_SECONDS = 15 * 60; // 15 minutes

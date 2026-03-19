@@ -84,6 +84,21 @@
   }
 }
 
+// hidden honeypot field styles
+input.hp {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0;
+  width: 0;
+  z-index: -1;
+}
+
+.turnstile {
+  margin-top: 0.5rem;
+}
+
 .btn-primary {
   margin-top: 0.5rem;
   padding: 0.875rem;

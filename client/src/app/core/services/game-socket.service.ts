@@ -62,8 +62,7 @@ export class GameSocketService {
     this.connectionState.set('connecting');
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const tokenParam = this.currentToken ? `?token=${encodeURIComponent(this.currentToken)}` : '';
-    const url = `${protocol}//${window.location.host}/api/sessions/${this.currentSessionId}/ws${tokenParam}`;
+    const url = `${protocol}//${window.location.host}/api/sessions/${this.currentSessionId}/ws`;
 
     this.socket = new WebSocket(url);
 
@@ -73,13 +72,21 @@ export class GameSocketService {
       this.reconnecting.set(false);
       this.reconnectAttempt = 0;
 
-      // Only send reconnect_guest when this is a genuine reconnect (not initial join).
-      // On initial join, guestSession is already stored before connect() is called,
-      // so hasSession() would be true even on the very first connection.
+      // TODO: verify that a registered user's initial join will not be lost with this logic
       if (this.isReconnecting && this.guestSession.hasSession()) {
+        // Guest reconnect: send guest token as first message
         const guestToken = this.guestSession.getToken();
         if (guestToken) {
           this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
+        } else if (this.currentToken) {
+          // Registered user (initial join or reconnect): send JWT as first message.
+          this.socket!.send(JSON.stringify({ type: 'auth', token: this.currentToken }));
+        } else if (this.guestSession.hasSession()) {
+          // Guest initial join (not a reconnect): also uses reconnect_guest.
+          const guestToken = this.guestSession.getToken();
+          if (guestToken) {
+            this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
+          }
         }
       }
       this.isReconnecting = false;
