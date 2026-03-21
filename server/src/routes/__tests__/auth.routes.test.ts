@@ -17,14 +17,16 @@ const { mockSignUp, mockLogin, mockLogout, mockIsPwnedPassword, mockForgotPasswo
 }));
 
 vi.mock('../../services/auth.service.js', () => ({
-  AuthService: vi.fn().mockImplementation(() => ({
-    signUp: mockSignUp,
-    login: mockLogin,
-    logout: mockLogout,
-    isPwnedPassword: mockIsPwnedPassword,
-    forgotPassword: mockForgotPassword,
-    resetPassword: mockResetPassword,
-  })),
+  AuthService: vi.fn(function () {
+    return {
+      signUp: mockSignUp,
+      login: mockLogin,
+      logout: mockLogout,
+      isPwnedPassword: mockIsPwnedPassword,
+      forgotPassword: mockForgotPassword,
+      resetPassword: mockResetPassword,
+    };
+  }),
 }));
 
 // Partial hook mock: turnstileVerify is a no-op; requireAuth stays real.

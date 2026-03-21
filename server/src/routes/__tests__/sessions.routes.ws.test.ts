@@ -71,15 +71,15 @@ const { mockGss, mockSessionSvc, mockAuthSvc, mockBuildGameBoard, mockEvaluate }
   });
 
 vi.mock('../../services/game-state.service.js', () => ({
-  GameStateService: vi.fn(() => mockGss),
+  GameStateService: vi.fn(function () { return mockGss; }),
 }));
 
 vi.mock('../../services/session.service.js', () => ({
-  SessionService: vi.fn(() => mockSessionSvc),
+  SessionService: vi.fn(function () { return mockSessionSvc; }),
 }));
 
 vi.mock('../../services/auth.service.js', () => ({
-  AuthService: vi.fn(() => mockAuthSvc),
+  AuthService: vi.fn(function () { return mockAuthSvc; }),
 }));
 
 vi.mock('../../services/session-state-builder.js', () => ({
