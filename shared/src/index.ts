@@ -10,3 +10,4 @@ export * from './game-session.types.js';
 export * from './upload.types.js';
 export * from './api.types.js';
 export * from './turnstile.types.js';
+export * from './query.types.js';

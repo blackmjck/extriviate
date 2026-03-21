@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 import { AuthService } from './auth.service';
+import { GameSocketService } from './game-socket.service';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -21,9 +23,15 @@ const fakeAuthResponse = {
 // ---------------------------------------------------------------------------
 // Helpers
 
+const mockSocketService = { disconnect: vi.fn() };
+
 function setup() {
   TestBed.configureTestingModule({
-    providers: [provideHttpClient(), provideHttpClientTesting()],
+    providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      { provide: GameSocketService, useValue: mockSocketService },
+    ],
   });
   return {
     service: TestBed.inject(AuthService),
@@ -52,7 +60,10 @@ async function loginService(service: AuthService, httpMock: HttpTestingControlle
 // ---------------------------------------------------------------------------
 
 describe('AuthService', () => {
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(() => {
+    vi.clearAllMocks();
+    TestBed.resetTestingModule();
+  });
 
   // -------------------------------------------------------------------------
   describe('initial state', () => {
@@ -320,12 +331,71 @@ describe('AuthService', () => {
       httpMock.verify();
     });
 
+    it('sends an Authorization: Bearer header on the logout request', async () => {
+      const { service, httpMock } = setup();
+      await loginService(service, httpMock);
+
+      service.logout();
+
+      const req = httpMock.expectOne('/api/auth/logout');
+      expect(req.request.headers.get('Authorization')).toBe('Bearer test-access-token');
+      req.flush({});
+      httpMock.verify();
+    });
+
+    it('sends withCredentials: true so the refresh-token cookie is included', async () => {
+      const { service, httpMock } = setup();
+      await loginService(service, httpMock);
+
+      service.logout();
+
+      const req = httpMock.expectOne('/api/auth/logout');
+      expect(req.request.withCredentials).toBe(true);
+      req.flush({});
+      httpMock.verify();
+    });
+
+    it('sends an empty body (not the options object) on the logout request', async () => {
+      const { service, httpMock } = setup();
+      await loginService(service, httpMock);
+
+      service.logout();
+
+      const req = httpMock.expectOne('/api/auth/logout');
+      // Body must be null (Angular serialises {} as null for application/json with no fields)
+      // or at most an empty object — never the options object containing headers/withCredentials.
+      expect(req.request.body).not.toHaveProperty('headers');
+      expect(req.request.body).not.toHaveProperty('withCredentials');
+      req.flush({});
+      httpMock.verify();
+    });
+
+    it('calls socketService.disconnect() to close any active game connection', async () => {
+      const { service, httpMock } = setup();
+      await loginService(service, httpMock);
+
+      service.logout();
+
+      expect(mockSocketService.disconnect).toHaveBeenCalledOnce();
+      httpMock.expectOne('/api/auth/logout').flush({});
+      httpMock.verify();
+    });
+
     it('does NOT fire a logout HTTP request when no access token is in memory', () => {
       const { service, httpMock } = setup();
 
       service.logout(); // called while already unauthenticated
 
       httpMock.expectNone('/api/auth/logout');
+      httpMock.verify();
+    });
+
+    it('still calls socketService.disconnect() even when no access token is held', () => {
+      const { service, httpMock } = setup();
+
+      service.logout();
+
+      expect(mockSocketService.disconnect).toHaveBeenCalledOnce();
       httpMock.verify();
     });
 
@@ -586,6 +656,86 @@ describe('AuthService', () => {
         expect(service.currentUser()).toBeNull();
         httpMock.verify();
       });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('forgotPassword()', () => {
+    it('POSTs to /api/auth/forgot-password with email and turnstileToken', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.forgotPassword('alice@example.com', 'cf-token');
+      const req = httpMock.expectOne('/api/auth/forgot-password');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'alice@example.com', turnstileToken: 'cf-token' });
+      req.flush({ success: true, data: { response: 'If that email exists, a reset link has been sent.' } });
+
+      await promise;
+      httpMock.verify();
+    });
+
+    it('returns the server response string on success', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.forgotPassword('alice@example.com', 'cf-token');
+      httpMock
+        .expectOne('/api/auth/forgot-password')
+        .flush({ success: true, data: { response: 'If that email exists, a reset link has been sent.' } });
+
+      expect(await promise).toBe('If that email exists, a reset link has been sent.');
+      httpMock.verify();
+    });
+
+    it('throws when the server responds with an error status', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.forgotPassword('alice@example.com', 'cf-token');
+      httpMock
+        .expectOne('/api/auth/forgot-password')
+        .flush({ success: false, error: { message: 'Too many requests', code: 'RATE_LIMITED' } }, { status: 429, statusText: 'Too Many Requests' });
+
+      await expect(promise).rejects.toThrow();
+      httpMock.verify();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('resetPassword()', () => {
+    it('POSTs to /api/auth/reset-password with token, password, and turnstileToken', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.resetPassword('reset-token-abc', 'new-password', 'cf-token');
+      const req = httpMock.expectOne('/api/auth/reset-password');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ token: 'reset-token-abc', newPassword: 'new-password', turnstileToken: 'cf-token' });
+      req.flush({ success: true, data: null });
+
+      await promise;
+      httpMock.verify();
+    });
+
+    it('resolves without throwing on a successful reset', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.resetPassword('reset-token-abc', 'new-password', 'cf-token');
+      httpMock
+        .expectOne('/api/auth/reset-password')
+        .flush({ success: true, data: null });
+
+      await expect(promise).resolves.not.toThrow();
+      httpMock.verify();
+    });
+
+    it('throws when the server responds with an error status (invalid token)', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.resetPassword('expired-token', 'new-password', 'cf-token');
+      httpMock
+        .expectOne('/api/auth/reset-password')
+        .flush({ success: false, error: { message: 'Invalid or expired reset token', code: 'INVALID_RESET_TOKEN' } }, { status: 400, statusText: 'Bad Request' });
+
+      await expect(promise).rejects.toThrow();
+      httpMock.verify();
     });
   });
 

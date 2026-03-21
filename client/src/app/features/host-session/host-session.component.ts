@@ -102,6 +102,7 @@ export class HostSessionComponent implements OnInit {
         (err as { error?: { error?: { message?: string } } })?.error?.error?.message ??
         'Failed to create session. Please try again.';
       this.submitError.set(message);
+    } finally {
       this.submitting.set(false);
     }
   }

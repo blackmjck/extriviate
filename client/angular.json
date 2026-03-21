@@ -73,13 +73,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "6kB",
+                  "maximumError": "10kB"
                 }
               ],
               "outputHashing": "all"
@@ -95,6 +95,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "runnerConfig": "vitest.config.ts",
             "include": ["src/**/*.spec.ts"],
             "coverage": true,
             "coverageExclude": ["**/*.html", "environment.ts", "environment.*.ts"],

@@ -52,9 +52,13 @@ export class LobbyComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // Auto-start stream if the user previously chose to enable media
+    // Auto-start stream if the user previously chose to enable media.
+    // If permission is now denied, reset the preference so the prompt reappears.
     if (this.mediaPref() === 'enabled') {
-      void this.webrtc.startLocalStream();
+      this.webrtc.startLocalStream().catch(() => {
+        localStorage.setItem(MEDIA_PREF_KEY, 'disabled');
+        this.mediaPref.set('disabled');
+      });
     }
   }
 

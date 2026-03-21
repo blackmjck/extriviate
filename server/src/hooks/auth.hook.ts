@@ -30,6 +30,22 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
         });
       }
     }
+
+    // Always validate tokenVersion against the DB to reject sessions that predate
+    // a password reset. Tokens without tokenVersion are treated as version 0 so
+    // that pre-migration tokens are correctly invalidated after a password reset.
+    const versionResult = await request.server.db.query<{ token_version: number }>(
+      'SELECT token_version FROM users WHERE id = $1 AND is_active = true',
+      [payload.sub]
+    );
+    const dbVersion = versionResult.rows[0]?.token_version ?? 0;
+    const payloadVersion = payload.tokenVersion ?? 0;
+    if (!versionResult.rows[0] || dbVersion !== payloadVersion) {
+      return reply.status(401).send({
+        success: false,
+        error: { message: 'Session has been invalidated', code: 'SESSION_INVALIDATED' },
+      });
+    }
   } catch (err) {
     return reply.status(401).send({
       success: false,
@@ -41,9 +57,18 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
 // Optional variant - attaches the user if a valid token is present,
 // but does NOT reject requests without one. Used on routes like the
 // session join page where both guests and logged-in users are valid.
+// Blacklist check is best-effort: if the token is revoked, request.user
+// is cleared so the route handler treats the caller as unauthenticated.
 export async function optionalAuth(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
   try {
     await request.jwtVerify();
+    const payload = request.user;
+    if (payload?.jti) {
+      const blacklisted = await request.server.isTokenBlacklisted(payload.jti);
+      // 'as any' is used here because we can't assign request to type
+      // FastifyRequest here without it yelling about jwtPayload
+      if (blacklisted) (request as any).user = undefined;
+    }
   } catch {
     // No valid token - that's fine, request.user simply won't be set.
     // Route handlers must check for request.user before using it.

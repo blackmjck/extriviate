@@ -26,35 +26,15 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { limit = 20, offset = 0, categoryId } = request.query;
+      const creatorId = parseInt(request.user.sub, 10);
+      const catId = categoryId ? parseInt(categoryId, 10) : undefined;
 
-      const conditions = ['q.creator_id = $1'];
-      const params: any[] = [request.user.sub];
-
-      if (categoryId) {
-        conditions.push(`q.category_id = $${params.length + 1}`);
-        params.push(categoryId);
-      }
-
-      const where = conditions.join(' AND ');
-
-      const [items, count] = await Promise.all([
-        fastify.db.query(
-          `SELECT q.id, q.category_id, q.content, q.created_at, q.updated_at,
-                  a.id AS answer_id, a.content AS answer_content
-           FROM questions q
-           LEFT JOIN answers a ON a.question_id = q.id
-           WHERE ${where}
-           ORDER BY q.created_at DESC
-           LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-          [...params, limit, offset]
-        ),
-        fastify.db.query(
-          `SELECT COUNT(*) FROM questions q WHERE ${where}`,
-          params
-        ),
+      const [rows, total] = await Promise.all([
+        fastify.queryService.listQuestionsWithAnswers(creatorId, limit, offset, catId),
+        fastify.queryService.countQuestions(creatorId, catId),
       ]);
 
-      const questions = items.rows.map((row: any) => ({
+      const questions = rows.map((row) => ({
         id: row.id,
         categoryId: row.category_id,
         content: row.content,
@@ -67,12 +47,7 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         success: true,
-        data: {
-          items: questions,
-          total: parseInt(count.rows[0].count, 10),
-          limit,
-          offset,
-        },
+        data: { items: questions, total, limit, offset },
       });
     }
   );
@@ -82,23 +57,18 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
     '/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const result = await fastify.db.query(
-        `SELECT q.id, q.category_id, q.content, q.created_at, q.updated_at,
-                a.id AS answer_id, a.content AS answer_content
-         FROM questions q
-         LEFT JOIN answers a ON a.question_id = q.id
-         WHERE q.id = $1 AND q.creator_id = $2`,
-        [request.params.id, request.user.sub]
+      const row = await fastify.queryService.findQuestionWithAnswer(
+        parseInt(request.params.id, 10),
+        parseInt(request.user.sub, 10),
       );
 
-      if (result.rows.length === 0) {
+      if (!row) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Question not found', code: 'NOT_FOUND' },
         });
       }
 
-      const row = result.rows[0];
       return reply.send({
         success: true,
         data: {
@@ -150,17 +120,15 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { categoryId, content, answer } = request.body;
+      const creatorId = parseInt(request.user.sub, 10);
       const client = await fastify.db.connect();
 
       try {
         await client.query('BEGIN');
 
         // Verify the category belongs to this user
-        const catCheck = await client.query(
-          'SELECT id FROM categories WHERE id = $1 AND creator_id = $2',
-          [categoryId, request.user.sub]
-        );
-        if (catCheck.rows.length === 0) {
+        const cat = await fastify.queryService.findCategoryForCreator(categoryId, creatorId, client);
+        if (!cat) {
           await client.query('ROLLBACK');
           return reply.status(404).send({
             success: false,
@@ -168,25 +136,11 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        const questionResult = await client.query(
-          `INSERT INTO questions (creator_id, category_id, content)
-           VALUES ($1, $2, $3)
-           RETURNING id, category_id, content, created_at, updated_at`,
-          [request.user.sub, categoryId, JSON.stringify(content)]
-        );
-
-        const question = questionResult.rows[0];
-
-        const answerResult = await client.query(
-          `INSERT INTO answers (question_id, content)
-           VALUES ($1, $2)
-           RETURNING id, content`,
-          [question.id, JSON.stringify(answer.content)]
-        );
+        const question = await fastify.queryService.createQuestion(creatorId, categoryId, content, client);
+        const answerRow = await fastify.queryService.createAnswer(question.id, answer.content, undefined, client);
 
         await client.query('COMMIT');
 
-        const answerRow = answerResult.rows[0];
         return reply.status(201).send({
           success: true,
           data: {
@@ -202,9 +156,10 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
             },
           },
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         await client.query('ROLLBACK');
-        if (err.code === '23503') {
+        const { code } = err as { code: string };
+        if (code === '23503') {
           return reply.status(404).send({
             success: false,
             error: { message: 'Category not found', code: 'NOT_FOUND' },
@@ -251,17 +206,16 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { content, answer } = request.body;
+      const questionId = parseInt(request.params.id, 10);
+      const creatorId = parseInt(request.user.sub, 10);
       const client = await fastify.db.connect();
 
       try {
         await client.query('BEGIN');
 
         // Verify ownership
-        const existing = await client.query(
-          'SELECT id FROM questions WHERE id = $1 AND creator_id = $2',
-          [request.params.id, request.user.sub]
-        );
-        if (existing.rows.length === 0) {
+        const existing = await fastify.queryService.findQuestionForCreator(questionId, creatorId, client);
+        if (!existing) {
           await client.query('ROLLBACK');
           return reply.status(404).send({
             success: false,
@@ -270,45 +224,27 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         if (content) {
-          await client.query(
-            `UPDATE questions
-             SET content = $1, updated_at = NOW()
-             WHERE id = $2`,
-            [JSON.stringify(content), request.params.id]
-          );
+          await fastify.queryService.updateQuestion(questionId, content, client);
         }
 
         if (answer) {
-          await client.query(
-            `UPDATE answers
-             SET content = $1
-             WHERE question_id = $2`,
-            [JSON.stringify(answer.content), request.params.id]
-          );
+          await fastify.queryService.updateAnswer(questionId, answer.content, client);
         }
 
-        const result = await client.query(
-          `SELECT q.id, q.category_id, q.content, q.created_at, q.updated_at,
-                  a.id AS answer_id, a.content AS answer_content
-           FROM questions q
-           LEFT JOIN answers a ON a.question_id = q.id
-           WHERE q.id = $1`,
-          [request.params.id]
-        );
+        const row = await fastify.queryService.findQuestionWithAnswer(questionId, undefined, client);
 
         await client.query('COMMIT');
 
-        const row = result.rows[0];
         return reply.send({
           success: true,
           data: {
-            id: row.id,
-            categoryId: row.category_id,
-            content: row.content,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            answer: row.answer_id
-              ? { id: row.answer_id, questionId: row.id, content: row.answer_content }
+            id: row!.id,
+            categoryId: row!.category_id,
+            content: row!.content,
+            createdAt: row!.created_at,
+            updatedAt: row!.updated_at,
+            answer: row!.answer_id
+              ? { id: row!.answer_id, questionId: row!.id, content: row!.answer_content }
               : null,
           },
         });
@@ -328,14 +264,12 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       try {
-        const result = await fastify.db.query(
-          `DELETE FROM questions
-           WHERE id = $1 AND creator_id = $2
-           RETURNING id`,
-          [request.params.id, request.user.sub]
+        const deleted = await fastify.queryService.deleteQuestion(
+          parseInt(request.params.id, 10),
+          parseInt(request.user.sub, 10),
         );
 
-        if (result.rows.length === 0) {
+        if (!deleted) {
           return reply.status(404).send({
             success: false,
             error: { message: 'Question not found', code: 'NOT_FOUND' },
@@ -343,8 +277,9 @@ const questionsRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         return reply.send({ success: true, data: null });
-      } catch (err: any) {
-        if (err.code === '23503') {
+      } catch (err: unknown) {
+        const { code } = err as { code: string };
+        if (code === '23503') {
           return reply.status(409).send({
             success: false,
             error: {

@@ -4,7 +4,7 @@
     <p class="auth-subtitle">Join the trivia action</p>
 
     @if (errorMessage()) {
-      <div class="error-banner">{{ errorMessage() }}</div>
+      <div class="error-banner" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
     }
 
     <form (ngSubmit)="onSubmit()" class="auth-form">

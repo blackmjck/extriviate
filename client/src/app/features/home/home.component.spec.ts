@@ -34,6 +34,7 @@ async function setup(authenticated = false) {
 
 describe('HomeComponent', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
 

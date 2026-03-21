@@ -26,29 +26,16 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { limit = 20, offset = 0 } = request.query;
+      const creatorId = parseInt(request.user.sub, 10);
 
-      const [items, count] = await Promise.all([
-        fastify.db.query(
-          `SELECT id, name, description, created_at, updated_at
-          FROM categories
-          WHERE creator_id = $1
-          ORDER BY name ASC
-          LIMIT $2 OFFSET $3`,
-          [request.user.sub, limit, offset]
-        ),
-        fastify.db.query('SELECT COUNT(*) FROM categories WHERE creator_id = $1', [
-          request.user.sub,
-        ]),
+      const [items, total] = await Promise.all([
+        fastify.queryService.listCategories(creatorId, limit, offset),
+        fastify.queryService.countCategories(creatorId),
       ]);
 
       return reply.send({
         success: true,
-        data: {
-          items: items.rows,
-          total: parseInt(count.rows[0].count, 10),
-          limit,
-          offset,
-        },
+        data: { items, total, limit, offset },
       });
     }
   );
@@ -58,21 +45,19 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
     '/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const result = await fastify.db.query(
-        `SELECT id, name, description, created_at, updated_at
-        FROM categories
-        WHERE id = $1 AND creator_id = $2`,
-        [request.params.id, request.user.sub]
+      const category = await fastify.queryService.findCategoryById(
+        parseInt(request.params.id, 10),
+        parseInt(request.user.sub, 10),
       );
 
-      if (result.rows.length === 0) {
+      if (!category) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Category not found', code: 'NOT_FOUND' },
         });
       }
 
-      return reply.send({ success: true, data: result.rows[0] });
+      return reply.send({ success: true, data: category });
     }
   );
 
@@ -97,19 +82,19 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
       const { name, description } = request.body;
 
       try {
-        const result = await fastify.db.query(
-          `INSERT INTO categories (creator_id, name, description)
-          VALUES ($1, $2, $3)
-          RETURNING id, name, description, created_at, updated_at`,
-          [request.user.sub, name, description ?? null]
+        const category = await fastify.queryService.createCategory(
+          parseInt(request.user.sub, 10),
+          name,
+          description ?? null,
         );
 
-        return reply.status(201).send({ success: true, data: result.rows[0] });
-      } catch (err: any) {
+        return reply.status(201).send({ success: true, data: category });
+      } catch (err: unknown) {
+        const { code } = err as { code: string };
         // PostgreSQL error code 23505 is a unique constraint violation.
         // Our schema has UNIQUE(creator_id, name) - this catches duplicate
         // category names for the same creator.
-        if (err.code === '23505') {
+        if (code === '23505') {
           return reply.status(409).send({
             success: false,
             error: {
@@ -144,26 +129,24 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
       const { name, description } = request.body;
 
       try {
-        const result = await fastify.db.query(
-          `UPDATE categories
-          SET name = COALESCE($1, name),
-              description = COALESCE($2, description),
-              updated_at = NOW()
-          WHERE id = $3 AND creator_id = $4
-          RETURNING id, name, description, created_at, updated_at`,
-          [name ?? null, description ?? null, request.params.id, request.user.sub]
+        const category = await fastify.queryService.updateCategory(
+          parseInt(request.params.id, 10),
+          parseInt(request.user.sub, 10),
+          name ?? null,
+          description ?? null,
         );
 
-        if (result.rows.length === 0) {
+        if (!category) {
           return reply.status(404).send({
             success: false,
             error: { message: 'Category not found', code: 'NOT_FOUND' },
           });
         }
 
-        return reply.send({ success: true, data: result.rows[0] });
-      } catch (err: any) {
-        if (err.code === '23505') {
+        return reply.send({ success: true, data: category });
+      } catch (err: unknown) {
+        const { code } = err as { code: string };
+        if (code === '23505') {
           return reply.status(409).send({
             success: false,
             error: {
@@ -183,14 +166,12 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       try {
-        const result = await fastify.db.query(
-          `DELETE FROM categories
-          WHERE id = $1 AND creator_id = $2
-          RETURNING id`,
-          [request.params.id, request.user.sub]
+        const deleted = await fastify.queryService.deleteCategory(
+          parseInt(request.params.id, 10),
+          parseInt(request.user.sub, 10),
         );
 
-        if (result.rows.length === 0) {
+        if (!deleted) {
           return reply.status(404).send({
             success: false,
             error: { message: 'Category not found', code: 'NOT_FOUND' },
@@ -198,11 +179,12 @@ const categoriesRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         return reply.send({ success: true, data: null });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const { code } = err as { code: string };
         // PostgreSQL error code 23503 is a foreign key violation.
         // This fires when trying to delete a category that is currently
         // referenced by a game - our schema uses ON DELETE RESTRICT.
-        if (err.code === '23503') {
+        if (code === '23503') {
           return reply.status(409).send({
             success: false,
             error: {

@@ -16,13 +16,15 @@
 
   <!-- Buzz button -->
   @if (showBuzzButton()) {
-    <button class="buzz-button" (pointerdown)="buzz()">BUZZ</button>
+    <button class="buzz-button" (pointerdown)="buzz($event)">BUZZ</button>
   }
 
   <!-- Answer input -->
   @if (showAnswerInput()) {
     <form class="answer-form" (ngSubmit)="submitAnswer()">
+      <label for="answer-input" class="sr-only">Your answer</label>
       <input
+        id="answer-input"
         class="answer-input"
         type="text"
         placeholder="Type your answer..."

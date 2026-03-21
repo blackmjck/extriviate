@@ -4,17 +4,15 @@ export type ActiveTheme = 'dark' | 'light' | 'quiz-show' | 'showcase' | 'glitzy'
 
 const STORAGE_KEY = 'extriviate_theme';
 
-const VALID_THEMES = new Set<string>([
-  'dark', 'light', 'quiz-show', 'showcase', 'glitzy',
-]);
+const VALID_THEMES = new Set<string>(['dark', 'light', 'quiz-show', 'showcase', 'glitzy']);
 
 // Maps each ActiveTheme to the value written to data-theme on <html>.
 const THEME_ATTR: Record<ActiveTheme, string> = {
-  dark:         '',
-  light:        'light',
-  'quiz-show':  'quiz-show',
-  showcase:     'showcase',
-  glitzy:       'glitzy',
+  dark: '',
+  light: 'light',
+  'quiz-show': 'quiz-show',
+  showcase: 'showcase',
+  glitzy: 'glitzy',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +48,6 @@ export class ThemeService {
   private resolveInitialTheme(): ActiveTheme {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && VALID_THEMES.has(stored)) return stored as ActiveTheme;
-    return this.systemDark.matches ? 'dark' : 'light';
+    return this.systemDark.matches ? 'quiz-show' : 'light';
   }
 }

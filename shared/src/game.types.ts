@@ -90,6 +90,11 @@ export interface GameCategory {
   category: Category; // always populated when sending to client
 }
 
+// The actual row when querying for questions by category from the database
+export interface QuestionByCategory extends GameCategory {
+  questions: GameQuestion[];
+}
+
 // A single question slot on the game board
 // rowPosition is 1-5, pointValue is always positive
 export interface GameQuestion {

@@ -4,7 +4,7 @@
     <p class="auth-subtitle">Welcome back to Extriviate</p>
 
     @if (errorMessage()) {
-      <div class="error-banner">{{ errorMessage() }}</div>
+      <div class="error-banner" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
     }
 
     <form (ngSubmit)="onSubmit()" class="auth-form">
@@ -68,6 +68,7 @@
       </button>
     </form>
 
+    <p class="auth-link"><a routerLink="/forgot-password">Forgot your password?</a></p>
     <p class="auth-link">Don't have an account? <a routerLink="/signup">Sign up</a></p>
   </div>
 </div>

@@ -73,18 +73,6 @@ export interface LiveSessionState {
   currentUser: PublicUser | null; // null if the viewer is a guest
 }
 
-// WebSocket message types - all messages between client and server
-// during a live session use this discriminated union.
-export type SessionMessage =
-  | { type: 'player_joined'; player: SessionPlayer }
-  | { type: 'player_left'; playerId: number }
-  | { type: 'question_opened'; gameCategoryId: number; rowPosition: number }
-  | {
-      type: 'question_answered';
-      questionId: number;
-      playerId: number;
-      correct: boolean;
-    }
-  | { type: 'score_updated'; playerId: number; newScore: number }
-  | { type: 'session_ended'; players: SessionPlayer[] }
-  | { type: 'error'; message: string };
+// WebSocket message types are defined in game-session.types.ts:
+//   Server → Client: GameplayMessage
+//   Client → Server: ClientGameMessage

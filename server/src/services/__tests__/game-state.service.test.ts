@@ -192,6 +192,22 @@ describe('GameStateService', () => {
       expect(service.getSession(1)).toBeUndefined();
     });
 
+    test('removeSession cancels the revealTimer so state is not mutated after removal', () => {
+      const state = makeState(service);
+      service.addPlayer(state, makePlayer({ playerId: 2 }), makeSocket());
+      openBuzzers(service, state);
+      service.handleBuzz(state, 2);
+      // completeRound sets revealTimer
+      service.completeRound(state);
+      expect(state.revealTimer).not.toBeNull();
+
+      service.removeSession(1);
+      // Timer must be cleared; running it would otherwise mutate the orphaned state
+      expect(state.revealTimer).toBeNull();
+      // Advancing time must not throw or mutate orphaned state
+      vi.runAllTimers();
+    });
+
     test('removeSession cancels disconnection timers so removal callbacks never fire', () => {
       const state = makeState(service);
       service.addPlayer(state, makePlayer({ playerId: 10 }), makeSocket());
@@ -364,6 +380,23 @@ describe('GameStateService', () => {
       expect(state.roundState.phase).toBe('idle');
     });
 
+    // Regression: DD holder disconnecting during player_answering (after wagering) must
+    // return to idle — NOT call advanceBuzzQueue which would incorrectly open buzzers.
+    test('DD holder disconnect in player_answering returns to idle, not buzzers_open', () => {
+      const state = makeState(service);
+      service.addPlayer(state, makePlayer({ playerId: 5, score: 500 }), makeSocket());
+      service.selectQuestion(state, 1, 1, 1, 200, true, [{ type: 'text', value: 'Q' }], [], 5);
+      service.declareWager(state, 5, 200);
+      // Manually advance to player_answering to simulate wager accepted
+      state.roundState.phase = 'player_answering';
+      state.roundState.isDailyDouble = true;
+      state.roundState.activePlayerId = 5;
+
+      service.handleDisconnect(state, 5, vi.fn());
+
+      expect(state.roundState.phase).toBe('idle'); // must NOT be 'buzzers_open'
+    });
+
     test('questionSelecterId is nulled when selecter disconnects', () => {
       const state = makeState(service);
       service.addPlayer(state, makePlayer({ playerId: 3 }), makeSocket());
@@ -427,6 +460,22 @@ describe('GameStateService', () => {
     test('returns false for unknown player', () => {
       const state = makeState(service);
       expect(service.handleReconnect(state, 999, makeSocket())).toBe(false);
+    });
+
+    // Regression: old socket must be evicted from socketIdentities so that its
+    // 'close' event does NOT re-trigger handleDisconnect on the reconnected player.
+    test('removes old socket from socketIdentities to prevent re-triggered disconnect', () => {
+      const state = makeState(service);
+      const oldSocket = makeSocket();
+      service.addPlayer(state, makePlayer({ playerId: 10 }), oldSocket);
+      service.handleDisconnect(state, 10, vi.fn());
+
+      const newSocket = makeSocket();
+      service.handleReconnect(state, 10, newSocket);
+
+      expect(state.socketIdentities.has(oldSocket)).toBe(false); // old socket evicted
+      expect(state.socketIdentities.has(newSocket)).toBe(true);  // new socket registered
+      expect(state.playerSockets.get(10)).toBe(newSocket);
     });
   });
 
@@ -1260,6 +1309,36 @@ describe('GameStateService', () => {
 
       expect(openSocket.send).toHaveBeenCalledOnce();
       expect(closedSocket.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('timer leak prevention', () => {
+    test('selectQuestion called twice does not leak the first lockTimer', () => {
+      const state = makeState(service);
+      service.addPlayer(state, makePlayer({ playerId: 1 }), makeSocket());
+
+      // First selection — lockTimer starts
+      service.selectQuestion(
+        state, 1, 1, 1, 200, false,
+        [{ type: 'text', value: 'First question' }],
+        [{ type: 'text', value: 'Answer' }],
+        1,
+      );
+      expect(state.lockTimer).not.toBeNull();
+
+      // Second selection before first timer fires
+      service.selectQuestion(
+        state, 2, 2, 1, 400, false,
+        [{ type: 'text', value: 'Second question' }],
+        [{ type: 'text', value: 'Answer' }],
+        1,
+      );
+
+      const releaseSpy = vi.spyOn(service as unknown as { releaseBuzzers: () => void }, 'releaseBuzzers');
+      vi.advanceTimersByTime(TEXT_MAX_LOCK_MS + 1000);
+
+      // Only one releaseBuzzers call — from the second timer, not both
+      expect(releaseSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

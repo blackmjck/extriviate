@@ -5,10 +5,8 @@ import type {
   DisconnectedPlayer,
   SessionMode,
   GameplayMessage,
-  ClientGameMessage,
   FullStateSyncPayload,
   BuzzerLockReason,
-  RoundPhase,
   ContentBlock,
   GameBoard,
 } from '@extriviate/shared';
@@ -23,6 +21,7 @@ import {
   RECONNECT_GRACE_PERIOD_MS,
   DAILY_DOUBLE_MIN_WAGER,
 } from '@extriviate/shared';
+import { FastifyInstance } from 'fastify';
 
 // ---- Per-Session State ----
 
@@ -40,11 +39,12 @@ export interface SessionGameState {
   socketIdentities: Map<WebSocket, { playerId: number; isHost: boolean }>;
   playerSockets: Map<number, WebSocket>;
   roundState: RoundStatePayload;
-  boardValues: number[];       // remaining unanswered point values (for DD wager max)
+  boardValues: number[]; // remaining unanswered point values (for DD wager max)
   hostPlayerId: number;
   buzzTimer: ReturnType<typeof setTimeout> | null;
   answerTimer: ReturnType<typeof setTimeout> | null;
   lockTimer: ReturnType<typeof setTimeout> | null;
+  revealTimer: ReturnType<typeof setTimeout> | null;
   // Callbacks to persist changes to the database
   onScoreChanged: (playerId: number, newScore: number) => void;
   onQuestionAnswered: (questionId: number) => void;
@@ -69,6 +69,7 @@ function createIdleRoundState(): RoundStatePayload {
     wager: null,
     buzzQueue: [],
     isCorrect: null,
+    timerDeadlineMs: null,
   };
 }
 
@@ -89,7 +90,7 @@ export class GameStateService {
     hostPlayerId: number,
     boardValues: number[],
     onScoreChanged: (playerId: number, newScore: number) => void,
-    onQuestionAnswered: (questionId: number) => void,
+    onQuestionAnswered: (questionId: number) => void
   ): SessionGameState {
     const state: SessionGameState = {
       sessionId,
@@ -110,6 +111,7 @@ export class GameStateService {
       buzzTimer: null,
       answerTimer: null,
       lockTimer: null,
+      revealTimer: null,
       onScoreChanged,
       onQuestionAnswered,
     };
@@ -144,7 +146,10 @@ export class GameStateService {
     });
   }
 
-  removePlayerSocket(state: SessionGameState, socket: WebSocket): { playerId: number; isHost: boolean } | null {
+  removePlayerSocket(
+    state: SessionGameState,
+    socket: WebSocket
+  ): { playerId: number; isHost: boolean } | null {
     const identity = state.socketIdentities.get(socket);
     if (!identity) return null;
 
@@ -158,7 +163,7 @@ export class GameStateService {
   handleDisconnect(
     state: SessionGameState,
     playerId: number,
-    onRemoval: (playerId: number) => void,
+    onRemoval: (playerId: number) => void
   ): void {
     const player = state.players.get(playerId);
     if (!player) return;
@@ -183,13 +188,18 @@ export class GameStateService {
     this.handleMidTurnDisconnect(state, playerId);
   }
 
-  handleReconnect(
-    state: SessionGameState,
-    playerId: number,
-    socket: WebSocket,
-  ): boolean {
+  handleReconnect(state: SessionGameState, playerId: number, socket: WebSocket): boolean {
     const player = state.players.get(playerId);
     if (!player) return false;
+
+    // Evict old socket before registering the new one. Without this, the TCP
+    // teardown of the old connection fires a 'close' event that calls
+    // removePlayerSocket → handleDisconnect, falsely marking the freshly-
+    // reconnected player as disconnected and starting the removal timer.
+    const oldSocket = state.playerSockets.get(playerId);
+    if (oldSocket && oldSocket !== socket) {
+      state.socketIdentities.delete(oldSocket);
+    }
 
     // Cancel removal timer
     const disconnected = state.disconnectedPlayers.get(playerId);
@@ -217,13 +227,19 @@ export class GameStateService {
     const rs = state.roundState;
 
     if (rs.activePlayerId === playerId && rs.phase === 'player_answering') {
-      // Active answerer disconnected — forfeit turn, advance buzz queue
       this.clearTimer(state, 'answerTimer');
-      this.advanceBuzzQueue(state);
+      if (rs.isDailyDouble) {
+        // DD answerer disconnected — no buzz queue; return to idle
+        this.clearAllTimers(state);
+        state.roundState = createIdleRoundState();
+      } else {
+        // Active answerer disconnected — forfeit turn, advance buzz queue
+        this.advanceBuzzQueue(state);
+      }
     }
 
     if (rs.activePlayerId === playerId && rs.phase === 'daily_double_revealed') {
-      // DD holder disconnected — return to idle
+      // DD holder disconnected before wagering — return to idle
       this.clearAllTimers(state);
       state.roundState = createIdleRoundState();
     }
@@ -257,7 +273,7 @@ export class GameStateService {
     isDailyDouble: boolean,
     questionContent: ContentBlock[],
     answerContent: ContentBlock[],
-    selecterId: number,
+    selecterId: number
   ): void {
     // Remove this value from remaining board values
     const idx = state.boardValues.indexOf(pointValue);
@@ -298,9 +314,8 @@ export class GameStateService {
 
     // Validate wager server-side
     const highestBoardValue = state.boardValues.length > 0 ? Math.max(...state.boardValues) : 0;
-    const maxWager = player.score <= 0
-      ? highestBoardValue
-      : Math.max(player.score, highestBoardValue);
+    const maxWager =
+      player.score <= 0 ? highestBoardValue : Math.max(player.score, highestBoardValue);
     const clampedWager = Math.max(DAILY_DOUBLE_MIN_WAGER, Math.min(wager, maxWager));
 
     rs.wager = clampedWager;
@@ -368,7 +383,7 @@ export class GameStateService {
   applyEvaluationResult(
     state: SessionGameState,
     playerId: number,
-    correct: boolean,
+    correct: boolean
   ): { pointDelta: number; newScore: number; roundOver: boolean } {
     const rs = state.roundState;
     const player = state.players.get(playerId);
@@ -379,7 +394,12 @@ export class GameStateService {
     player.score += pointDelta;
 
     // Persist score immediately
-    state.onScoreChanged(playerId, player.score);
+    try {
+      state.onScoreChanged(playerId, player.score);
+    } catch (err) {
+      // TODO: figure out how to log this with fastify but
+      // without breaking the singleton setup for the service
+    }
 
     rs.isCorrect = correct;
     rs.phase = 'answer_evaluated';
@@ -424,8 +444,10 @@ export class GameStateService {
     rs.phase = 'round_complete';
     this.clearAllTimers(state);
 
-    // After reveal delay, return to idle
-    setTimeout(() => {
+    // After reveal delay, return to idle. Stored in revealTimer so it can be
+    // cancelled by clearAllTimers / removeSession and won't fire on orphaned state.
+    state.revealTimer = setTimeout(() => {
+      state.revealTimer = null;
       if (state.roundState.phase === 'round_complete') {
         state.roundState = createIdleRoundState();
         // Preserve questionSelecterId from the completed round
@@ -438,8 +460,10 @@ export class GameStateService {
     state.roundState.phase = 'round_timeout';
     this.clearAllTimers(state);
 
-    // After reveal delay, return to idle
-    setTimeout(() => {
+    // After reveal delay, return to idle. Stored in revealTimer so it can be
+    // cancelled by clearAllTimers / removeSession.
+    state.revealTimer = setTimeout(() => {
+      state.revealTimer = null;
       if (state.roundState.phase === 'round_timeout') {
         const selecterId = state.roundState.questionSelecterId;
         state.roundState = createIdleRoundState();
@@ -495,6 +519,7 @@ export class GameStateService {
   // ---- Timers ----
 
   private startLockTimer(state: SessionGameState, content: ContentBlock[]): void {
+    this.clearTimer(state, 'lockTimer');
     const reason = state.roundState.buzzerLockReason;
     if (!reason || reason === 'host_controlled') return;
 
@@ -506,7 +531,7 @@ export class GameStateService {
       const wordCount = textContent.split(/\s+/).filter(Boolean).length;
       const durationMs = Math.min(
         Math.max(Math.round((wordCount / WORDS_PER_MINUTE) * 60_000), TEXT_MIN_LOCK_MS),
-        TEXT_MAX_LOCK_MS,
+        TEXT_MAX_LOCK_MS
       );
 
       state.lockTimer = setTimeout(() => {
@@ -522,6 +547,8 @@ export class GameStateService {
   }
 
   private startBuzzTimer(state: SessionGameState): void {
+    this.clearTimer(state, 'buzzTimer');
+    state.roundState.timerDeadlineMs = Date.now() + BUZZ_WINDOW_DURATION_MS;
     state.buzzTimer = setTimeout(() => {
       state.buzzTimer = null;
       // Nobody buzzed in time
@@ -530,6 +557,8 @@ export class GameStateService {
   }
 
   private startAnswerTimer(state: SessionGameState): void {
+    this.clearTimer(state, 'answerTimer');
+    state.roundState.timerDeadlineMs = Date.now() + ANSWER_TIMER_DURATION_MS;
     state.answerTimer = setTimeout(() => {
       state.answerTimer = null;
       // Treat timeout as wrong answer
@@ -541,7 +570,10 @@ export class GameStateService {
     }, ANSWER_TIMER_DURATION_MS);
   }
 
-  private clearTimer(state: SessionGameState, timerName: 'buzzTimer' | 'answerTimer' | 'lockTimer'): void {
+  private clearTimer(
+    state: SessionGameState,
+    timerName: 'buzzTimer' | 'answerTimer' | 'lockTimer' | 'revealTimer'
+  ): void {
     if (state[timerName]) {
       clearTimeout(state[timerName]!);
       state[timerName] = null;
@@ -549,9 +581,11 @@ export class GameStateService {
   }
 
   private clearAllTimers(state: SessionGameState): void {
+    state.roundState.timerDeadlineMs = null;
     this.clearTimer(state, 'buzzTimer');
     this.clearTimer(state, 'answerTimer');
     this.clearTimer(state, 'lockTimer');
+    this.clearTimer(state, 'revealTimer');
   }
 
   // ---- Broadcasting ----

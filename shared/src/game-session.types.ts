@@ -1,5 +1,6 @@
 import type { ContentBlock } from './upload.types.js';
 import type { GameBoard } from './game.types.js';
+import type { SessionStatus } from './session.types.js';
 
 // ---- Round State Machine ----
 
@@ -40,6 +41,7 @@ export interface RoundStatePayload {
   wager: number | null; // daily double wager amount
   buzzQueue: number[]; // ordered list of player IDs who buzzed
   isCorrect: boolean | null; // result of the last evaluation
+  timerDeadlineMs: number | null; // Unix ms timestamp when the active timer expires; null if no timer
 }
 
 // ---- Live Player State ----
@@ -89,7 +91,8 @@ export type GameplayMessage =
       newScore: number;
     }
   | { type: 'timer_started'; timerType: 'buzz' | 'answer' | 'lock'; durationMs: number }
-  | { type: 'timer_expired'; timerType: 'buzz' | 'answer' | 'lock' }
+  // timer_expired is NOT sent by the server — clients clear their countdown via the
+  // phase-change effect on RoundStatePayload (timerDeadlineMs goes null on phase transitions).
   | { type: 'player_disconnected'; playerId: number }
   | { type: 'player_reconnected'; playerId: number }
   | { type: 'player_removed'; playerId: number }
@@ -108,7 +111,7 @@ export interface FullStateSyncPayload {
   board: GameBoard;
   mode: SessionMode;
   turnBased: boolean;
-  status: 'lobby' | 'active' | 'paused' | 'completed';
+  status: SessionStatus;
   players: LivePlayer[];
   roundState: RoundStatePayload;
   hostPlayerId: number;

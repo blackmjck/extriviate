@@ -1,8 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import type { WebSocket } from 'ws';
-import { requireAuth, optionalAuth } from '../hooks/auth.hook.js';
+import { requireAuth } from '../hooks/auth.hook.js';
 import { AuthService } from '../services/auth.service.js';
-import { SessionService } from '../services/session.service.js';
+import { SessionService, type DbGameSession } from '../services/session.service.js';
 import { GameStateService, type SessionGameState } from '../services/game-state.service.js';
 import { buildGameBoard, extractBoardValues } from '../services/session-state-builder.js';
 import { evaluateAnswer } from '../services/evaluation.service.js';
@@ -13,6 +13,8 @@ import type {
   LivePlayer,
   ContentBlock,
   GuestTokenPayload,
+  SessionStatus,
+  HttpError,
 } from '@extriviate/shared';
 import {
   MAX_SESSION_NAME_LENGTH,
@@ -24,8 +26,8 @@ import {
 const gameStateService = new GameStateService();
 
 const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
-  const sessionService = new SessionService(fastify.db);
-  const authService = new AuthService(fastify.db, fastify);
+  const sessionService = new SessionService(fastify.queryService);
+  const authService = new AuthService(fastify.queryService, fastify);
 
   // ---- REST Routes ----
 
@@ -45,9 +47,9 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       data: {
         session: {
           id: session.id,
-          name: (session as any).name,
-          status: (session as any).status,
-          joinCode: (session as any).join_code,
+          name: session.name,
+          status: session.status,
+          joinCode: session.join_code,
         },
         playerCount: players.length,
       },
@@ -66,31 +68,30 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           properties: {
             gameId: { type: 'integer' },
             name: { type: 'string', minLength: 1, maxLength: MAX_SESSION_NAME_LENGTH },
+            mode: { type: 'string', enum: ['computer_hosted', 'user_hosted'] },
+            turnBased: { type: 'boolean' },
           },
           additionalProperties: false,
         },
       },
     },
     async (request, reply) => {
-      const { gameId, name } = request.body;
+      const { gameId, name, mode = 'computer_hosted', turnBased = false } = request.body;
       const userId = parseInt(request.user.sub, 10);
 
       // Verify the game exists and belongs to this user
-      const gameResult = await fastify.db.query(
-        'SELECT id FROM games WHERE id = $1 AND creator_id = $2',
-        [gameId, userId]
-      );
-      if (gameResult.rows.length === 0) {
+      const gameResult = await fastify.queryService.findGameForOwner(gameId, userId);
+      if (!gameResult) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Game not found', code: 'NOT_FOUND' },
         });
       }
 
-      const session = await sessionService.createSession(gameId, userId, name);
+      const session = await sessionService.createSession(gameId, userId, name, mode, turnBased);
 
       // Load the full board and initialize in-memory state
-      const board = await buildGameBoard(fastify.db, gameId);
+      const board = await buildGameBoard(fastify.queryService,gameId);
       if (!board) {
         return reply.status(500).send({
           success: false,
@@ -99,17 +100,12 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const boardValues = extractBoardValues(board);
-      const mode = (session as any).mode ?? 'computer_hosted';
-      const turnBased = (session as any).turn_based ?? false;
-
-      const sessionName = name;
-      const joinCode = (session as any).join_code as string;
 
       gameStateService.createSession(
         session.id,
         gameId,
-        sessionName,
-        joinCode,
+        session.name,
+        session.join_code,
         board,
         mode,
         turnBased,
@@ -156,7 +152,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       const sessionId = parseInt(request.params.id, 10);
       const session = await sessionService.findById(sessionId);
 
-      if (!session || !['lobby', 'active'].includes((session as any).status)) {
+      if (!session || !['lobby', 'active'].includes(session.status)) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Session not found or not joinable', code: 'NOT_FOUND' },
@@ -177,10 +173,11 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           userId = result.user.id;
           displayName = result.user.displayName;
           tokens = result.tokens;
-        } catch (err: any) {
-          return reply.status(err.statusCode ?? 401).send({
+        } catch (err: unknown) {
+          const { message, code, statusCode } = err as HttpError;
+          return reply.status(statusCode ?? 401).send({
             success: false,
-            error: { message: err.message, code: err.code },
+            error: { message, code },
           });
         }
       } else {
@@ -194,10 +191,11 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
           userId = result.user.id;
           displayName = result.user.displayName;
           tokens = result.tokens;
-        } catch (err: any) {
-          return reply.status(err.statusCode ?? 500).send({
+        } catch (err: unknown) {
+          const { message, code, statusCode } = err as HttpError;
+          return reply.status(statusCode ?? 500).send({
             success: false,
-            error: { message: err.message, code: err.code },
+            error: { message, code },
           });
         }
       }
@@ -236,7 +234,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // PATCH /api/sessions/:id/status — change session status
-  fastify.patch<{ Params: { id: string }; Body: { status: string } }>(
+  fastify.patch<{ Params: { id: string }; Body: { status: SessionStatus } }>(
     '/:id/status',
     {
       preHandler: [requireAuth],
@@ -255,11 +253,33 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       const sessionId = parseInt(request.params.id, 10);
       const session = await sessionService.findById(sessionId);
 
-      if (!session || (session as any).host_id !== parseInt(request.user.sub, 10)) {
+      if (!session || session.host_id !== parseInt(request.user.sub, 10)) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Session not found', code: 'NOT_FOUND' },
         });
+      }
+
+      const validTransitions: Record<string, string[]> = {
+        lobby: ['active'],
+        active: ['paused', 'completed'],
+        paused: ['active', 'completed'],
+        completed: [],
+      };
+
+      const currentStatus = session.status;
+      if (!validTransitions[currentStatus]?.includes(request.body.status)) {
+        return reply.status(400).send({
+          success: false,
+          error: { message: 'Invalid status transition', code: 'INVALID_TRANSITION' },
+        });
+      }
+
+      // For 'completed' transitions: persist ranks before marking the session
+      // as completed so that a setRanks failure leaves the session in a
+      // recoverable state (still active/paused, retryable by the host).
+      if (request.body.status === 'completed') {
+        await sessionService.setRanks(sessionId);
       }
 
       const updated = await sessionService.updateStatus(sessionId, request.body.status);
@@ -267,12 +287,11 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       // Update in-memory state and broadcast to all connected clients
       const state = gameStateService.getSession(sessionId);
       if (state) {
-        state.status = request.body.status as any;
+        state.status = request.body.status;
 
         if (request.body.status === 'completed') {
-          // Set ranks, broadcast full_state_sync with completed status,
-          // then remove session. Broadcast must happen before removeSession.
-          await sessionService.setRanks(sessionId);
+          // Broadcast full_state_sync with completed status, then remove session.
+          // Broadcast must happen before removeSession.
           gameStateService.broadcast(state, {
             type: 'full_state_sync',
             state: gameStateService.buildFullStateSync(state),
@@ -354,7 +373,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // Find the question on the board
-      const board = await buildGameBoard(fastify.db, state.gameId);
+      const board = await buildGameBoard(fastify.queryService,state.gameId);
       if (!board) {
         return reply.status(500).send({
           success: false,
@@ -694,7 +713,7 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
 
             // In computer_hosted mode, evaluate automatically
             if (state.mode === 'computer_hosted') {
-              const board = await buildGameBoard(fastify.db, state.gameId);
+              const board = await buildGameBoard(fastify.queryService,state.gameId);
               const rs = state.roundState;
 
               // Find the correct answer for this question

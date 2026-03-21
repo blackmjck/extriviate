@@ -92,8 +92,6 @@ export class QuestionListComponent implements OnInit {
 
   toggleVisibility(id: number): void {
     const hide = this.visible().has(id);
-    console.log(`${hide ? 'Hide' : 'Show'} question id ${id}`);
-
     this.visible.update((list) => {
       if (hide) {
         const replacement = new Set(list);

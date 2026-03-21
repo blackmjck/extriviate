@@ -1,26 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
-import { PasswordStrengthMeterComponent } from './password-strength-meter.component';
 import { AuthService } from '../../../core/services/auth.service';
+import {
+  PasswordStrengthMeterComponent,
+  ZXCVBN_TOKEN,
+  zxcvbnScore,
+} from './password-strength-meter.component';
 
 // ---------------------------------------------------------------------------
-// Hoist the zxcvbn mock so it can be re-configured per test.
-// vi.hoisted() runs before module imports, which is required for vi.mock() factories.
 
-const { mockZxcvbn } = vi.hoisted(() => ({
-  mockZxcvbn: vi.fn(),
-}));
-
-vi.mock('@zxcvbn-ts/core', () => ({
-  zxcvbn: mockZxcvbn,
-}));
+const mockZxcvbn = vi.fn();
 
 // ---------------------------------------------------------------------------
 // Fixtures
 
-type Score = 0 | 1 | 2 | 3 | 4;
-
-function zxcvbnResult(score: Score, warning = '', suggestions: string[] = []) {
+function zxcvbnResult(score: zxcvbnScore, warning = '', suggestions: string[] = []) {
   return { score, feedback: { warning, suggestions } };
 }
 
@@ -34,6 +28,7 @@ function setup(opts: { minLength?: number; minLevel?: number } = {}) {
     imports: [PasswordStrengthMeterComponent],
     providers: [
       provideZonelessChangeDetection(),
+      { provide: ZXCVBN_TOKEN, useValue: mockZxcvbn },
       { provide: AuthService, useValue: { checkPwnedPassword: mockCheckPwned } },
     ],
   });
@@ -181,7 +176,7 @@ describe('PasswordStrengthMeterComponent', () => {
 
   // -------------------------------------------------------------------------
   describe('score labels', () => {
-    const CASES: [Score, string][] = [
+    const CASES: [zxcvbnScore, string][] = [
       [0, 'Very weak'],
       [1, 'Weak'],
       [2, 'Fair'],

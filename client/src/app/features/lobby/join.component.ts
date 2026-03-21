@@ -73,6 +73,18 @@ export class JoinComponent implements OnInit {
     this.errorMessage.set('');
   }
 
+  private buildJoinBody() {
+    const method = this.joinMethod();
+    switch (method) {
+      case 'guest':
+        return { method: 'guest', displayName: this.guestName() } as const;
+      case 'login':
+        return { method: 'login', email: this.loginEmail(), password: this.loginPassword() } as const;
+      case 'signup':
+        return { method: 'signup', email: this.signupEmail(), password: this.signupPassword(), displayName: this.signupName() } as const;
+    }
+  }
+
   async onJoin(): Promise<void> {
     const session = this.session();
     if (!session) return;
@@ -82,21 +94,7 @@ export class JoinComponent implements OnInit {
 
     try {
       const method = this.joinMethod();
-      const body =
-        method === 'guest'
-          ? ({ method: 'guest', displayName: this.guestName() } as const)
-          : method === 'login'
-            ? ({
-                method: 'login',
-                email: this.loginEmail(),
-                password: this.loginPassword(),
-              } as const)
-            : ({
-                method: 'signup',
-                email: this.signupEmail(),
-                password: this.signupPassword(),
-                displayName: this.signupName(),
-              } as const);
+      const body = this.buildJoinBody();
 
       const res = await this.sessionService.joinSession(session.id, body);
 

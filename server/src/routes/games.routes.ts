@@ -32,29 +32,14 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { limit = 20, offset = 0 } = request.query;
+      const creatorId = parseInt(request.user.sub, 10);
 
-      const totalQuestions = GAME_CATEGORY_COUNT * GAME_QUESTION_ROWS;
-
-      const [items, count] = await Promise.all([
-        fastify.db.query(
-          `SELECT g.id, g.title, g.daily_doubles_enabled, g.is_published, g.created_at, g.updated_at,
-                  (
-                    g.title <> '' AND
-                    (SELECT COUNT(*) FROM game_categories gc WHERE gc.game_id = g.id) = $4 AND
-                    (SELECT COUNT(*) FROM game_questions gq WHERE gq.game_id = g.id AND gq.point_value > 0) = $5
-                  ) AS is_complete
-           FROM games g
-           WHERE g.creator_id = $1
-           ORDER BY g.updated_at DESC
-           LIMIT $2 OFFSET $3`,
-          [request.user.sub, limit, offset, GAME_CATEGORY_COUNT, totalQuestions]
-        ),
-        fastify.db.query('SELECT COUNT(*) FROM games WHERE creator_id = $1', [
-          request.user.sub,
-        ]),
+      const [rows, total] = await Promise.all([
+        fastify.queryService.listGames(creatorId, limit, offset),
+        fastify.queryService.countGames(creatorId),
       ]);
 
-      const games = items.rows.map((row: any) => ({
+      const games = rows.map((row) => ({
         id: row.id,
         title: row.title,
         dailyDoublesEnabled: row.daily_doubles_enabled,
@@ -66,12 +51,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         success: true,
-        data: {
-          items: games,
-          total: parseInt(count.rows[0].count, 10),
-          limit,
-          offset,
-        },
+        data: { items: games, total, limit, offset },
       });
     }
   );
@@ -82,24 +62,21 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     '/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const gameResult = await fastify.db.query(
-        `SELECT id, title, daily_doubles_enabled, is_published, created_at, updated_at
-         FROM games
-         WHERE id = $1 AND creator_id = $2`,
-        [request.params.id, request.user.sub]
-      );
+      const gameId = parseInt(request.params.id, 10);
+      const creatorId = parseInt(request.user.sub, 10);
 
-      if (gameResult.rows.length === 0) {
+      const gameRow = await fastify.queryService.findGameForOwner(gameId, creatorId);
+
+      if (!gameRow) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Game not found', code: 'NOT_FOUND' },
         });
       }
 
-      const gameRow = gameResult.rows[0];
       const game = {
         id: gameRow.id,
-        creatorId: parseInt(request.user.sub, 10),
+        creatorId: gameRow.creator_id,
         title: gameRow.title,
         dailyDoublesEnabled: gameRow.daily_doubles_enabled,
         isPublished: gameRow.is_published,
@@ -108,38 +85,18 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
       };
 
       // Fetch categories with their questions and answers
-      const categoriesResult = await fastify.db.query(
-        `SELECT gc.id, gc.category_id, gc.position,
-                c.name AS category_name, c.description AS category_description,
-                c.created_at AS category_created_at, c.updated_at AS category_updated_at
-         FROM game_categories gc
-         JOIN categories c ON c.id = gc.category_id
-         WHERE gc.game_id = $1
-         ORDER BY gc.position`,
-        [request.params.id]
-      );
-
-      const questionsResult = await fastify.db.query(
-        `SELECT gq.id, gq.game_category_id, gq.question_id, gq.row_position,
-                gq.point_value, gq.is_daily_double, gq.is_answered,
-                q.content AS question_content, q.category_id, q.created_at AS question_created_at,
-                q.updated_at AS question_updated_at,
-                a.id AS answer_id, a.content AS answer_content
-         FROM game_questions gq
-         JOIN questions q ON q.id = gq.question_id
-         LEFT JOIN answers a ON a.question_id = q.id
-         WHERE gq.game_id = $1
-         ORDER BY gq.row_position`,
-        [request.params.id]
-      );
+      const [categoryRows, questionRows] = await Promise.all([
+        fastify.queryService.listGameCategoriesWithCategoryData(gameId),
+        fastify.queryService.listGameQuestionsWithData(gameId),
+      ]);
 
       // Group questions by game_category_id
       const questionsByCategory = new Map<number, any[]>();
-      for (const row of questionsResult.rows) {
+      for (const row of questionRows) {
         const list = questionsByCategory.get(row.game_category_id) ?? [];
         list.push({
           id: row.id,
-          gameId: parseInt(request.params.id, 10),
+          gameId,
           gameCategoryId: row.game_category_id,
           questionId: row.question_id,
           rowPosition: row.row_position,
@@ -148,7 +105,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
           isAnswered: row.is_answered,
           question: {
             id: row.question_id,
-            creatorId: parseInt(request.user.sub, 10),
+            creatorId: row.question_creator_id,
             categoryId: row.category_id,
             content: row.question_content,
             createdAt: row.question_created_at,
@@ -161,14 +118,14 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
         questionsByCategory.set(row.game_category_id, list);
       }
 
-      const categories = categoriesResult.rows.map((row: any) => ({
+      const categories = categoryRows.map((row) => ({
         id: row.id,
-        gameId: parseInt(request.params.id, 10),
+        gameId,
         categoryId: row.category_id,
         position: row.position,
         category: {
           id: row.category_id,
-          creatorId: parseInt(request.user.sub, 10),
+          creatorId: row.category_creator_id,
           name: row.category_name,
           description: row.category_description,
           createdAt: row.category_created_at,
@@ -183,7 +140,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
         categories.every(
           (c) =>
             c.questions.length === GAME_QUESTION_ROWS &&
-            c.questions.every((q: any) => q.pointValue > 0),
+            c.questions.every((q: any) => q.pointValue > 0)
         );
 
       return reply.send({
@@ -213,14 +170,12 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { title, dailyDoublesEnabled = true } = request.body;
 
-      const result = await fastify.db.query(
-        `INSERT INTO games (creator_id, title, daily_doubles_enabled)
-         VALUES ($1, $2, $3)
-         RETURNING id, title, daily_doubles_enabled, is_published, created_at, updated_at`,
-        [request.user.sub, title, dailyDoublesEnabled]
+      const row = await fastify.queryService.createGame(
+        parseInt(request.user.sub, 10),
+        title,
+        dailyDoublesEnabled,
       );
 
-      const row = result.rows[0];
       return reply.status(201).send({
         success: true,
         data: {
@@ -255,72 +210,54 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { title, dailyDoublesEnabled, isPublished } = request.body;
+      const gameId = parseInt(request.params.id, 10);
+      const creatorId = parseInt(request.user.sub, 10);
 
       // When publishing, verify the game is complete before allowing it.
       if (isPublished === true) {
         const totalQuestions = GAME_CATEGORY_COUNT * GAME_QUESTION_ROWS;
-        const [catCount, qCount, gameRow] = await Promise.all([
-          fastify.db.query(
-            'SELECT COUNT(*) FROM game_categories WHERE game_id = $1',
-            [request.params.id],
-          ),
-          fastify.db.query(
-            'SELECT COUNT(*) FROM game_questions WHERE game_id = $1 AND point_value > 0',
-            [request.params.id],
-          ),
-          fastify.db.query(
-            'SELECT title FROM games WHERE id = $1 AND creator_id = $2',
-            [request.params.id, request.user.sub],
-          ),
+        const [cats, qs, gameRow] = await Promise.all([
+          fastify.queryService.countGameCategories(gameId),
+          fastify.queryService.countGameQuestionsWithPointValue(gameId),
+          fastify.queryService.findGameForOwner(gameId, creatorId),
         ]);
 
-        if (gameRow.rows.length === 0) {
+        if (!gameRow) {
           return reply.status(404).send({
             success: false,
             error: { message: 'Game not found', code: 'NOT_FOUND' },
           });
         }
 
-        const effectiveTitle = (title ?? gameRow.rows[0].title ?? '').trim();
-        const cats = parseInt(catCount.rows[0].count, 10);
-        const qs = parseInt(qCount.rows[0].count, 10);
+        const effectiveTitle = (title ?? gameRow.title ?? '').trim();
 
         if (!effectiveTitle || cats < GAME_CATEGORY_COUNT || qs < totalQuestions) {
           return reply.status(400).send({
             success: false,
             error: {
-              message: 'Game must have a title, all 6 categories, and all 30 questions with point values before publishing.',
+              message:
+                'Game must have a title, all 6 categories, and all 30 questions with point values before publishing.',
               code: 'GAME_NOT_COMPLETE',
             },
           });
         }
       }
 
-      const result = await fastify.db.query(
-        `UPDATE games
-         SET title = COALESCE($1, title),
-             daily_doubles_enabled = COALESCE($2, daily_doubles_enabled),
-             is_published = COALESCE($3, is_published),
-             updated_at = NOW()
-         WHERE id = $4 AND creator_id = $5
-         RETURNING id, title, daily_doubles_enabled, is_published, created_at, updated_at`,
-        [
-          title ?? null,
-          dailyDoublesEnabled ?? null,
-          isPublished ?? null,
-          request.params.id,
-          request.user.sub,
-        ]
+      const row = await fastify.queryService.updateGame(
+        gameId,
+        creatorId,
+        title ?? null,
+        dailyDoublesEnabled ?? null,
+        isPublished ?? null,
       );
 
-      if (result.rows.length === 0) {
+      if (!row) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Game not found', code: 'NOT_FOUND' },
         });
       }
 
-      const row = result.rows[0];
       return reply.send({
         success: true,
         data: {
@@ -382,25 +319,22 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { categories } = request.body;
+      const gameId = parseInt(request.params.id, 10);
+      const creatorId = parseInt(request.user.sub, 10);
       const client = await fastify.db.connect();
 
       try {
         await client.query('BEGIN');
 
         // Verify game ownership
-        const gameCheck = await client.query(
-          'SELECT id, daily_doubles_enabled FROM games WHERE id = $1 AND creator_id = $2',
-          [request.params.id, request.user.sub]
-        );
-        if (gameCheck.rows.length === 0) {
+        const game = await fastify.queryService.findGameForOwner(gameId, creatorId);
+        if (!game) {
           await client.query('ROLLBACK');
           return reply.status(404).send({
             success: false,
             error: { message: 'Game not found', code: 'NOT_FOUND' },
           });
         }
-
-        const game = gameCheck.rows[0];
 
         // Validate daily double count
         if (game.daily_doubles_enabled) {
@@ -428,37 +362,26 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
           await client.query('ROLLBACK');
           return reply.status(400).send({
             success: false,
-            error: { message: 'Category positions must be unique (1-6)', code: 'INVALID_POSITIONS' },
+            error: {
+              message: 'Category positions must be unique (1-6)',
+              code: 'INVALID_POSITIONS',
+            },
           });
         }
 
         // Clear existing board data (game_questions has FK to game_categories,
-        // so delete questions first)
-        await client.query('DELETE FROM game_questions WHERE game_id = $1', [request.params.id]);
-        await client.query('DELETE FROM game_categories WHERE game_id = $1', [request.params.id]);
+        // so deleteGameBoard removes questions first)
+        await fastify.queryService.deleteGameBoard(gameId, client);
 
         // Insert categories and questions
         for (const cat of categories) {
-          const catResult = await client.query(
-            `INSERT INTO game_categories (game_id, category_id, position)
-             VALUES ($1, $2, $3)
-             RETURNING id`,
-            [request.params.id, cat.categoryId, cat.position]
+          const gc = await fastify.queryService.insertGameCategory(
+            gameId, cat.categoryId, cat.position, client,
           );
-          const gameCategoryId = catResult.rows[0].id;
 
           for (const q of cat.questions) {
-            await client.query(
-              `INSERT INTO game_questions (game_id, game_category_id, question_id, row_position, point_value, is_daily_double)
-               VALUES ($1, $2, $3, $4, $5, $6)`,
-              [
-                request.params.id,
-                gameCategoryId,
-                q.questionId,
-                q.rowPosition,
-                q.pointValue,
-                q.isDailyDouble ?? false,
-              ]
+            await fastify.queryService.insertGameQuestion(
+              gameId, gc.id, q.questionId, q.rowPosition, q.pointValue, q.isDailyDouble ?? false, client,
             );
           }
         }
@@ -466,9 +389,10 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
         await client.query('COMMIT');
 
         return reply.send({ success: true, data: null });
-      } catch (err: any) {
+      } catch (err: unknown) {
         await client.query('ROLLBACK');
-        if (err.code === '23503') {
+        const { code } = err as { code: string };
+        if (code === '23503') {
           return reply.status(404).send({
             success: false,
             error: {
@@ -477,7 +401,7 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
             },
           });
         }
-        if (err.code === '23505') {
+        if (code === '23505') {
           return reply.status(409).send({
             success: false,
             error: {
@@ -498,21 +422,19 @@ const gamesRoutes: FastifyPluginAsync = async (fastify) => {
     '/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
+      const gameId = parseInt(request.params.id, 10);
+      const creatorId = parseInt(request.user.sub, 10);
       const client = await fastify.db.connect();
 
       try {
         await client.query('BEGIN');
 
-        // Delete board data first (FK ordering)
-        await client.query('DELETE FROM game_questions WHERE game_id = $1', [request.params.id]);
-        await client.query('DELETE FROM game_categories WHERE game_id = $1', [request.params.id]);
+        // Delete board data first (FK ordering: questions before categories before game)
+        await fastify.queryService.deleteGameBoard(gameId, client);
 
-        const result = await client.query(
-          'DELETE FROM games WHERE id = $1 AND creator_id = $2 RETURNING id',
-          [request.params.id, request.user.sub]
-        );
+        const deleted = await fastify.queryService.deleteGame(gameId, creatorId, client);
 
-        if (result.rows.length === 0) {
+        if (!deleted) {
           await client.query('ROLLBACK');
           return reply.status(404).send({
             success: false,

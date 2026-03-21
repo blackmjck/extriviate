@@ -1,20 +1,37 @@
 // password-strength-meter.component.ts
-import { Component, input, computed, inject, signal, output, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  InjectionToken,
+  input,
+  computed,
+  inject,
+  signal,
+  output,
+  effect,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, tap } from 'rxjs';
 import { zxcvbn } from '@zxcvbn-ts/core';
 import { AuthService } from '../../../core/services/auth.service';
 
+export type zxcvbnScore = 0 | 1 | 2 | 3 | 4;
+
+export const ZXCVBN_TOKEN = new InjectionToken<typeof zxcvbn>('ZXCVBN_TOKEN', {
+  providedIn: 'root',
+  factory: () => zxcvbn,
+});
+
 @Component({
   selector: 'app-password-strength-meter',
-  standalone: true,
-  imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [],
   templateUrl: './password-strength-meter.component.html',
   styleUrl: './password-strength-meter.component.scss',
 })
 export class PasswordStrengthMeterComponent {
   private readonly auth = inject(AuthService);
+  private readonly zxcvbnFn = inject(ZXCVBN_TOKEN);
 
   readonly password = input<string>('');
   readonly minLength = input<number>(8); // a minimum of 8 is required for the HIBP check
@@ -24,7 +41,7 @@ export class PasswordStrengthMeterComponent {
 
   readonly isPwned = signal<boolean>(false);
   readonly LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
-  readonly segments = [0, 1, 2, 3, 4]; // 5 bars = scores 0–4 mapped to 1–5
+  readonly segments: zxcvbnScore[] = [0, 1, 2, 3, 4]; // 5 bars = scores 0–4 mapped to 1–5
 
   readonly password$ = toObservable(this.password).pipe(
     debounceTime(350),
@@ -36,7 +53,7 @@ export class PasswordStrengthMeterComponent {
 
   private readonly result = computed(() => {
     const p = this.debouncedPassword();
-    return p ? zxcvbn(p) : null;
+    return p ? this.zxcvbnFn(p) : null;
   });
 
   readonly score = computed(() => this.result()?.score ?? -1);

@@ -1,4 +1,11 @@
-<div class="board-container">
+<div class="board-container" [class.portrait-compact]="showOrientationPrompt()">
+  @if (showOrientationPrompt()) {
+    <div class="orientation-prompt" role="alert" aria-live="polite">
+      <span class="orientation-icon" aria-hidden="true">&#8635;</span>
+      <p>Rotate your device for the best experience</p>
+    </div>
+  }
+
   <div class="board-grid">
     <!-- Category headers -->
     @for (cat of categories(); track cat.id) {

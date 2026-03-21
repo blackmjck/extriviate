@@ -22,6 +22,7 @@ function setup() {
 
 describe('UploadService', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
 
@@ -76,6 +77,18 @@ describe('UploadService', () => {
       expect(result.data.publicUrl).toBe('https://cdn.example.com/abc123');
       httpMock.verify();
     });
+
+    it('propagates HTTP errors from confirm', async () => {
+      const { service, httpMock } = setup();
+
+      const promise = service.confirm('key1', 'image/png', 1024);
+      httpMock
+        .expectOne((r) => r.url.includes('/api/uploads/confirm'))
+        .flush('Forbidden', { status: 403, statusText: 'Forbidden' });
+
+      await expect(promise).rejects.toThrow();
+      httpMock.verify();
+    });
   });
 
   describe('uploadToPresignedUrl', () => {
@@ -108,7 +121,6 @@ describe('UploadService', () => {
 
       expect(mockXhr.open).toHaveBeenCalledWith('PUT', 'https://r2.example.com/upload');
       expect(mockXhr.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
-      vi.restoreAllMocks();
     });
 
     it('rejects when XHR completes with a non-2xx status', async () => {
@@ -135,39 +147,126 @@ describe('UploadService', () => {
       await expect(
         service.uploadToPresignedUrl('https://r2.example.com/upload', file, vi.fn()),
       ).rejects.toThrow('Upload failed with status 403');
-
-      vi.restoreAllMocks();
     });
 
-    // it('calls onProgress with upload fractions', () => {
-    //   const { service } = setup();
+    it('rejects when a network error occurs', async () => {
+      const { service } = setup();
 
-    //   let progressCallback: ((e: ProgressEvent) => void) | null = null;
-    //   const mockXhr = {
-    //     open: vi.fn(),
-    //     setRequestHeader: vi.fn(),
-    //     send: vi.fn(),
-    //     upload: {
-    //       addEventListener: vi.fn((_event: string, handler: (e: ProgressEvent) => void) => {
-    //         progressCallback = handler;
-    //       }),
-    //     },
-    //     addEventListener: vi.fn(),
-    //     status: 200,
-    //   };
-    //   vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-    //     () => mockXhr as unknown as XMLHttpRequest,
-    //   );
+      const eventHandlers: Record<string, () => void> = {};
+      const mockXhr = {
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        upload: { addEventListener: vi.fn() },
+        addEventListener: vi.fn((event: string, handler: () => void) => {
+          eventHandlers[event] = handler;
+        }),
+        status: 0,
+      };
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
+        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
+      );
 
-    //   const onProgress = vi.fn();
-    //   const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
-    //   service.uploadToPresignedUrl('https://r2.example.com/upload', file, onProgress);
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      const promise = service.uploadToPresignedUrl('https://r2.example.com/upload', file, vi.fn());
 
-    //   // Simulate a progress event
-    //   progressCallback?.({ lengthComputable: true, loaded: 50, total: 100 } as ProgressEvent);
-    //   expect(onProgress).toHaveBeenCalledWith(0.5);
+      // Trigger the 'error' event after the promise is established
+      eventHandlers['error']?.();
 
-    //   vi.restoreAllMocks();
-    // });
+      await expect(promise).rejects.toThrow('Upload network error');
+    });
+
+    it('rejects when the upload is aborted', async () => {
+      const { service } = setup();
+
+      const eventHandlers: Record<string, () => void> = {};
+      const mockXhr = {
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        upload: { addEventListener: vi.fn() },
+        addEventListener: vi.fn((event: string, handler: () => void) => {
+          eventHandlers[event] = handler;
+        }),
+        status: 0,
+      };
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
+        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
+      );
+
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      const promise = service.uploadToPresignedUrl('https://r2.example.com/upload', file, vi.fn());
+
+      eventHandlers['abort']?.();
+
+      await expect(promise).rejects.toThrow('Upload aborted');
+    });
+
+    it('calls onProgress with upload fraction when lengthComputable is true', () => {
+      const { service } = setup();
+
+      // Capture the progress handler registered on xhr.upload
+      const capturedHandlers: { progress?: (e: ProgressEvent) => void } = {};
+      const mockXhr = {
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        upload: {
+          addEventListener: vi.fn((event: string, handler: (e: ProgressEvent) => void) => {
+            if (event === 'progress') capturedHandlers.progress = handler;
+          }),
+        },
+        // addEventListener for load/error/abort — never fire them; we only test progress
+        addEventListener: vi.fn(),
+        status: 200,
+      };
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
+        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
+      );
+
+      const onProgress = vi.fn();
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      // Start upload (promise will never resolve since load is never fired, but that's fine)
+      service.uploadToPresignedUrl('https://r2.example.com/upload', file, onProgress);
+
+      // Simulate two progress events
+      capturedHandlers.progress?.({ lengthComputable: true, loaded: 25, total: 100 } as ProgressEvent);
+      expect(onProgress).toHaveBeenCalledWith(0.25);
+
+      capturedHandlers.progress?.({ lengthComputable: true, loaded: 75, total: 100 } as ProgressEvent);
+      expect(onProgress).toHaveBeenCalledWith(0.75);
+
+      expect(onProgress).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not call onProgress when lengthComputable is false', () => {
+      const { service } = setup();
+
+      const capturedHandlers: { progress?: (e: ProgressEvent) => void } = {};
+      const mockXhr = {
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        upload: {
+          addEventListener: vi.fn((event: string, handler: (e: ProgressEvent) => void) => {
+            if (event === 'progress') capturedHandlers.progress = handler;
+          }),
+        },
+        addEventListener: vi.fn(),
+        status: 200,
+      };
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
+        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
+      );
+
+      const onProgress = vi.fn();
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      service.uploadToPresignedUrl('https://r2.example.com/upload', file, onProgress);
+
+      // Simulate a progress event where length is not known
+      capturedHandlers.progress?.({ lengthComputable: false, loaded: 50, total: 0 } as ProgressEvent);
+
+      expect(onProgress).not.toHaveBeenCalled();
+    });
   });
 });

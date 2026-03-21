@@ -47,10 +47,8 @@ export class LoginComponent {
     if (isError) {
       this.errorMessage.set('CAPTCHA failed. Please refresh and try again.');
       this.turnstileToken.set('');
-      console.error('CAPTCHA failure:', msg);
     } else {
       this.turnstileToken.set(msg ?? '');
-      console.log('CAPTCHA success!', msg);
     }
   }
 

@@ -7,6 +7,7 @@ export interface JwtPayload {
   iat?: number; // issued-at - added automatically by the JWT library
   exp?: number; // expiry - added automatically by the JWT library
   jti?: string; // JWT ID - unique identifier used to key the Redis blacklist
+  tokenVersion?: number; // incremented on password reset; stale tokens are rejected by requireAuth
 }
 
 // The token pair returned on successful login or token refresh (used in generateTokens)
@@ -33,6 +34,13 @@ export interface LoginRequest {
   email: string;
   password: string;
   turnstileToken?: string;
+}
+
+// Error type if login request fails
+export interface LoginError extends Error {
+  code: string;
+  statusCode: number; // HTTP status code
+  retryAfterSeconds?: number; // rate limiting
 }
 
 // Response body returned after a successful login or signup

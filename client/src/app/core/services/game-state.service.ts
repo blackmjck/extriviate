@@ -63,6 +63,8 @@ export class GameStateService {
     switch (message.type) {
       case 'full_state_sync':
         this.applyFullStateSync(message.state);
+        // Server has now confirmed identity — safe to deliver any queued messages.
+        this.socketService.flushPendingMessages();
         break;
 
       case 'round_state_update':
@@ -153,7 +155,6 @@ export class GameStateService {
       case 'buzzers_released':
       case 'buzzers_locked':
       case 'timer_started':
-      case 'timer_expired':
       case 'webrtc_offer':
       case 'webrtc_answer':
       case 'webrtc_ice_candidate':

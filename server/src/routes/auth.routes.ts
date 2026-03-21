@@ -3,7 +3,13 @@ import { randomUUID } from 'crypto';
 import fastifyRateLimit from '@fastify/rate-limit';
 import { AuthService } from '../services/auth.service.js';
 import { requireAuth, turnstileVerify } from '../hooks/auth.hook.js';
-import type { SignUpRequest, LoginRequest, JwtPayload } from '@extriviate/shared';
+import type {
+  SignUpRequest,
+  LoginRequest,
+  JwtPayload,
+  LoginError,
+  HttpError,
+} from '@extriviate/shared';
 import { config } from '../config.js';
 
 // Cookie options for the refresh token.
@@ -24,7 +30,7 @@ function getRefreshCookieOptions(nodeEnv: string) {
 }
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
-  const authService = new AuthService(fastify.db, fastify);
+  const authService = new AuthService(fastify.queryService, fastify);
 
   // Rate limiting
   // Registered first so it applies to all routes declared below in this scope.
@@ -35,11 +41,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     max: 30,
     timeWindow: '1 minute',
 
-    // Use the existing Redis connection as the counter store.
-    // This means rate-limit counters survive server restarts and are accurate
-    // even under concurrent load (Redis operations are atomic).
-    // Falls back to in-memory automatically if Redis is unavailable.
-    redis: fastify.redisAvailable ? fastify.redis : undefined,
+    // In-memory store is correct for single-instance Render deployment.
+    // Passing the node-redis client here would crash the server: @fastify/rate-limit's
+    // RedisStore calls defineCommand() — an ioredis-only API not present on node-redis v4.
+    // If this ever moves to multiple instances, install @fastify/redis (which wraps
+    // node-redis in an ioredis-compatible interface) and pass app.redis here instead.
 
     // In production, Fastify reads request.ip from X-Forwarded-For (trustProxy: true).
     // This key generator makes the rate-limit key explicit for clarity.
@@ -48,6 +54,10 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     // Return a response that matches the ApiResponse<T> format used everywhere
     // else in the API; the default response format from the plugin is different.
     errorResponseBuilder: (_request, context) => ({
+      // statusCode must be at the top level — @fastify/rate-limit v10 throws this object
+      // and Fastify's error handler reads statusCode (or status) to set the response code.
+      // Without it, Fastify defaults to 500.
+      statusCode: context.statusCode,
       success: false,
       error: {
         message: `Too many requests. Please wait ${Math.ceil(context.ttl / 1000)} seconds before trying again.`,
@@ -113,10 +123,15 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         return reply
           .status(201)
           .send({ success: true, data: { user, tokens: { accessToken: tokens.accessToken } } });
-      } catch (err: any) {
-        return reply.status(err.statusCode ?? 500).send({
+      } catch (err: unknown) {
+        const { statusCode, message, code } = err as {
+          statusCode?: number;
+          message?: string;
+          code?: string;
+        };
+        return reply.status(statusCode ?? 500).send({
           success: false,
-          error: { message: err.message, code: err.code },
+          error: { message: message, code: code },
         });
       }
     }
@@ -161,22 +176,20 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         return reply
           .status(200)
           .send({ success: true, data: { user, tokens: { accessToken: tokens.accessToken } } });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const { code, message, retryAfterSeconds, statusCode } = err as LoginError;
         // For account lockout, include the Retry-After header so well-behaved
         // clients (and the app) know exactly how long to wait.
-        if (err.code === 'ACCOUNT_LOCKED') {
-          return reply
-            .status(429)
-            .header('Retry-After', String(err.retryAfterSeconds))
-            .send({
-              success: false,
-              error: { message: err.message, code: err.code },
-            });
+        if (code === 'ACCOUNT_LOCKED') {
+          return reply.status(429).header('Retry-After', String(retryAfterSeconds)).send({
+            success: false,
+            error: { message, code },
+          });
         }
 
-        return reply.status(err.statusCode ?? 500).send({
+        return reply.status(statusCode ?? 500).send({
           success: false,
-          error: { message: err.message, code: err.code },
+          error: { message, code },
         });
       }
     }
@@ -274,6 +287,90 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /api/auth/forgot-password
+  fastify.post<{ Body: { email: string; turnstileToken: string } }>(
+    '/forgot-password',
+    {
+      preHandler: [turnstileVerify],
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: 60 * 60 * 1000, // 1 hour
+          // Why 10 per hour?
+          // This is stricter than others because it generates an email as a result
+          // and we want to prevent spamming both to avoid user phishing attempts
+          // and so that our email provider doesn't mark the application as a spambot
+          // and cancel our service.
+        },
+      },
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email', 'turnstileToken'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            turnstileToken: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const res = await authService.forgotPassword(request.body.email);
+        return reply.status(200).send({
+          success: true,
+          data: { response: res.response },
+        });
+      } catch (err: unknown) {
+        const { message, code, statusCode } = err as HttpError;
+        return reply.status(statusCode ?? 500).send({
+          success: false,
+          error: { message, code: code ?? 'INTERNAL_ERROR' },
+        });
+      }
+    }
+  );
+
+  // POST /api/auth/reset-password
+  fastify.post<{ Body: { token: string; newPassword: string } }>(
+    '/reset-password',
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '15 minutes',
+          // Tight limit: an attacker with a stolen token gets at most 5 guesses
+          // per IP before being blocked for the rest of the 15-minute window.
+        },
+      },
+      schema: {
+        body: {
+          type: 'object',
+          required: ['token', 'newPassword'],
+          properties: {
+            token: { type: 'string', minLength: 1 },
+            newPassword: { type: 'string', minLength: 8, maxLength: 72 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        await authService.resetPassword(request.body.token, request.body.newPassword);
+        return reply.status(200).send({
+          success: true,
+          data: { message: 'Password updated successfully.' },
+        });
+      } catch (err: unknown) {
+        const { message, code, statusCode } = err as HttpError;
+        return reply.status(statusCode ?? 500).send({
+          success: false,
+          error: { message, code: code ?? 'INTERNAL_ERROR' },
+        });
+      }
+    }
+  );
+
   // POST /api/auth/refresh
   fastify.post(
     '/refresh',
@@ -334,6 +431,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           email: payload.email,
           role: payload.role,
           jti: newJti,
+          ...(payload.tokenVersion !== undefined ? { tokenVersion: payload.tokenVersion } : {}),
         };
 
         const newAccessToken = fastify.signAccessToken(newPayload);

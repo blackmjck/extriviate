@@ -6,14 +6,22 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+// A generic HTTP error response
+export interface HttpError extends Error {
+  code?: string; // optional machine-readable error code, e.g. "EMAIL_TAKEN"
+  statusCode?: number;
+}
+
+// A generic inner wrapper for our custom error responses
+export interface ApiErrorObject extends HttpError {
+  message: string;
+  field?: string; // optional field name for validation errors, e.g. "email"
+}
+
 // A standard wrapper for all API error responses
 export interface APIError {
   success: false;
-  error: {
-    message: string;
-    code?: string; // optional machine-readable error code, e.g. "EMAIL_TAKEN"
-    field?: string; // optional field name for validation errors, e.g. "email"
-  };
+  error: ApiErrorObject;
 }
 
 // the union of success and error - what every API call can return.

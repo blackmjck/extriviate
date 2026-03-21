@@ -6,8 +6,7 @@ export const routes: Routes = [
   // ---- Public landing ----
   {
     path: '',
-    loadComponent: () =>
-      import('./features/home/home.component').then((m) => m.HomeComponent),
+    loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
   },
 
   // ---- Auth-required routes ----
@@ -53,19 +52,25 @@ export const routes: Routes = [
     path: 'questions',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/question-editor/question-list.component').then((m) => m.QuestionListComponent),
+      import('./features/question-editor/question-list.component').then(
+        (m) => m.QuestionListComponent,
+      ),
   },
   {
     path: 'questions/new',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/question-editor/question-editor.component').then((m) => m.QuestionEditorComponent),
+      import('./features/question-editor/question-editor.component').then(
+        (m) => m.QuestionEditorComponent,
+      ),
   },
   {
     path: 'questions/:id',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/question-editor/question-editor.component').then((m) => m.QuestionEditorComponent),
+      import('./features/question-editor/question-editor.component').then(
+        (m) => m.QuestionEditorComponent,
+      ),
   },
 
   // ---- Public routes ----
@@ -76,23 +81,29 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    loadComponent: () =>
-      import('./features/auth/login.component').then((m) => m.LoginComponent),
+    loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'logout',
-    loadComponent: () =>
-      import('./features/auth/logout.component').then((m) => m.LogoutComponent),
+    loadComponent: () => import('./features/auth/logout.component').then((m) => m.LogoutComponent),
   },
   {
     path: 'signup',
+    loadComponent: () => import('./features/auth/signup.component').then((m) => m.SignupComponent),
+  },
+  {
+    path: 'forgot-password',
     loadComponent: () =>
-      import('./features/auth/signup.component').then((m) => m.SignupComponent),
+      import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password.component').then((m) => m.ResetPasswordComponent),
   },
   {
     path: 'join/:joinCode',
-    loadComponent: () =>
-      import('./features/lobby/join.component').then((m) => m.JoinComponent),
+    loadComponent: () => import('./features/lobby/join.component').then((m) => m.JoinComponent),
   },
   {
     path: 'session/:id',

@@ -70,7 +70,7 @@ describe('FooterComponent', () => {
     const { fixture } = setup();
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
     const values = Array.from(select.options).map((o) => o.value);
-    expect(values).toEqual(['dark', 'light', 'quiz-show', 'showcase', 'glitzy']);
+    expect(values).toEqual(['quiz-show', 'light', 'dark', 'showcase', 'glitzy']);
   });
 
   it('marks the current theme option as selected', () => {
@@ -96,6 +96,4 @@ describe('FooterComponent', () => {
     select.dispatchEvent(new Event('change'));
     expect(mockThemeService.setTheme).toHaveBeenCalledWith('quiz-show');
   });
-
-
 });

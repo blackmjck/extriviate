@@ -1,18 +1,30 @@
 import bcrypt from 'bcrypt';
 import crypto, { randomUUID } from 'crypto';
-import type { Pool } from 'pg';
 import type { FastifyInstance } from 'fastify';
-import type { User, PublicUser, AuthTokens, SignUpRequest, LoginRequest } from '@extriviate/shared';
+import { Resend } from 'resend';
+import type {
+  PublicUser,
+  AuthTokens,
+  SignUpRequest,
+  LoginRequest,
+  LoginError,
+  HttpError,
+} from '@extriviate/shared';
 import { MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_DURATION_SECONDS } from '@extriviate/shared';
+import { config } from '../config.js';
+import type { QueryService } from './query.service.js';
 
 const SALT_ROUNDS = 12;
+const EMAIL_RESET_MAX = 3;
+const EMAIL_RESET_WINDOW_SECONDS = 10 * 60; // 10-minute fixed window
+const GENERIC_RESET_RESPONSE = "If that email is registered, you'll receive a link shortly.";
 // bcrypt work factor - 12 is the current recommended minimum.
 // Higher = more secure but slower. 12 takes ~300ms on modern hardware.
 // which is acceptable for a login endpoint.
 
 export class AuthService {
   constructor(
-    private readonly db: Pool,
+    private readonly qs: QueryService,
     private readonly fastify: FastifyInstance
   ) {}
 
@@ -28,32 +40,137 @@ export class AuthService {
     return text.split('\n').some((line) => line.split(':')[0] === suffix);
   }
 
+  // Send a password reset link if the email has an active account.
+  // Always returns the same generic message to avoid confirming whether
+  // an email address is registered (enumeration prevention).
+  async forgotPassword(email: string): Promise<{ response: string }> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailKey = `pw_reset:${normalizedEmail}`;
+
+    // Per-email rate limit — checked before the DB query so we don't waste
+    // a round-trip on a request we're going to silently drop anyway.
+    // Returns the generic response on breach (not 429) to avoid confirming
+    // the address is registered and being targeted.
+    if (this.fastify.redisAvailable) {
+      const attempts = await this.fastify.redis.get(emailKey);
+      if (parseInt(attempts ?? '0', 10) >= EMAIL_RESET_MAX) {
+        return { response: GENERIC_RESET_RESPONSE };
+      }
+    }
+
+    const user = await this.qs.findActiveUserByEmail(normalizedEmail);
+
+    if (!user) {
+      return { response: GENERIC_RESET_RESPONSE };
+    }
+
+    // Increment the per-email counter only when a real user is found —
+    // this counts actual email sends, not enumeration probes.
+    if (this.fastify.redisAvailable) {
+      const newCount = await this.fastify.redis.incr(emailKey);
+      if (newCount === 1) {
+        // Fixed window: set expiry only on the first increment so the window
+        // doesn't slide with each new send.
+        await this.fastify.redis.expire(emailKey, EMAIL_RESET_WINDOW_SECONDS);
+      }
+    }
+
+    // Store only the SHA-256 hash — the raw token is never persisted.
+    const rawToken = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await this.qs.createPasswordResetToken(user.id, tokenHash, expiresAt);
+
+    const resend = new Resend(config.resend.apiKey);
+    const resetUrl = `https://notify.extriviate.com/reset-password?token=${rawToken}`; // `${config.client.url}/reset-password?token=${rawToken}`;
+
+    const { error } = await resend.emails.send({
+      from: 'notifications@notify.extriviate.com',
+      to: user.email,
+      subject: 'Reset your Extriviate password',
+      html: `<p>Click <a href="${resetUrl}" target="_blank">here</a> to reset your password. This link expires in 15 minutes.</p>
+             <p>If you didn't request this, you can safely ignore this email.</p>`,
+    });
+
+    if (error) {
+      this.fastify.log.error({ error }, 'Failed to send password reset email');
+      const e = new Error('Failed to send reset email. Please try again.') as HttpError;
+      e.code = 'EMAIL_SEND_FAILED';
+      e.statusCode = 503;
+      throw e;
+    }
+
+    return { response: GENERIC_RESET_RESPONSE };
+  }
+
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    const tokenRecord = await this.qs.findPasswordResetToken(tokenHash);
+
+    // Generic error for all failure modes — never reveal whether a token
+    // was valid, expired, or already used.
+    const invalidTokenError = Object.assign(
+      new Error('This reset link is invalid or has expired.'),
+      { code: 'INVALID_RESET_TOKEN', statusCode: 400 }
+    );
+
+    if (!tokenRecord) throw invalidTokenError;
+    if (tokenRecord.used_at) throw invalidTokenError;
+    if (new Date() > new Date(tokenRecord.expires_at)) throw invalidTokenError;
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Transaction: update the password and consume the token atomically.
+    // If either query fails, both roll back — the token stays valid for retry.
+    const client = await this.fastify.db.connect();
+    try {
+      await client.query('BEGIN');
+
+      await this.qs.updateUserPassword(tokenRecord.user_id, passwordHash, client);
+
+      // Definitive single-use guard: claims the token atomically inside the
+      // transaction. false return means a concurrent request won the race.
+      const claimed = await this.qs.markPasswordResetTokenUsed(tokenRecord.id, client);
+      if (!claimed) {
+        throw invalidTokenError;
+      }
+
+      // Invalidate all other outstanding tokens for this user so earlier reset
+      // emails cannot be replayed after a successful reset.
+      await this.qs.deleteUnusedPasswordResetTokensForUser(tokenRecord.user_id, client);
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async signUp(data: SignUpRequest): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const { email, password, displayName } = data;
 
-    // Check for existing account with this email
-    const existing = await this.db.query('SELECT id FROM users WHERE email = $1', [
-      email.toLowerCase(),
-    ]);
-    if (existing.rows.length > 0) {
-      const err = new Error('An account with this email already exists') as any;
-      err.code = 'EMAIL_TAKEN';
-      err.statusCode = 409;
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    let dbUser;
+    try {
+      dbUser = await this.qs.createUser(email.toLowerCase(), displayName, passwordHash);
+    } catch (err: unknown) {
+      const { code } = err as { code: string };
+      if (code === '23505') {
+        const e = new Error('An account with this email already exists') as HttpError;
+        e.code = 'EMAIL_TAKEN';
+        e.statusCode = 409;
+        throw e;
+      }
       throw err;
     }
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    const result = await this.db.query<User>(
-      `INSERT INTO users (email, display_name, password_hash)
-      VALUES ($1, $2, $3)
-      RETURNING id, email, display_name, role, is_active, created_at, updated_at`,
-      [email.toLowerCase(), displayName, passwordHash]
-    );
-
-    const user = result.rows[0];
-    const publicUser = toPublicUser(user);
-    const tokens = this.generateTokens(publicUser);
+    const publicUser = toPublicUser(dbUser);
+    const tokens = this.generateTokens(publicUser, dbUser.token_version);
 
     return { user: publicUser, tokens };
   }
@@ -88,18 +205,13 @@ export class AuthService {
       }
     }
 
-    const result = await this.db.query<User>(
-      'SELECT * FROM users WHERE email = $1 AND is_active = true',
-      [data.email.toLowerCase()]
-    );
-
-    const user = result.rows[0];
+    const user = await this.qs.findActiveUserByEmail(normalizedEmail);
 
     // Compare against a dummy hash even when user is not found.
     // This prevents timing attacks that could reveal whether
     // an email address has an account.
     const hash =
-      (user as any)?.password_hash ??
+      user?.password_hash ??
       '$2b$12$invalidhashpadding000000000000000000000000000000000000000';
     const valid = await bcrypt.compare(data.password, hash);
 
@@ -116,7 +228,7 @@ export class AuthService {
         }
       }
 
-      const err = new Error('Invalid email or password') as any;
+      const err = new Error('Invalid email or password') as LoginError;
       err.code = 'INVALID_CREDENTIALS';
       err.statusCode = 401;
       throw err;
@@ -128,7 +240,7 @@ export class AuthService {
     }
 
     const publicUser = toPublicUser(user);
-    const tokens = this.generateTokens(publicUser);
+    const tokens = this.generateTokens(publicUser, user.token_version);
 
     return { user: publicUser, tokens };
   }
@@ -137,7 +249,7 @@ export class AuthService {
     await this.fastify.blacklistToken(jti, blacklistUntil);
   }
 
-  private generateTokens(user: PublicUser): AuthTokens {
+  private generateTokens(user: PublicUser, tokenVersion: number): AuthTokens {
     const jti = randomUUID();
     // jti (JWT ID) is unique per token - used as the blacklist key for Redis
 
@@ -146,6 +258,7 @@ export class AuthService {
       email: '', // not included in payload for privacy
       role: user.role,
       jti,
+      tokenVersion,
     };
 
     return {
@@ -156,11 +269,11 @@ export class AuthService {
 }
 
 // Strips sensitive fields - never expose passwordHash or email in responses
-function toPublicUser(user: any): PublicUser {
+function toPublicUser(user: { id: number; display_name: string; role: string; created_at: string }): PublicUser {
   return {
     id: user.id,
     displayName: user.display_name,
-    role: user.role,
+    role: user.role as PublicUser['role'],
     createdAt: user.created_at,
   };
 }

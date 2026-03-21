@@ -78,9 +78,9 @@ describe('ThemeService', () => {
       expect(service.activeTheme()).toBe('glitzy');
     });
 
-    it('falls back to "dark" from system preference when nothing is stored', () => {
+    it('falls back to "quiz-show" from system preference when nothing is stored', () => {
       const { service } = setup(true);
-      expect(service.activeTheme()).toBe('dark');
+      expect(service.activeTheme()).toBe('quiz-show');
     });
 
     it('falls back to "light" from system preference when nothing is stored', () => {
@@ -91,7 +91,7 @@ describe('ThemeService', () => {
     it('falls back to system preference when stored value is unrecognised', () => {
       localStorage.setItem(STORAGE_KEY, 'unknown-value');
       const { service } = setup(true);
-      expect(service.activeTheme()).toBe('dark');
+      expect(service.activeTheme()).toBe('quiz-show');
     });
   });
 
@@ -161,7 +161,7 @@ describe('ThemeService', () => {
 
     it('switches to light when system changes to light and no stored preference', () => {
       const { service, triggerChange } = setup(true);
-      expect(service.activeTheme()).toBe('dark');
+      expect(service.activeTheme()).toBe('quiz-show');
       triggerChange(false);
       expect(service.activeTheme()).toBe('light');
     });

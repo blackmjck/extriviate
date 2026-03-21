@@ -9,21 +9,15 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/users/me
   // Returns the currently authenticated user's profile
   fastify.get('/me', { preHandler: [requireAuth] }, async (request, reply) => {
-    const result = await fastify.db.query(
-      `SELECT id, display_name, role, created_at
-        FROM users
-        WHERE id = $1 AND is_active = true`,
-      [request.user.sub]
-    );
+    const user = await fastify.queryService.findActiveUserById(parseInt(request.user.sub, 10));
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return reply.status(404).send({
         success: false,
         error: { message: 'User not found', code: 'USER_NOT_FOUND' },
       });
     }
 
-    const user = result.rows[0];
     return reply.send({
       success: true,
       data: {
@@ -38,18 +32,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/users/me/stats
   // Returns aggregated counts for the profile page.
   fastify.get('/me/stats', { preHandler: [requireAuth] }, async (request, reply) => {
-    const userId = request.user.sub;
-    const result = await fastify.db.query(
-      `SELECT
-        (SELECT COUNT(*) FROM games WHERE creator_id = $1) AS games_created,
-        (SELECT COUNT(*) FROM categories WHERE creator_id = $1) AS categories_created,
-        (SELECT COUNT(*) FROM questions WHERE creator_id = $1) AS questions_created,
-        (SELECT COUNT(*) FROM session_players sp
-          JOIN game_sessions gs ON gs.id = sp.session_id
-          WHERE sp.user_id = $1 AND gs.status = 'completed') AS sessions_played`,
-      [userId]
-    );
-    const row = result.rows[0];
+    const row = await fastify.queryService.getUserStats(parseInt(request.user.sub, 10));
     return reply.send({
       success: true,
       data: {
@@ -86,26 +69,21 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { displayName } = request.body;
 
-      const result = await fastify.db.query(
-        `UPDATE users
-        SET display_name = COALESCE($1, display_name),
-            updated_at = NOW()
-        WHERE id = $2 AND is_active = true
-        RETURNING id, display_name, role, created_at`,
-        [displayName ?? null, request.user.sub]
+      const user = await fastify.queryService.updateUserDisplayName(
+        parseInt(request.user.sub, 10),
+        displayName ?? null,
       );
       // COALESCE($1, display_name) means: use the new value if provided,
       // otherwise keep the existing value. This handles partial updates
       // cleanly without needing separate queries per field.
 
-      if (result.rows.length === 0) {
+      if (!user) {
         return reply.status(404).send({
           success: false,
           error: { message: 'User not found', code: 'USER_NOT_FOUND' },
         });
       }
 
-      const user = result.rows[0];
       return reply.send({
         success: true,
         data: {
@@ -119,7 +97,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // POST /api/users/me/change-password
-  // Separate endpoing from PATCH /me because password changes require
+  // Separate endpoint from PATCH /me because password changes require
   // current password verification - different logic and stricter handling.
   fastify.post<{ Body: ChangePasswordRequest }>(
     '/me/change-password',
@@ -141,19 +119,16 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
       const { currentPassword, newPassword } = request.body;
 
       // Fetch the current hash to verify against
-      const result = await fastify.db.query(
-        'SELECT password_hash FROM users WHERE id = $1 AND is_active = true',
-        [request.user.sub]
-      );
+      const row = await fastify.queryService.findUserHashById(parseInt(request.user.sub, 10));
 
-      if (result.rows.length === 0) {
+      if (!row) {
         return reply.status(404).send({
           success: false,
           error: { message: 'User not found', code: 'USER_NOT_FOUND' },
         });
       }
 
-      const valid = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
+      const valid = await bcrypt.compare(currentPassword, row.password_hash);
       if (!valid) {
         return reply.status(401).send({
           success: false,
@@ -162,10 +137,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-      await fastify.db.query(
-        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-        [newHash, request.user.sub]
-      );
+      await fastify.queryService.updateUserPassword(parseInt(request.user.sub, 10), newHash);
 
       return reply.send({ success: true, data: null });
     }
@@ -177,9 +149,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   // user's games and categories - soft delete preserves historical records
   // while preventing further login.
   fastify.delete('/me', { preHandler: [requireAuth] }, async (request, reply) => {
-    await fastify.db.query('UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1', [
-      request.user.sub,
-    ]);
+    await fastify.queryService.deactivateUser(parseInt(request.user.sub, 10));
 
     // Blacklist the current token immediately so it can't be reused
     if (request.user.jti && request.user.exp) {

@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import { requireAuth, optionalAuth, turnstileVerify } from '../auth.hook.js';
+import { CF_SECRET_TEST_KEYS } from '@extriviate/shared';
 
 vi.mock('../../config.js', () => ({
   config: {
@@ -15,6 +16,7 @@ const TEST_JWT_SECRET = 'test-secret-long-enough-for-hs256-signing';
 function buildApp() {
   const app = Fastify({ logger: false });
   const mockIsBlacklisted = vi.fn().mockResolvedValue(false);
+  const mockDbQuery = vi.fn().mockResolvedValue({ rows: [{ token_version: 0 }] });
 
   app.register(fastifyJwt, {
     secret: TEST_JWT_SECRET,
@@ -22,6 +24,7 @@ function buildApp() {
     decode: { complete: true },
   });
   app.decorate('isTokenBlacklisted', mockIsBlacklisted);
+  app.decorate('db', { query: mockDbQuery } as any);
 
   app.get('/protected', { preHandler: [requireAuth] }, async (req) => ({
     sub: req.user.sub,
@@ -32,7 +35,7 @@ function buildApp() {
   }));
   app.post('/verify', { preHandler: [turnstileVerify] }, async (req) => ({ ok: true }));
 
-  return { app, mockIsBlacklisted };
+  return { app, mockIsBlacklisted, mockDbQuery };
 }
 
 function mockCloudflare(fetchMock: ReturnType<typeof vi.fn>, success: boolean) {
@@ -45,9 +48,10 @@ function mockCloudflare(fetchMock: ReturnType<typeof vi.fn>, success: boolean) {
 describe('requireAuth', () => {
   let app: ReturnType<typeof Fastify>;
   let mockIsBlacklisted: ReturnType<typeof vi.fn>;
+  let mockDbQuery: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    ({ app, mockIsBlacklisted } = buildApp());
+    ({ app, mockIsBlacklisted, mockDbQuery } = buildApp());
     await app.ready();
   });
 
@@ -123,13 +127,126 @@ describe('requireAuth', () => {
     expect(response.statusCode).toBe(200);
     expect(mockIsBlacklisted).not.toHaveBeenCalled();
   });
+
+  // tokenVersion: token without the claim is treated as version 0 — DB IS checked
+  test('treats a token with no tokenVersion as version 0 and allows it when DB version is 0', async () => {
+    // Default mockDbQuery returns token_version: 0
+    const token = app.jwt.sign({ sub: '1', email: '', role: 'creator', jti: 'no-ver-jti' });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    // DB must be consulted — missing tokenVersion is no longer a free pass
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT token_version FROM users'),
+      ['1'],
+    );
+  });
+
+  // tokenVersion: token without the claim is REJECTED when DB version > 0
+  // (e.g. password was reset after a pre-migration token was issued)
+  test('rejects a token without tokenVersion when the DB version has been incremented', async () => {
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 1 }] });
+    const token = app.jwt.sign({ sub: '1', email: '', role: 'creator', jti: 'pre-migration-jti' });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'SESSION_INVALIDATED' },
+    });
+  });
+
+  // tokenVersion: matching version passes
+  test('allows a token whose tokenVersion matches the current DB value', async () => {
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 2 }] });
+    const token = app.jwt.sign({ sub: '1', email: '', role: 'creator', jti: 'ver-jti', tokenVersion: 2 });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT token_version FROM users'),
+      ['1']
+    );
+  });
+
+  // tokenVersion: stale version after password reset
+  test('returns 401 SESSION_INVALIDATED when the token predates a password reset', async () => {
+    // Token carries version 0; DB now has version 1 (reset happened)
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 1 }] });
+    const token = app.jwt.sign({ sub: '1', email: '', role: 'creator', jti: 'stale-jti', tokenVersion: 0 });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'SESSION_INVALIDATED' },
+    });
+  });
+
+  // expired token test
+  test('rejects an expired token with 401 UNAUTHORIZED', async () => {
+    const expiredToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: 'exp-jti' },
+      { expiresIn: -1 },
+    );
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${expiredToken}` },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'UNAUTHORIZED' },
+    });
+    // Blacklist check must not be reached — token rejected by jwt.verify before our hook logic runs
+    expect(mockIsBlacklisted).not.toHaveBeenCalled();
+  });
+
+  // tokenVersion: user not found (deactivated)
+  test('returns 401 SESSION_INVALIDATED when the user row is not found in the DB', async () => {
+    mockDbQuery.mockResolvedValue({ rows: [] });
+    const token = app.jwt.sign({ sub: '999', email: '', role: 'creator', jti: 'ghost-jti', tokenVersion: 0 });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('SESSION_INVALIDATED');
+  });
 });
 
 describe('optionalAuth', () => {
   let app: ReturnType<typeof Fastify>;
+  let mockIsBlacklisted: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    ({ app } = buildApp());
+    ({ app, mockIsBlacklisted } = buildApp());
     await app.ready();
   });
 
@@ -150,6 +267,23 @@ describe('optionalAuth', () => {
     const noToken = await app.inject({ method: 'GET', url: '/optional' });
     expect(noToken.statusCode).toBe(200);
     expect(noToken.json().hasUser).toBe(false);
+  });
+
+  // blacklisted token: optionalAuth must clear request.user instead of passing it through
+  test('clears request.user when the token jti is blacklisted', async () => {
+    mockIsBlacklisted.mockResolvedValue(true);
+    const token = app.jwt.sign({ sub: '7', email: '', role: 'player', jti: 'revoked-opt-jti' });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/optional',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    // user must be cleared, not populated, so the route treats caller as anonymous
+    expect(response.json().hasUser).toBe(false);
+    expect(mockIsBlacklisted).toHaveBeenCalledWith('revoked-opt-jti');
   });
 });
 
@@ -226,5 +360,21 @@ describe('turnstileVerify', () => {
 
     expect(response.statusCode).toBe(400);
     expect(response.json().error.code).toBe('CAPTCHA_FAILED');
+  });
+
+  // non-production: always-pass test key is substituted for the real secret
+  test('uses the CF always-pass test key in non-production environments', async () => {
+    // The config mock sets nodeEnv: 'test', so the hook substitutes CF_SECRET_TEST_KEYS.PASS
+    mockCloudflare(mockFetch, true);
+
+    await app.inject({
+      method: 'POST',
+      url: '/verify',
+      payload: { turnstileToken: 'any-token' },
+    });
+
+    const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(requestBody.secret).toBe(CF_SECRET_TEST_KEYS.PASS);
+    expect(requestBody.secret).not.toBe('prod-secret');
   });
 });

@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
-import type { Pool, QueryResult } from 'pg';
 import { buildGameBoard, extractBoardValues } from '../session-state-builder.js';
+import type { QueryService } from '../query.service.js';
 import type { GameBoard } from '@extriviate/shared';
 
 // ---- extractBoardValues ----
@@ -141,16 +141,17 @@ describe('extractBoardValues', () => {
 
 // ---- buildGameBoard ----
 
-// Creates a mock Pool whose query() resolves rows based on call order.
-function makeDb(rowSets: Array<unknown[]>): Pool {
-  let callIndex = 0;
+// Creates a mock QueryService whose three methods return the given fixture data.
+function makeQs(
+  gameRow: object | null,
+  categoryRows: object[],
+  questionRows: object[],
+): QueryService {
   return {
-    query: vi.fn().mockImplementation(async () => {
-      const rows = rowSets[callIndex] ?? [];
-      callIndex++;
-      return { rows } as unknown as QueryResult;
-    }),
-  } as unknown as Pool;
+    findGameById: vi.fn().mockResolvedValue(gameRow),
+    listGameCategoriesWithCategoryData: vi.fn().mockResolvedValue(categoryRows),
+    listGameQuestionsWithData: vi.fn().mockResolvedValue(questionRows),
+  } as unknown as QueryService;
 }
 
 // Minimal DB row fixtures
@@ -168,8 +169,10 @@ const gameRow = {
 
 const categoryRow = {
   id: 100,
+  game_id: 1,
   category_id: 50,
   position: 1,
+  created_at: '2024-01-01',
   category_name: 'Science',
   category_description: null,
   category_creator_id: 10,
@@ -179,6 +182,7 @@ const categoryRow = {
 
 const questionRow = {
   id: 200,
+  game_id: 1,
   game_category_id: 100,
   question_id: 300,
   row_position: 1,
@@ -197,14 +201,14 @@ const questionRow = {
 
 describe('buildGameBoard', () => {
   test('returns null when game not found', async () => {
-    const db = makeDb([[], [], []]);
-    const result = await buildGameBoard(db, 999);
+    const qs = makeQs(null, [], []);
+    const result = await buildGameBoard(qs, 999);
     expect(result).toBeNull();
   });
 
   test('returns GameBoard with correct game fields', async () => {
-    const db = makeDb([[gameRow], [categoryRow], [questionRow]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [questionRow]);
+    const board = await buildGameBoard(qs, 1);
 
     expect(board).not.toBeNull();
     expect(board!.game.id).toBe(1);
@@ -214,8 +218,8 @@ describe('buildGameBoard', () => {
   });
 
   test('maps categories correctly', async () => {
-    const db = makeDb([[gameRow], [categoryRow], [questionRow]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [questionRow]);
+    const board = await buildGameBoard(qs, 1);
 
     expect(board!.categories).toHaveLength(1);
     expect(board!.categories[0].id).toBe(100);
@@ -224,8 +228,8 @@ describe('buildGameBoard', () => {
   });
 
   test('maps questions to correct categories', async () => {
-    const db = makeDb([[gameRow], [categoryRow], [questionRow]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [questionRow]);
+    const board = await buildGameBoard(qs, 1);
 
     const questions = board!.categories[0].questions;
     expect(questions).toHaveLength(1);
@@ -235,8 +239,8 @@ describe('buildGameBoard', () => {
   });
 
   test('maps question content and answer', async () => {
-    const db = makeDb([[gameRow], [categoryRow], [questionRow]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [questionRow]);
+    const board = await buildGameBoard(qs, 1);
 
     const q = board!.categories[0].questions[0];
     expect(q.question.content).toEqual([{ type: 'text', value: 'Q content' }]);
@@ -246,23 +250,23 @@ describe('buildGameBoard', () => {
 
   test('null accepted_answers defaults to empty array', async () => {
     const rowWithNullAccepted = { ...questionRow, accepted_answers: null };
-    const db = makeDb([[gameRow], [categoryRow], [rowWithNullAccepted]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [rowWithNullAccepted]);
+    const board = await buildGameBoard(qs, 1);
 
     expect(board!.categories[0].questions[0].question.answer.acceptedAnswers).toEqual([]);
   });
 
   test('returns empty categories array when game has no categories', async () => {
-    const db = makeDb([[gameRow], [], []]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [], []);
+    const board = await buildGameBoard(qs, 1);
 
     expect(board!.categories).toHaveLength(0);
   });
 
   test('questions not matching any category are not orphaned into wrong category', async () => {
     const orphanQuestionRow = { ...questionRow, game_category_id: 999 };
-    const db = makeDb([[gameRow], [categoryRow], [orphanQuestionRow]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [orphanQuestionRow]);
+    const board = await buildGameBoard(qs, 1);
 
     // Category 100 should have 0 questions since orphan belongs to category 999
     expect(board!.categories[0].questions).toHaveLength(0);
@@ -270,17 +274,19 @@ describe('buildGameBoard', () => {
 
   test('multiple questions grouped under correct category', async () => {
     const q2 = { ...questionRow, id: 201, question_id: 301, row_position: 2, point_value: 400 };
-    const db = makeDb([[gameRow], [categoryRow], [questionRow, q2]]);
-    const board = await buildGameBoard(db, 1);
+    const qs = makeQs(gameRow, [categoryRow], [questionRow, q2]);
+    const board = await buildGameBoard(qs, 1);
 
     expect(board!.categories[0].questions).toHaveLength(2);
     expect(board!.categories[0].questions.map((q) => q.pointValue)).toEqual([200, 400]);
   });
 
-  test('makes exactly three DB queries', async () => {
-    const db = makeDb([[gameRow], [categoryRow], [questionRow]]);
-    await buildGameBoard(db, 1);
+  test('calls findGameById, listGameCategoriesWithCategoryData, and listGameQuestionsWithData', async () => {
+    const qs = makeQs(gameRow, [categoryRow], [questionRow]);
+    await buildGameBoard(qs, 1);
 
-    expect(db.query).toHaveBeenCalledTimes(3);
+    expect(qs.findGameById).toHaveBeenCalledWith(1);
+    expect(qs.listGameCategoriesWithCategoryData).toHaveBeenCalledWith(1);
+    expect(qs.listGameQuestionsWithData).toHaveBeenCalledWith(1);
   });
 });

@@ -384,18 +384,12 @@ export class GameEditorComponent implements OnInit, OnDestroy {
     }
     if (!this.isDirty() || !this.game() || this.saving() || this.autosaving()) return;
     this.autosaving.set(true);
-    const start = Date.now();
     try {
       await this.performSave();
       this.isDirty.set(false);
     } catch {
       // Silent — the manual Save button remains available if autosave fails.
     } finally {
-      const elapsed = Date.now() - start;
-      const remaining = 1000 - elapsed;
-      if (remaining > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, remaining));
-      }
       this.autosaving.set(false);
     }
   }

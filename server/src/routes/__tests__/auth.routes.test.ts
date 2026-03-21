@@ -7,11 +7,13 @@ import { config } from '../../config.js';
 
 // vi.hoisted variables are available inside vi.mock() factories because
 // both are hoisted above imports. Regular const/let at module scope are not.
-const { mockSignUp, mockLogin, mockLogout, mockIsPwnedPassword } = vi.hoisted(() => ({
+const { mockSignUp, mockLogin, mockLogout, mockIsPwnedPassword, mockForgotPassword, mockResetPassword } = vi.hoisted(() => ({
   mockSignUp: vi.fn(),
   mockLogin: vi.fn(),
   mockLogout: vi.fn(),
   mockIsPwnedPassword: vi.fn(),
+  mockForgotPassword: vi.fn(),
+  mockResetPassword: vi.fn(),
 }));
 
 vi.mock('../../services/auth.service.js', () => ({
@@ -20,6 +22,8 @@ vi.mock('../../services/auth.service.js', () => ({
     login: mockLogin,
     logout: mockLogout,
     isPwnedPassword: mockIsPwnedPassword,
+    forgotPassword: mockForgotPassword,
+    resetPassword: mockResetPassword,
   })),
 }));
 
@@ -49,6 +53,8 @@ function buildApp() {
   const app = Fastify({ logger: false });
   const mockIsBlacklisted = vi.fn().mockResolvedValue(false);
   const mockBlacklistToken = vi.fn().mockResolvedValue(undefined);
+  // Default: user exists with token_version 0 — overridden per-test when needed
+  const mockDbQuery = vi.fn().mockResolvedValue({ rows: [{ token_version: 0 }] });
 
   // Real JWT plugin — needed by requireAuth (jwtVerify) and by the
   // /logout + /refresh handlers (fastify.jwt.verify).
@@ -62,8 +68,8 @@ function buildApp() {
   app.register(fastifyCookie, { secret: TEST_JWT_SECRET });
 
   // Decorators that authRoutes and requireAuth read off fastify/request.server.
-  // 'db' is never actually used because AuthService is mocked.
-  app.decorate('db', {} as any);
+  // AuthService itself is mocked; db.query is only called by requireAuth's tokenVersion check.
+  app.decorate('db', { query: mockDbQuery } as any);
   app.decorate('redis', undefined as any);
   app.decorate('redisAvailable', false); // → in-memory rate limiting
   app.decorate('isTokenBlacklisted', mockIsBlacklisted);
@@ -77,7 +83,7 @@ function buildApp() {
 
   app.register(authRoutes, { prefix: '/api/auth' });
 
-  return { app, mockIsBlacklisted, mockBlacklistToken };
+  return { app, mockIsBlacklisted, mockBlacklistToken, mockDbQuery };
 }
 
 // ---------------------------------------------------------------------------
@@ -328,11 +334,13 @@ describe('POST /api/auth/login', () => {
 
 describe('POST /api/auth/logout', () => {
   let app: ReturnType<typeof Fastify>;
+  let mockDbQuery: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    ({ app } = buildApp());
+    ({ app, mockDbQuery } = buildApp());
     await app.ready();
     vi.clearAllMocks();
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 0 }] }); // restore after clearAllMocks
   });
 
   afterEach(() => app.close());
@@ -454,6 +462,47 @@ describe('POST /api/auth/logout', () => {
     const setCookie = res.headers['set-cookie'] as string;
     expect(setCookie).toMatch(/Max-Age=0|expires=Thu, 01 Jan 1970/i);
     expect(setCookie).toContain('Path=/api/auth');
+  });
+
+  test('returns 401 SESSION_INVALIDATED when the token version is stale after a password reset', async () => {
+    // Token was issued with version 0; DB now has version 1 (reset happened since)
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 1 }] });
+    const accessToken = app.jwt.sign({
+      sub: '1', email: '', role: 'player', jti: 'old-session-jti', tokenVersion: 0,
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/logout',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'SESSION_INVALIDATED' },
+    });
+  });
+
+  test('allows logout when the token version matches the current DB value', async () => {
+    mockDbQuery.mockResolvedValue({ rows: [{ token_version: 2 }] });
+    const jti = 'current-session-jti';
+    const accessToken = app.jwt.sign({ sub: '1', email: '', role: 'player', jti, tokenVersion: 2 });
+    const refreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti, tokenVersion: 2 },
+      { expiresIn: '7d' }
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/logout',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Cookie: `refresh_token=${refreshToken}`,
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
   });
 });
 
@@ -710,5 +759,313 @@ describe('POST /api/auth/refresh', () => {
     expect(cookie).toContain('Path=/api/auth');
     expect(cookie).toContain(`Max-Age=${7 * 24 * 60 * 60}`);
     expect(cookie.toLowerCase()).not.toContain('secure'); // nodeEnv is 'test'
+  });
+
+  test('propagates tokenVersion from the incoming refresh token into both new tokens', async () => {
+    const oldRefreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: 'old-jti', tokenVersion: 3 },
+      { expiresIn: '7d' }
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      headers: { Cookie: `refresh_token=${oldRefreshToken}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+
+    const newAccessPayload = (app.jwt.decode(res.json().data.accessToken) as any).payload;
+    expect(newAccessPayload.tokenVersion).toBe(3);
+
+    const newRefreshValue = (res.headers['set-cookie'] as string).match(/refresh_token=([^;]+)/)?.[1];
+    const newRefreshPayload = (app.jwt.decode(newRefreshValue!) as any).payload;
+    expect(newRefreshPayload.tokenVersion).toBe(3);
+  });
+
+  test('issues tokens without tokenVersion when the incoming token had none (pre-migration compat)', async () => {
+    const oldRefreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: 'old-jti' }, // no tokenVersion
+      { expiresIn: '7d' }
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      headers: { Cookie: `refresh_token=${oldRefreshToken}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+
+    const newAccessPayload = (app.jwt.decode(res.json().data.accessToken) as any).payload;
+    expect(newAccessPayload.tokenVersion).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+describe('POST /api/auth/forgot-password', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(async () => {
+    ({ app } = buildApp());
+    await app.ready();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => app.close());
+
+  test('rejects a body missing email with 400 before calling AuthService', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { turnstileToken: 'tok' }, // missing email
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockForgotPassword).not.toHaveBeenCalled();
+  });
+
+  test('rejects a body missing turnstileToken with 400 before calling AuthService', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { email: 'alice@example.com' }, // missing turnstileToken
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockForgotPassword).not.toHaveBeenCalled();
+  });
+
+  test('rejects an invalid email format with 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { email: 'not-an-email', turnstileToken: 'tok' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockForgotPassword).not.toHaveBeenCalled();
+  });
+
+  test('returns 200 with the generic response message on success', async () => {
+    const message = "If that email is registered, you'll receive a link shortly.";
+    mockForgotPassword.mockResolvedValue({ response: message });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { email: 'alice@example.com', turnstileToken: 'tok' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ success: true, data: { response: message } });
+  });
+
+  test('proxies the service statusCode and error code on failure', async () => {
+    const err = Object.assign(new Error('Failed to send reset email. Please try again.'), {
+      code: 'EMAIL_SEND_FAILED',
+      statusCode: 503,
+    });
+    mockForgotPassword.mockRejectedValue(err);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { email: 'alice@example.com', turnstileToken: 'tok' },
+    });
+
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'EMAIL_SEND_FAILED' },
+    });
+  });
+
+  test('returns 500 INTERNAL_ERROR when the service throws without a statusCode', async () => {
+    mockForgotPassword.mockRejectedValue(new Error('Unexpected error'));
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: { email: 'alice@example.com', turnstileToken: 'tok' },
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'INTERNAL_ERROR' },
+    });
+  });
+
+  test('returns 429 RATE_LIMITED after 10 requests from the same IP within the hour', async () => {
+    const message = "If that email is registered, you'll receive a link shortly.";
+    mockForgotPassword.mockResolvedValue({ response: message });
+    const validPayload = { email: 'alice@example.com', turnstileToken: 'tok' };
+
+    for (let i = 0; i < 10; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/forgot-password',
+        payload: validPayload,
+      });
+      expect(res.statusCode, `expected 200 on request ${i + 1}`).toBe(200);
+    }
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/forgot-password',
+      payload: validPayload,
+    });
+    expect(res.statusCode).toBe(429);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'RATE_LIMITED' },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+describe('POST /api/auth/reset-password', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(async () => {
+    ({ app } = buildApp());
+    await app.ready();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => app.close());
+
+  test('rejects a body missing token with 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { newPassword: 'NewPassword1!' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
+  test('rejects a body missing newPassword with 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token: 'some-token' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
+  test('rejects a newPassword shorter than 8 characters with 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token: 'tok', newPassword: 'short' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
+  test('rejects a newPassword longer than 72 characters with 400', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token: 'tok', newPassword: 'x'.repeat(73) },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
+  test('accepts passwords at the exact minimum and maximum length boundaries', async () => {
+    mockResetPassword.mockResolvedValue(undefined);
+
+    for (const newPassword of ['x'.repeat(8), 'x'.repeat(72)]) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: { token: 'valid-token', newPassword },
+      });
+      expect(res.statusCode, `expected 200 for ${newPassword.length}-char password`).toBe(200);
+    }
+  });
+
+  test('returns 200 with a success message when the reset succeeds', async () => {
+    mockResetPassword.mockResolvedValue(undefined);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token: 'valid-token', newPassword: 'NewPassword1!' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      success: true,
+      data: { message: 'Password updated successfully.' },
+    });
+  });
+
+  test('returns 400 INVALID_RESET_TOKEN when the service rejects the token', async () => {
+    const err = Object.assign(new Error('This reset link is invalid or has expired.'), {
+      code: 'INVALID_RESET_TOKEN',
+      statusCode: 400,
+    });
+    mockResetPassword.mockRejectedValue(err);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token: 'bad-token', newPassword: 'NewPassword1!' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'INVALID_RESET_TOKEN' },
+    });
+  });
+
+  test('does not require a turnstileToken — no Turnstile check on this route', async () => {
+    mockResetPassword.mockResolvedValue(undefined);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      // no turnstileToken field
+      payload: { token: 'valid-token', newPassword: 'NewPassword1!' },
+    });
+
+    expect(res.statusCode).toBe(200);
+  });
+
+  test('returns 429 RATE_LIMITED after 5 requests from the same IP within 15 minutes', async () => {
+    mockResetPassword.mockResolvedValue(undefined);
+    const validPayload = { token: 'some-token', newPassword: 'NewPassword1!' };
+
+    for (let i = 0; i < 5; i++) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/reset-password',
+        payload: validPayload,
+      });
+      expect(res.statusCode, `expected 200 on request ${i + 1}`).toBe(200);
+    }
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: validPayload,
+    });
+    expect(res.statusCode).toBe(429);
+    expect(res.json()).toMatchObject({
+      success: false,
+      error: { code: 'RATE_LIMITED' },
+    });
   });
 });

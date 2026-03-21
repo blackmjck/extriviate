@@ -8,10 +8,12 @@ import {
   type AuthTokens,
   PwnedResponse,
 } from '@extriviate/shared';
+import { GameSocketService } from './game-socket.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly socketService = inject(GameSocketService);
 
   // The access token lives only in memory. It is gone on page reload -
   // that's intentional. loadUser() silently restores it via the HttpOnly cookie.
@@ -35,6 +37,31 @@ export class AuthService {
       // Either way, it means we can't evaluate the password in this request for good or ill.
       return undefined;
     }
+  }
+
+  // This triggers a check for a user on the backend and sends a password reset email (if valid)
+  async forgotPassword(email: string, turnstileToken: string): Promise<string> {
+    const res = await firstValueFrom(
+      this.http.post<ApiResponse<{ response: string }>>('/api/auth/forgot-password', {
+        email,
+        turnstileToken,
+      }),
+    );
+    // Return the server message (which should be generic to avoid phishing)
+    return res.data.response;
+  }
+
+  // Send the secret reset token and new password for the user
+  async resetPassword(token: string, password: string, turnstileToken: string): Promise<never> {
+    const res = await firstValueFrom(
+      this.http.post<ApiResponse<never>>('/api/auth/reset-password', {
+        token,
+        newPassword: password,
+        turnstileToken,
+      }),
+    );
+    // Return what you like; we won't be using it other than to signal success/failure
+    return res.data;
   }
 
   async login(email: string, password: string, turnstileToken: string): Promise<PublicUser> {
@@ -83,7 +110,7 @@ export class AuthService {
       // withCredentials: true is required so the browser sends the refresh
       // token cookie along with this request.
       this.http
-        .post('/api/auth/logout', {
+        .post('/api/auth/logout', {}, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         })
@@ -93,6 +120,7 @@ export class AuthService {
           },
         });
     }
+    this.socketService.disconnect();
     this.accessToken = null;
     this.currentUser.set(null);
   }

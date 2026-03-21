@@ -5,6 +5,8 @@ import { GuestSessionService } from './guest-session.service';
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
+const MAX_PENDING_MESSAGES = 20;
+
 @Injectable({ providedIn: 'root' })
 export class GameSocketService {
   private readonly guestSession = inject(GuestSessionService);
@@ -50,6 +52,9 @@ export class GameSocketService {
     if (this.connectionState() === 'connected' && this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
     } else {
+      if (this.pendingMessages.length >= MAX_PENDING_MESSAGES) {
+        this.pendingMessages.shift(); // drop the oldest message
+      }
       this.pendingMessages.push(message);
     }
   }
@@ -72,27 +77,19 @@ export class GameSocketService {
       this.reconnecting.set(false);
       this.reconnectAttempt = 0;
 
-      // TODO: verify that a registered user's initial join will not be lost with this logic
-      if (this.isReconnecting && this.guestSession.hasSession()) {
-        // Guest reconnect: send guest token as first message
+      if (this.guestSession.hasSession()) {
         const guestToken = this.guestSession.getToken();
         if (guestToken) {
           this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
-        } else if (this.currentToken) {
-          // Registered user (initial join or reconnect): send JWT as first message.
-          this.socket!.send(JSON.stringify({ type: 'auth', token: this.currentToken }));
-        } else if (this.guestSession.hasSession()) {
-          // Guest initial join (not a reconnect): also uses reconnect_guest.
-          const guestToken = this.guestSession.getToken();
-          if (guestToken) {
-            this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
-          }
         }
+      } else if (this.currentToken) {
+        this.socket!.send(JSON.stringify({ type: 'auth', token: this.currentToken }));
       }
       this.isReconnecting = false;
-
-      // Flush pending messages
-      this.flushPendingMessages();
+      // Pending messages are flushed only after the server confirms identity
+      // via full_state_sync — see GameStateService.handleMessage. Flushing here
+      // would drop messages because the server silently ignores all messages from
+      // sockets that are not yet in socketIdentities.
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
@@ -140,7 +137,7 @@ export class GameSocketService {
     }
   }
 
-  private flushPendingMessages(): void {
+  flushPendingMessages(): void {
     const messages = this.pendingMessages;
     this.pendingMessages = [];
     for (const msg of messages) {

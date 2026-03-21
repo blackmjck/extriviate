@@ -11,6 +11,7 @@ import { GAME_QUESTION_ROWS } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
 import { SessionService } from '../../core/services/session.service';
 import { WebRtcService } from '../../core/services/webrtc.service';
+import { OrientationService } from '../../core/services/orientation.service';
 import { PlayerGalleryComponent } from '../../shared/components/player-gallery/player-gallery.component';
 import { MediaControlsComponent } from '../../shared/components/media-controls/media-controls.component';
 
@@ -32,6 +33,12 @@ export class GameBoardComponent {
   private readonly gameState = inject(GameStateService);
   private readonly sessionService = inject(SessionService);
   private readonly webrtc = inject(WebRtcService);
+  private readonly orientation = inject(OrientationService);
+
+  /** True on small-screen portrait devices — show rotation prompt during active play */
+  readonly showOrientationPrompt = computed(
+    () => this.orientation.isPortrait() && this.orientation.isSmallScreen(),
+  );
 
   readonly board = input.required<GameBoard>();
   readonly sessionId = input.required<number>();

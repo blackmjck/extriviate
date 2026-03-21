@@ -66,17 +66,32 @@ export class QuestionComponent implements OnDestroy {
       }
     });
 
-    // Drive timer from server timer messages
+    // Restore timer from full_state_sync after reconnect
+    effect(() => {
+      const state = this.roundState();
+      const deadline = state?.timerDeadlineMs ?? null;
+      if (deadline !== null) {
+        const remainingMs = deadline - Date.now();
+        if (remainingMs > 0) {
+          this.startTimer(remainingMs);
+        } else {
+          this.clearTimer();
+        }
+      }
+    });
+
+    // Drive timer from server timer_started messages.
+    // Timer clearing is handled by the phase-change effect above — the server
+    // does not broadcast timer_expired; phase transitions carry that signal.
     this.socketService.messages$.pipe(takeUntilDestroyed()).subscribe((message) => {
       if (message.type === 'timer_started') {
         this.startTimer(message.durationMs);
-      } else if (message.type === 'timer_expired') {
-        this.clearTimer();
       }
     });
   }
 
-  buzz(): void {
+  buzz(event: PointerEvent): void {
+    event.preventDefault();
     const playerId = this.currentPlayerId();
     if (playerId === null) return;
     this.socketService.send({ type: 'buzz', playerId });
@@ -110,7 +125,10 @@ export class QuestionComponent implements OnDestroy {
     this.timerInterval = setInterval(() => {
       remaining--;
       if (remaining <= 0) {
-        this.clearTimer();
+        if (this.timerInterval !== null) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
         this.timerValue.set(0);
       } else {
         this.timerValue.set(remaining);

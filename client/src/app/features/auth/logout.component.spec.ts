@@ -45,7 +45,7 @@ describe('LogoutComponent', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
 

@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import dbPlugin from './plugins/db.plugin.js';
+import queryServicePlugin from './plugins/query-service.plugin.js';
 import redisPlugin from './plugins/redis.plugin.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import corsPlugin from './plugins/cors.plugin.js';
@@ -32,6 +33,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // These must be registered before routes because routes depend on
   // fastify.db, fastify.redis, etc. Fastify guarantees registration order
   await fastify.register(dbPlugin);
+  await fastify.register(queryServicePlugin);
   await fastify.register(redisPlugin);
   await fastify.register(jwtPlugin);
   // jwtPlugin depends on redisPlugin - its dependencies: ['redis'] declaration

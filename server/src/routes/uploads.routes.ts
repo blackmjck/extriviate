@@ -1,5 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { requireAuth } from '../hooks/auth.hook.js';
@@ -70,14 +75,14 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/uploads/confirm
   // Called after client uploads to R2. Records the upload in the database.
-  fastify.post<{ Body: { key: string; mimeType: string; sizeBytes: number } }>(
+  fastify.post<{ Body: { key: string; mimeType: string; sizeBytes?: number } }>(
     '/confirm',
     {
       preHandler: [requireAuth],
       schema: {
         body: {
           type: 'object',
-          required: ['key', 'mimeType', 'sizeBytes'],
+          required: ['key', 'mimeType'],
           properties: {
             key: { type: 'string', minLength: 1 },
             mimeType: { type: 'string' },
@@ -88,7 +93,7 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { key, mimeType, sizeBytes } = request.body;
+      const { key, mimeType } = request.body;
 
       // Ensure the key belongs to this user (path starts with users/{userId}/)
       if (!key.startsWith(`users/${request.user.sub}/`)) {
@@ -98,10 +103,27 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
         });
       }
 
-      // Validate size against type-specific limits
+      // Verify the actual file size from R2 — do not trust the client-supplied value
+      let actualSizeBytes: number;
+      try {
+        const head = await s3.send(
+          new HeadObjectCommand({
+            Bucket: config.r2.bucketName,
+            Key: key,
+          })
+        );
+        actualSizeBytes = head.ContentLength ?? 0;
+      } catch {
+        return reply.status(400).send({
+          success: false,
+          error: { message: 'File not found in storage', code: 'FILE_NOT_FOUND' },
+        });
+      }
+
+      // Validate actual size against type-specific limits
       const isVideo = mimeType.startsWith('video/');
       const maxSize = isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
-      if (sizeBytes > maxSize) {
+      if (actualSizeBytes > maxSize) {
         return reply.status(400).send({
           success: false,
           error: { message: 'File exceeds maximum size', code: 'FILE_TOO_LARGE' },
@@ -111,20 +133,20 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
       const publicUrl = `${config.r2.publicBaseUrl}/${key}`;
 
       try {
-        const result = await fastify.db.query(
-          `INSERT INTO uploads (owner_id, key, public_url, mime_type, size_bytes)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, key, public_url, mime_type, size_bytes, created_at`,
-          [request.user.sub, key, publicUrl, mimeType, sizeBytes]
+        const row = await fastify.queryService.confirmUpload(
+          parseInt(request.user.sub, 10),
+          key,
+          publicUrl,
+          mimeType,
+          actualSizeBytes,
         );
 
-        const row = result.rows[0];
         return reply.status(201).send({
           success: true,
           data: {
             upload: {
               id: row.id,
-              ownerId: parseInt(request.user.sub, 10),
+              ownerId: row.owner_id,
               key: row.key,
               publicUrl: row.public_url,
               mimeType: row.mime_type,
@@ -134,8 +156,9 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
             publicUrl: row.public_url,
           },
         });
-      } catch (err: any) {
-        if (err.code === '23505') {
+      } catch (err: unknown) {
+        const { code } = err as { code: string };
+        if (code === '23505') {
           return reply.status(409).send({
             success: false,
             error: { message: 'This file has already been confirmed', code: 'DUPLICATE_UPLOAD' },
@@ -164,24 +187,16 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { limit = 20, offset = 0 } = request.query;
+      const ownerId = parseInt(request.user.sub, 10);
 
-      const [items, count] = await Promise.all([
-        fastify.db.query(
-          `SELECT id, key, public_url, mime_type, size_bytes, created_at
-           FROM uploads
-           WHERE owner_id = $1
-           ORDER BY created_at DESC
-           LIMIT $2 OFFSET $3`,
-          [request.user.sub, limit, offset]
-        ),
-        fastify.db.query('SELECT COUNT(*) FROM uploads WHERE owner_id = $1', [
-          request.user.sub,
-        ]),
+      const [rows, total] = await Promise.all([
+        fastify.queryService.listUploads(ownerId, limit, offset),
+        fastify.queryService.countUploads(ownerId),
       ]);
 
-      const uploads = items.rows.map((row: any) => ({
+      const uploads = rows.map((row) => ({
         id: row.id,
-        ownerId: parseInt(request.user.sub, 10),
+        ownerId: row.owner_id,
         key: row.key,
         publicUrl: row.public_url,
         mimeType: row.mime_type,
@@ -191,12 +206,7 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({
         success: true,
-        data: {
-          items: uploads,
-          total: parseInt(count.rows[0].count, 10),
-          limit,
-          offset,
-        },
+        data: { items: uploads, total, limit, offset },
       });
     }
   );
@@ -207,30 +217,31 @@ const uploadsRoutes: FastifyPluginAsync = async (fastify) => {
     '/:id',
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      const result = await fastify.db.query(
-        'SELECT id, key FROM uploads WHERE id = $1 AND owner_id = $2',
-        [request.params.id, request.user.sub]
+      const upload = await fastify.queryService.findUploadById(
+        parseInt(request.params.id, 10),
+        parseInt(request.user.sub, 10),
       );
 
-      if (result.rows.length === 0) {
+      if (!upload) {
         return reply.status(404).send({
           success: false,
           error: { message: 'Upload not found', code: 'NOT_FOUND' },
         });
       }
 
-      const { key } = result.rows[0];
+      // Delete from DB first — if the DB delete fails, the R2 object is untouched
+      // and the user can retry. If DB succeeds but R2 delete fails, the object
+      // becomes orphaned storage (invisible to users but wastes space). This is
+      // preferable to the reverse: a stale DB record pointing to a deleted object
+      // would produce broken URLs for any client that renders the upload.
+      await fastify.queryService.deleteUpload(upload.id);
 
-      // Delete from R2 first — if this fails, the DB record stays
-      // and the user can retry. Better than orphaning an R2 object.
       await s3.send(
         new DeleteObjectCommand({
           Bucket: config.r2.bucketName,
-          Key: key,
+          Key: upload.key,
         })
       );
-
-      await fastify.db.query('DELETE FROM uploads WHERE id = $1', [request.params.id]);
 
       return reply.send({ success: true, data: null });
     }
