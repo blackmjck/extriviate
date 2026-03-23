@@ -5,7 +5,9 @@ node_modules/
 # Build outputs
 */dist/
 client/.angular/
-*/tsconfig.tsbuildinfo
+client/tsconfig.tsbuildinfo
+server/tsconfig.tsbuildinfo
+shared/tsconfig.tsbuildinfo
 
 # Environment files
 server/.env
