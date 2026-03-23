@@ -101,22 +101,54 @@ describe('ResetPasswordComponent', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('computed: showLoading', () => {
-    it('is true when turnstileToken is empty', async () => {
+  describe('computed: disabledHint', () => {
+    it('returns empty string when loading is true', async () => {
       const { component } = await setup();
-      // token is empty by default
-      expect(component.showLoading()).toBe(true);
+      component.loading.set(true);
+      expect(component.disabledHint()).toBe('');
     });
 
-    it('is false when turnstileToken is set and loading is false', async () => {
+    it('returns empty string when isLocked is true', async () => {
+      const { component } = await setup();
+      component.isLocked.set(true);
+      expect(component.disabledHint()).toBe('');
+    });
+
+    it('returns CAPTCHA wait message when not locked/loading and token is empty', async () => {
+      const { component } = await setup();
+      expect(component.disabledHint()).toBe('Waiting for security check to complete\u2026');
+    });
+
+    it('returns required fields message when token is set but passwords are empty', async () => {
+      const { component } = await setup();
+      component.turnstileToken.set('cf-token');
+      expect(component.disabledHint()).toBe('Please fill in all required fields.');
+    });
+
+    it('returns empty string when passwords and token are set', async () => {
+      const { component } = await setup();
+      component.password.set('new-password');
+      component.confirmPassword.set('new-password');
+      component.turnstileToken.set('cf-token');
+      expect(component.disabledHint()).toBe('');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('computed: showLoading', () => {
+    it('is false when loading is false (regardless of token)', async () => {
+      const { component } = await setup();
+      expect(component.showLoading()).toBe(false);
+    });
+
+    it('is false when loading is false even with a token set', async () => {
       const { component } = await setup();
       component.turnstileToken.set('cf-token');
       expect(component.showLoading()).toBe(false);
     });
 
-    it('is true when loading is true even with a turnstileToken', async () => {
+    it('is true when loading is true', async () => {
       const { component } = await setup();
-      component.turnstileToken.set('cf-token');
       component.loading.set(true);
       expect(component.showLoading()).toBe(true);
     });
@@ -168,17 +200,17 @@ describe('ResetPasswordComponent', () => {
     it('is true when turnstileToken is missing', async () => {
       const { component } = await setup();
       component.password.set('new-password');
-      // turnstileToken is '' — showLoading() returns true → disabled
+      // turnstileToken is '' — !turnstileToken().length is a direct term in disabled()
       expect(component.disabled()).toBe(true);
     });
 
-    it('is true when errorMessage is set', async () => {
+    it('is false even when errorMessage is set (errorMessage no longer gates the button)', async () => {
       const { component } = await setup();
       component.password.set('new-password');
       component.confirmPassword.set('new-password');
       component.turnstileToken.set('cf-token');
       component.errorMessage.set('Something went wrong');
-      expect(component.disabled()).toBeTruthy();
+      expect(component.disabled()).toBe(false);
     });
 
     it('is true when isLocked is true', async () => {
@@ -343,6 +375,7 @@ describe('ResetPasswordComponent', () => {
 
       expect(component.errorMessage()).toBe('There was an error.');
       expect(component.loading()).toBe(false);
+      expect(component.submitted()).toBe(false);
       expect(mockResetPassword).not.toHaveBeenCalled();
     });
   });
@@ -502,9 +535,16 @@ describe('ResetPasswordComponent', () => {
       expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
     });
 
-    it('shows "Loading..." button text when showLoading is true and showWorking is false', async () => {
-      // Default state: no turnstileToken → showLoading true, showWorking false
+    it('shows "Reset" button text when not loading (regardless of CAPTCHA token)', async () => {
       const { fixture } = await setup();
+      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(btn.textContent!.trim()).toBe('Reset');
+    });
+
+    it('shows "Loading..." button text when loading is true but submitted is false', async () => {
+      const { fixture, component } = await setup();
+      component.loading.set(true);
+      fixture.detectChanges();
       const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
       expect(btn.textContent!.trim()).toBe('Loading...');
     });
@@ -524,6 +564,22 @@ describe('ResetPasswordComponent', () => {
       fixture.detectChanges();
       const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
       expect(btn.textContent!.trim()).toBe('Reset');
+    });
+
+    it('shows the form-hint paragraph with CAPTCHA message when token is absent', async () => {
+      const { fixture } = await setup();
+      const hint = fixture.nativeElement.querySelector('.form-hint') as HTMLElement;
+      expect(hint).toBeTruthy();
+      expect(hint.textContent!.trim()).toContain('Waiting for security check');
+    });
+
+    it('hides the form-hint paragraph when passwords and token are set', async () => {
+      const { fixture, component } = await setup();
+      component.password.set('new-password');
+      component.confirmPassword.set('new-password');
+      component.turnstileToken.set('cf-token');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.form-hint')).toBeNull();
     });
   });
 });

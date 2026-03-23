@@ -681,12 +681,10 @@ describe('AuthService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.forgotPassword('alice@example.com', 'cf-token');
-      httpMock
-        .expectOne('/api/auth/forgot-password')
-        .flush({
-          success: true,
-          data: { response: 'If that email exists, a reset link has been sent.' },
-        });
+      httpMock.expectOne('/api/auth/forgot-password').flush({
+        success: true,
+        data: { response: 'If that email exists, a reset link has been sent.' },
+      });
 
       expect(await promise).toBe('If that email exists, a reset link has been sent.');
       httpMock.verify();
@@ -741,15 +739,13 @@ describe('AuthService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.resetPassword('expired-token', 'new-password', 'cf-token');
-      httpMock
-        .expectOne('/api/auth/reset-password')
-        .flush(
-          {
-            success: false,
-            error: { message: 'Invalid or expired reset token', code: 'INVALID_RESET_TOKEN' },
-          },
-          { status: 400, statusText: 'Bad Request' },
-        );
+      httpMock.expectOne('/api/auth/reset-password').flush(
+        {
+          success: false,
+          error: { message: 'Invalid or expired reset token', code: 'INVALID_RESET_TOKEN' },
+        },
+        { status: 400, statusText: 'Bad Request' },
+      );
 
       await expect(promise).rejects.toThrow();
       httpMock.verify();

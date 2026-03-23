@@ -32,18 +32,25 @@ export class SignupComponent {
   strongPassword = signal<boolean>(false);
   loading = signal(false);
   submitted = signal(false);
-  showLoading = computed(() => this.loading() || !this.turnstileToken().length);
+  showLoading = computed(() => this.loading());
   showWorking = computed(() => this.loading() && this.submitted());
   disabled = computed(
     () =>
-      this.showLoading() ||
-      this.showWorking() ||
-      this.errorMessage().length ||
+      this.loading() ||
+      !this.turnstileToken().length ||
       !this.password().length ||
       !this.displayName().length ||
       !this.email().length ||
       !this.strongPassword(),
   );
+  disabledHint = computed<string>(() => {
+    if (this.loading()) return '';
+    if (!this.turnstileToken().length) return 'Waiting for security check to complete\u2026';
+    if (!this.email().length || !this.displayName().length || !this.password().length)
+      return 'Please fill in all required fields.';
+    if (!this.strongPassword()) return 'Please choose a stronger password.';
+    return '';
+  });
 
   onCaptcha(msg: string | null, isError = false): void {
     if (isError) {
@@ -85,6 +92,7 @@ export class SignupComponent {
       // annoy them with an unhelpful message!
       this.errorMessage.set('There was an error.');
       this.loading.set(false);
+      this.submitted.set(false);
       return;
     }
 

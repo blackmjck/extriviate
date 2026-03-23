@@ -88,6 +88,9 @@
           Sign Up
         }
       </button>
+      @if (disabledHint()) {
+        <p class="form-hint" role="status" aria-live="polite">{{ disabledHint() }}</p>
+      }
     </form>
 
     <p class="auth-link">Already have an account? <a routerLink="/login">Sign in</a></p>

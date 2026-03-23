@@ -72,11 +72,7 @@ export class PasswordStrengthMeterComponent {
 
   constructor() {
     effect(() => {
-      this.pass.emit(
-        !this.isPwnedChecking() &&
-        this.score() >= this.minLevel() &&
-        !this.isPwned()
-      );
+      this.pass.emit(!this.isPwnedChecking() && this.score() >= this.minLevel() && !this.isPwned());
     });
   }
 

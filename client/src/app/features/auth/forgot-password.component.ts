@@ -44,16 +44,18 @@ export class ForgotPasswordComponent implements OnInit {
   submitted = signal(false);
   isLocked = signal(false);
 
-  showLoading = computed(() => this.loading() || !this.turnstileToken().length);
+  showLoading = computed(() => this.loading());
   showWorking = computed(() => this.loading() && this.submitted());
   disabled = computed(
     () =>
-      this.showLoading() ||
-      this.showWorking() ||
-      this.errorMessage().length ||
-      !this.email().length ||
-      this.isLocked(),
+      this.loading() || !this.turnstileToken().length || !this.email().length || this.isLocked(),
   );
+  disabledHint = computed<string>(() => {
+    if (this.loading() || this.isLocked()) return '';
+    if (!this.turnstileToken().length) return 'Waiting for security check to complete\u2026';
+    if (!this.email().length) return 'Please enter your email address.';
+    return '';
+  });
 
   ngOnInit(): void {
     const error = this.route.snapshot.queryParamMap.get('error');
@@ -107,6 +109,7 @@ export class ForgotPasswordComponent implements OnInit {
       // annoy them with an unhelpful message!
       this.errorMessage.set('There was an error.');
       this.loading.set(false);
+      this.submitted.set(false);
       return;
     }
 

@@ -186,7 +186,7 @@ export class AuthService {
   }
 
   async signUp(data: SignUpRequest): Promise<{ user: PublicUser; tokens: AuthTokens }> {
-    const normalizedEmail = data.email.toLowerCase();
+    const normalizedEmail = data.email.toLowerCase().trim();
 
     const existing = await this.qs.findActiveUserByEmail(normalizedEmail);
     if (existing) {
@@ -200,7 +200,7 @@ export class AuthService {
 
     let dbUser;
     try {
-      dbUser = await this.qs.createUser(normalizedEmail, data.displayName, passwordHash);
+      dbUser = await this.qs.createUser(normalizedEmail, data.displayName.trim(), passwordHash);
     } catch (err: unknown) {
       const { code } = err as { code: string };
       if (code === '23505') {
@@ -219,7 +219,7 @@ export class AuthService {
   }
 
   async login(data: LoginRequest): Promise<{ user: PublicUser; tokens: AuthTokens }> {
-    const normalizedEmail = data.email.toLowerCase();
+    const normalizedEmail = data.email.toLowerCase().trim();
     const lockoutKey = `login_attempts:${normalizedEmail}`;
 
     // Check for an active lockout

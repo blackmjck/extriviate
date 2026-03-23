@@ -66,6 +66,9 @@
           Sign In
         }
       </button>
+      @if (disabledHint()) {
+        <p class="form-hint" role="status" aria-live="polite">{{ disabledHint() }}</p>
+      }
     </form>
 
     <p class="auth-link"><a routerLink="/forgot-password">Forgot your password?</a></p>

@@ -282,7 +282,9 @@ describe('PasswordStrengthMeterComponent', () => {
 
       // Queue an unresolved promise for the next checkPassword call
       let resolveCheck!: (v: boolean | undefined) => void;
-      const checkPromise = new Promise<boolean | undefined>((res) => { resolveCheck = res; });
+      const checkPromise = new Promise<boolean | undefined>((res) => {
+        resolveCheck = res;
+      });
       mockCheckPwned.mockReturnValueOnce(checkPromise);
 
       const passValues: boolean[] = [];

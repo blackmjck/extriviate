@@ -114,21 +114,53 @@ describe('ForgotPasswordComponent', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('computed: showLoading', () => {
-    it('is true when turnstileToken is empty', async () => {
+  describe('computed: disabledHint', () => {
+    it('returns empty string when loading is true', async () => {
       const { component } = await setup();
-      expect(component.showLoading()).toBe(true);
+      component.loading.set(true);
+      expect(component.disabledHint()).toBe('');
     });
 
-    it('is false when turnstileToken is set and loading is false', async () => {
+    it('returns empty string when isLocked is true', async () => {
+      const { component } = await setup();
+      component.isLocked.set(true);
+      expect(component.disabledHint()).toBe('');
+    });
+
+    it('returns CAPTCHA wait message when not locked/loading and token is empty', async () => {
+      const { component } = await setup();
+      expect(component.disabledHint()).toBe('Waiting for security check to complete\u2026');
+    });
+
+    it('returns email prompt when token is set but email is empty', async () => {
+      const { component } = await setup();
+      component.turnstileToken.set('cf-token');
+      expect(component.disabledHint()).toBe('Please enter your email address.');
+    });
+
+    it('returns empty string when email and token are set', async () => {
+      const { component } = await setup();
+      component.email.set('alice@example.com');
+      component.turnstileToken.set('cf-token');
+      expect(component.disabledHint()).toBe('');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('computed: showLoading', () => {
+    it('is false when loading is false (regardless of token)', async () => {
+      const { component } = await setup();
+      expect(component.showLoading()).toBe(false);
+    });
+
+    it('is false when loading is false even with a token set', async () => {
       const { component } = await setup();
       component.turnstileToken.set('cf-token');
       expect(component.showLoading()).toBe(false);
     });
 
-    it('is true when loading is true even with a turnstileToken', async () => {
+    it('is true when loading is true', async () => {
       const { component } = await setup();
-      component.turnstileToken.set('cf-token');
       component.loading.set(true);
       expect(component.showLoading()).toBe(true);
     });
@@ -182,12 +214,12 @@ describe('ForgotPasswordComponent', () => {
       expect(component.disabled()).toBe(true);
     });
 
-    it('is true when errorMessage is set', async () => {
+    it('is false even when errorMessage is set (errorMessage no longer gates the button)', async () => {
       const { component } = await setup();
       component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
       component.errorMessage.set('oops');
-      expect(component.disabled()).toBeTruthy();
+      expect(component.disabled()).toBe(false);
     });
 
     it('is true when isLocked is true', async () => {
@@ -311,6 +343,7 @@ describe('ForgotPasswordComponent', () => {
 
       expect(component.errorMessage()).toBe('There was an error.');
       expect(component.loading()).toBe(false);
+      expect(component.submitted()).toBe(false);
       expect(mockForgotPassword).not.toHaveBeenCalled();
     });
   });
@@ -336,9 +369,7 @@ describe('ForgotPasswordComponent', () => {
 
       await component.onSubmit();
 
-      expect(component.responseMessage()).toBe(
-        'If that email exists, a reset link has been sent.',
-      );
+      expect(component.responseMessage()).toBe('If that email exists, a reset link has been sent.');
     });
 
     it('sets isLocked to true after a successful submission', async () => {
@@ -477,8 +508,16 @@ describe('ForgotPasswordComponent', () => {
       expect(btn.disabled).toBe(false);
     });
 
-    it('shows "Loading..." button text when no token is present', async () => {
+    it('shows "Recover" button text when not loading (regardless of CAPTCHA token)', async () => {
       const { fixture } = await setup();
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      expect(btn.textContent!.trim()).toBe('Recover');
+    });
+
+    it('shows "Loading..." button text when loading is true but submitted is false', async () => {
+      const { fixture, component } = await setup();
+      component.loading.set(true);
+      fixture.detectChanges();
       const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
       expect(btn.textContent!.trim()).toBe('Loading...');
     });
@@ -499,6 +538,21 @@ describe('ForgotPasswordComponent', () => {
       fixture.detectChanges();
       const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
       expect(btn.textContent!.trim()).toBe('Checking...');
+    });
+
+    it('shows the form-hint paragraph with CAPTCHA message when token is absent', async () => {
+      const { fixture } = await setup();
+      const hint = host(fixture).querySelector<HTMLElement>('.form-hint');
+      expect(hint).toBeTruthy();
+      expect(hint!.textContent!.trim()).toContain('Waiting for security check');
+    });
+
+    it('hides the form-hint paragraph when email and token are set', async () => {
+      const { fixture, component } = await setup();
+      component.email.set('alice@example.com');
+      component.turnstileToken.set('cf-token');
+      fixture.detectChanges();
+      expect(host(fixture).querySelector('.form-hint')).toBeNull();
     });
   });
 });

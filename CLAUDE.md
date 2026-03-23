@@ -175,19 +175,21 @@ extriviate/
 ## Database Schema
 
 ```sql
-users             id, email UNIQUE, display_name, password_hash, role, is_active
-categories        id, creator_id→users, name, UNIQUE(creator_id,name)
-questions         id, creator_id, category_id, content JSONB
-answers           id, question_id CASCADE, content JSONB, accepted_answers text[]
-games             id, creator_id, title, daily_doubles_enabled, is_published,
-                  require_question_format, use_ai_evaluation
-game_categories   id, game_id, category_id RESTRICT, position 1-6, UNIQUE(game_id,position)
-game_questions    id, game_id, game_category_id, question_id RESTRICT, row_position 1-5,
-                  point_value>0, is_daily_double, is_answered
-game_sessions     id, game_id, host_id, name, join_code, status, mode, turn_based,
-                  played_at, ended_at
-session_players   id, session_id, user_id nullable, display_name, final_score INTEGER, rank nullable
-uploads           id, owner_id, key, public_url UNIQUE, mime_type, size_bytes
+users                  id, email UNIQUE, display_name, password_hash, role, is_active
+categories             id, creator_id→users, name, UNIQUE(creator_id,name)
+questions              id, creator_id, category_id, content JSONB
+answers                id, question_id CASCADE, content JSONB, accepted_answers text[]
+games                  id, creator_id, title, daily_doubles_enabled, is_published,
+                       require_question_format, use_ai_evaluation
+game_categories        id, game_id, category_id RESTRICT, position 1-6, UNIQUE(game_id,position)
+game_questions         id, game_id, game_category_id, question_id RESTRICT, row_position 1-5,
+                       point_value>0, is_daily_double, is_answered
+game_sessions          id, game_id, host_id, name, join_code, status, mode, turn_based,
+                       played_at, ended_at
+password_reset_tokens  id, user_id->users CASCADE, token_hash UNIQUE, expires_at, used_at nullable,
+                       created_at
+session_players        id, session_id, user_id nullable, display_name, final_score INTEGER, rank nullable
+uploads                id, owner_id, key, public_url UNIQUE, mime_type, size_bytes
 ```
 
 - Scores support negatives (INTEGER, not UNSIGNED).
