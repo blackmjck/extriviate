@@ -240,7 +240,7 @@ export class AuthService {
 
         const err = new Error(
           `Too many failed login attempts. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`
-        ) as any;
+        ) as LoginError;
         err.code = 'ACCOUNT_LOCKED';
         err.statusCode = 429;
         err.retryAfterSeconds = secondsRemaining;
@@ -324,7 +324,6 @@ export class AuthService {
 
     const payload = {
       sub: String(user.id),
-      email: '', // not included in payload for privacy
       role: user.role,
       jti,
       tokenVersion,

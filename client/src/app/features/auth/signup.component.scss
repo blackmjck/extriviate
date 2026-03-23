@@ -84,12 +84,12 @@
 }
 
 // hidden honeypot field styles
-input.hp {
+input[name='confirm_email'] {
   height: 0;
-  left: 0;
   opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
   position: absolute;
-  top: 0;
   width: 0;
   z-index: -1;
 }

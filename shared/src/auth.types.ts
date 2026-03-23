@@ -2,7 +2,7 @@
 // Kept minimal - only what's needed to identify and authorize a request
 export interface JwtPayload {
   sub: string; // subject - the user's numeric ID, stored as string per JWT convention
-  email: string;
+  email?: string; // intentionally omitted from issued tokens for privacy
   role: UserRole;
   iat?: number; // issued-at - added automatically by the JWT library
   exp?: number; // expiry - added automatically by the JWT library

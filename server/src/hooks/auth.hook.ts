@@ -59,7 +59,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
 // session join page where both guests and logged-in users are valid.
 // Blacklist check is best-effort: if the token is revoked, request.user
 // is cleared so the route handler treats the caller as unauthenticated.
-export async function optionalAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function optionalAuth(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
   try {
     await request.jwtVerify();
     const payload = request.user;
@@ -80,10 +80,11 @@ export async function optionalAuth(request: FastifyRequest, reply: FastifyReply)
     const dbVersion = versionResult.rows[0]?.token_version ?? 0;
     const payloadVersion = payload.tokenVersion ?? 0;
     if (!versionResult.rows[0] || dbVersion !== payloadVersion) {
-      return reply.status(401).send({
-        success: false,
-        error: { message: 'Session has been invalidated', code: 'SESSION_INVALIDATED' },
-      });
+      // Stale token (e.g. post-password-reset) — treat as unauthenticated,
+      // consistent with the blacklist check above. optionalAuth must never
+      // hard-reject: routes using it accept both authenticated and guest callers.
+      (request as any).user = undefined;
+      return;
     }
   } catch {
     // No valid token - that's fine, request.user simply won't be set.

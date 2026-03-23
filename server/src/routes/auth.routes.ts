@@ -464,7 +464,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         const newJti = randomUUID();
         const newPayload = {
           sub: payload.sub,
-          email: payload.email,
           role: payload.role,
           jti: newJti,
           tokenVersion: dbVersion, // from the DB, never copied from the incoming JWT

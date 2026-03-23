@@ -120,7 +120,9 @@ const sessionsRoutes: FastifyPluginAsync = async (fastify) => {
       );
 
       // Add the host as the first player
-      const hostPlayer = await sessionService.addPlayer(session.id, request.user.email, userId);
+      const hostUser = await fastify.queryService.findActiveUserById(userId);
+      const hostDisplayName = hostUser?.display_name ?? `User ${userId}`;
+      const hostPlayer = await sessionService.addPlayer(session.id, hostDisplayName, userId);
       const state = gameStateService.getSession(session.id)!;
       // Host LivePlayer entry will be created when they connect via WebSocket
 

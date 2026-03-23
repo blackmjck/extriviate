@@ -61,16 +61,10 @@ export class SignupComponent {
     }
   }
 
-  setHP(evt: unknown) {
-    // handle Angular-interpreted events
-    if (typeof evt === 'string' && evt.length) {
-      this.hp.set(evt);
-      // handle native HTML events (e.g. input, change, blur, etc.)
-    } else if (evt instanceof Event && evt.target) {
-      const { value } = evt.target as unknown as { value: string };
-      if (value !== this.hp()) {
-        this.hp.set(value);
-      }
+  setHP(evt: Event): void {
+    const value = (evt.target as HTMLInputElement).value;
+    if (value !== this.hp()) {
+      this.hp.set(value);
     }
   }
 

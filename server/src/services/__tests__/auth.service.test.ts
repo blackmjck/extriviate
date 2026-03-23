@@ -223,13 +223,9 @@ describe('AuthService', () => {
         turnstileToken: 'token',
       });
 
-      expect(mockFastify.signAccessToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sub: '1',
-          email: '',
-          role: 'creator',
-        })
-      );
+      const callArg = vi.mocked(mockFastify.signAccessToken).mock.calls[0][0];
+      expect(callArg).toMatchObject({ sub: '1', role: 'creator' });
+      expect(callArg).not.toHaveProperty('email');
     });
 
     test('lowercases the email passed to createUser', async () => {

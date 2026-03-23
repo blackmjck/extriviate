@@ -691,10 +691,9 @@ describe('POST /api/auth/refresh', () => {
     expect(newPayload.payload.jti).not.toBe(oldJti);
   });
 
-  test('new tokens carry the original sub, email, and role', async () => {
+  test('new tokens carry the original sub and role (email is not included in tokens)', async () => {
     const originalPayload = {
       sub: '42',
-      email: 'alice@example.com',
       role: 'admin',
       jti: 'original-jti',
     };
@@ -712,7 +711,7 @@ describe('POST /api/auth/refresh', () => {
     const newAccessToken = res.json().data.accessToken;
     const newAccessPayload = (app.jwt.decode(newAccessToken) as any).payload;
     expect(newAccessPayload.sub).toBe('42');
-    expect(newAccessPayload.email).toBe('alice@example.com');
+    expect(newAccessPayload.email).toBeUndefined();
     expect(newAccessPayload.role).toBe('admin');
 
     // Verify new refresh token identity

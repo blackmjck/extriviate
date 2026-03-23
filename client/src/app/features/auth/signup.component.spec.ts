@@ -249,18 +249,6 @@ describe('SignupComponent', () => {
 
   // -------------------------------------------------------------------------
   describe('setHP()', () => {
-    it('sets hp when given a non-empty string', async () => {
-      const { component } = await setup();
-      component.setHP('bot@evil.com');
-      expect(component.hp()).toBe('bot@evil.com');
-    });
-
-    it('does not set hp for an empty string', async () => {
-      const { component } = await setup();
-      component.setHP('');
-      expect(component.hp()).toBe('');
-    });
-
     it('sets hp from a native Event with a non-empty target value', async () => {
       const { component } = await setup();
       const input = document.createElement('input');
