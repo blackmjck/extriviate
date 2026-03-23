@@ -16,6 +16,10 @@ server/.env.*
 *.log
 npm-debug.log*
 
+# Test and coverage output
+client/coverage
+server/coverage
+
 # OS
 .DS_Store
 Thumbs.db

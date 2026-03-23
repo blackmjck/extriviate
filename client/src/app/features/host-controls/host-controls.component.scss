@@ -6,40 +6,40 @@
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 20px;
 }
 
 .panel-title {
+  border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
 }
 
 .phase-status {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 8px;
 }
 
 .phase-label {
   color: var(--text-subtle);
   font-size: 0.8rem;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .phase-value {
   color: var(--score-value);
-  font-weight: 600;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .control-group {
@@ -48,15 +48,15 @@
 }
 
 .control-btn {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 8px;
   border: none;
-  font-weight: 600;
-  font-size: 0.85rem;
+  border-radius: 8px;
   cursor: pointer;
-  text-transform: uppercase;
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
+  padding: 10px 16px;
+  text-transform: uppercase;
   transition:
     transform 0.1s ease,
     opacity 0.15s ease;
@@ -76,8 +76,8 @@
 
   &.lock {
     background: var(--border-subtle);
-    color: var(--text-primary);
     border: 1px solid var(--border-strong);
+    color: var(--text-primary);
   }
 
   &.correct {
@@ -94,10 +94,10 @@
 .evaluation-section {
   background: var(--surface-1);
   border-radius: 8px;
-  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 16px;
 }
 
 .answering-player {
@@ -108,10 +108,10 @@
 
 .submitted-answer {
   color: #fff;
+  font-family: var(--font-question);
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
-  font-family: var(--font-question);
 }
 
 .eval-buttons {

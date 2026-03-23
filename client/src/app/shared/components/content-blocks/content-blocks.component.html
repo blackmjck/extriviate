@@ -6,7 +6,9 @@
       [class.italic]="block.formatting === 'italic'"
       [class.underline]="block.formatting === 'underline'"
       [class.code]="block.formatting === 'code'"
-    >{{ block.value }}</p>
+    >
+      {{ block.value }}
+    </p>
   }
   @if (isImage(block)) {
     <figure class="block-image-wrap">

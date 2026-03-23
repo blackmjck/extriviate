@@ -11,59 +11,59 @@
 // ---- Drop Zone ----
 
 .drop-zone {
+  background: var(--surface-1);
   border: 2px dashed var(--border-strong);
   border-radius: 12px;
+  cursor: pointer;
   padding: 40px 24px;
   text-align: center;
   transition: border-color 0.2s, background 0.2s;
-  cursor: pointer;
-  background: var(--surface-1);
 
   &--active {
-    border-color: var(--accent);
     background: var(--accent-dim);
+    border-color: var(--accent);
   }
 
   &--uploading {
-    cursor: default;
-    border-style: solid;
     border-color: var(--border-subtle);
+    border-style: solid;
+    cursor: default;
   }
 
   &__prompt {
+    align-items: center;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 10px;
   }
 
   &__icon {
-    font-size: 2rem;
     color: var(--text-hint);
+    font-size: 2rem;
     line-height: 1;
   }
 
   &__text {
-    font-size: 0.95rem;
     color: var(--text-subtle);
+    font-size: 0.95rem;
   }
 
   &__or {
-    font-size: 0.75rem;
     color: var(--text-hint);
-    text-transform: uppercase;
+    font-size: 0.75rem;
     letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   &__browse-btn {
-    display: inline-block;
-    padding: 10px 24px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--on-accent);
     background: var(--accent);
     border-radius: 6px;
+    color: var(--on-accent);
     cursor: pointer;
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 24px;
     transition: background 0.15s;
 
     &:hover {
@@ -76,45 +76,45 @@
   }
 
   &__progress {
+    align-items: center;
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 12px;
-    width: 100%;
-    max-width: 360px;
     margin: 0 auto;
+    max-width: 360px;
+    width: 100%;
   }
 
   &__file-name {
-    font-size: 0.85rem;
     color: var(--text-muted);
+    font-size: 0.85rem;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100%;
   }
 
   &__percent {
+    color: var(--score-value);
     font-family: var(--font-score);
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--score-value);
   }
 }
 
 // ---- Progress Bar ----
 
 .progress-bar {
-  width: 100%;
-  height: 8px;
   background: var(--border-subtle);
   border-radius: 4px;
+  height: 8px;
   overflow: hidden;
+  width: 100%;
 
   &__fill {
-    height: 100%;
     background: var(--accent);
     border-radius: 4px;
+    height: 100%;
     transition: width 0.2s ease-out;
   }
 }
@@ -124,8 +124,8 @@
 .error-banner {
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
-  color: var(--danger);
-  padding: 10px 14px;
   border-radius: 6px;
+  color: var(--danger);
   font-size: 0.85rem;
+  padding: 10px 14px;
 }

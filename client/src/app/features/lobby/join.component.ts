@@ -79,9 +79,18 @@ export class JoinComponent implements OnInit {
       case 'guest':
         return { method: 'guest', displayName: this.guestName() } as const;
       case 'login':
-        return { method: 'login', email: this.loginEmail(), password: this.loginPassword() } as const;
+        return {
+          method: 'login',
+          email: this.loginEmail(),
+          password: this.loginPassword(),
+        } as const;
       case 'signup':
-        return { method: 'signup', email: this.signupEmail(), password: this.signupPassword(), displayName: this.signupName() } as const;
+        return {
+          method: 'signup',
+          email: this.signupEmail(),
+          password: this.signupPassword(),
+          displayName: this.signupName(),
+        } as const;
     }
   }
 

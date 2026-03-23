@@ -1,29 +1,29 @@
 :host {
-  display: block;
-  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
+  display: block;
+  // min-height: 100vh
   flex: 1;
   padding: 40px 24px;
 }
 
 .game-list {
-  max-width: 960px;
   margin: 0 auto;
+  max-width: 960px;
 
   &__header {
-    display: flex;
     align-items: center;
+    display: flex;
     justify-content: space-between;
     margin-bottom: 32px;
   }
 
   &__title {
+    color: var(--accent);
+    flex: 1;
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--accent);
     margin: 0;
-    flex: 1;
   }
 }
 
@@ -31,18 +31,18 @@
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .game-card {
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 20px;
   transition: border-color 0.15s;
 
   &:hover {
@@ -51,24 +51,24 @@
 
   &__body {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 8px;
-    flex: 1;
   }
 
   &__title {
+    color: var(--text-primary);
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
-    color: var(--text-primary);
   }
 
   &__status {
+    color: var(--text-subtle);
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--text-subtle);
+    text-transform: uppercase;
 
     &--published {
       color: var(--published);

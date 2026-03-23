@@ -183,7 +183,7 @@ describe('QuestionPickerComponent — loadQuestions (HTTP)', () => {
   });
 
   it('passes the categoryId as a query parameter', () => {
-    const { component, httpMock } = setupWithHttp();
+    const { httpMock } = setupWithHttp();
     const req = httpMock.expectOne((r) => r.url.includes('/api/questions'));
     expect(req.request.params.get('categoryId')).toBe('10');
     req.flush({ success: true, data: { items: [], total: 0 } });
@@ -191,7 +191,7 @@ describe('QuestionPickerComponent — loadQuestions (HTTP)', () => {
   });
 
   it('passes offset as a query parameter', () => {
-    const { component, httpMock } = setupWithHttp();
+    const { httpMock } = setupWithHttp();
     const req = httpMock.expectOne((r) => r.url.includes('/api/questions'));
     expect(req.request.params.get('offset')).toBe('0');
     req.flush({ success: true, data: { items: [], total: 0 } });
@@ -212,13 +212,15 @@ describe('QuestionPickerComponent — loadQuestions (HTTP)', () => {
   });
 
   it('renders the loading text while loading', () => {
-    const { fixture, component, httpMock } = setupWithHttp();
+    const { fixture, httpMock } = setupWithHttp();
     // loading is true during the in-flight request
     fixture.detectChanges();
     const loadingEl = (fixture.nativeElement as HTMLElement).querySelector('.loading-text');
     expect(loadingEl).not.toBeNull();
     // clean up
-    httpMock.expectOne((r) => r.url.includes('/api/questions')).flush({ success: true, data: { items: [], total: 0 } });
+    httpMock
+      .expectOne((r) => r.url.includes('/api/questions'))
+      .flush({ success: true, data: { items: [], total: 0 } });
     httpMock.verify();
   });
 
@@ -427,27 +429,67 @@ describe('QuestionPickerComponent — questionPreview', () => {
   it.each([
     [
       'text block',
-      { id: 1, creatorId: 1, categoryId: 1, content: [{ type: 'text' as const, value: 'Hello world' }], answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] }, createdAt: '', updatedAt: '' },
+      {
+        id: 1,
+        creatorId: 1,
+        categoryId: 1,
+        content: [{ type: 'text' as const, value: 'Hello world' }],
+        answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
+        createdAt: '',
+        updatedAt: '',
+      },
       'Hello world',
     ],
     [
       'empty text block',
-      { id: 1, creatorId: 1, categoryId: 1, content: [{ type: 'text' as const, value: '' }], answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] }, createdAt: '', updatedAt: '' },
+      {
+        id: 1,
+        creatorId: 1,
+        categoryId: 1,
+        content: [{ type: 'text' as const, value: '' }],
+        answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
+        createdAt: '',
+        updatedAt: '',
+      },
       '(empty)',
     ],
     [
       'image block',
-      { id: 1, creatorId: 1, categoryId: 1, content: [{ type: 'image' as const, value: 'https://img' }], answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] }, createdAt: '', updatedAt: '' },
+      {
+        id: 1,
+        creatorId: 1,
+        categoryId: 1,
+        content: [{ type: 'image' as const, value: 'https://img' }],
+        answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
+        createdAt: '',
+        updatedAt: '',
+      },
       '[image]',
     ],
     [
       'video block',
-      { id: 1, creatorId: 1, categoryId: 1, content: [{ type: 'video' as const, value: 'https://vid' }], answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] }, createdAt: '', updatedAt: '' },
+      {
+        id: 1,
+        creatorId: 1,
+        categoryId: 1,
+        content: [{ type: 'video' as const, value: 'https://vid' }],
+        answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
+        createdAt: '',
+        updatedAt: '',
+      },
       '[video]',
     ],
     [
       'no content blocks',
-      { id: 1, creatorId: 1, categoryId: 1, content: [], answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] }, createdAt: '', updatedAt: '' },
+      {
+        id: 1,
+        creatorId: 1,
+        categoryId: 1,
+        content: [],
+        answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
+        createdAt: '',
+        updatedAt: '',
+      },
       '(no content)',
     ],
   ])('returns correct preview for %s', (_label, question, expected) => {
@@ -459,10 +501,13 @@ describe('QuestionPickerComponent — questionPreview', () => {
     const { component } = setupPreview();
     const longText = 'A'.repeat(100);
     const q: QuestionWithAnswer = {
-      id: 1, creatorId: 1, categoryId: 1,
+      id: 1,
+      creatorId: 1,
+      categoryId: 1,
       content: [{ type: 'text', value: longText }],
       answer: { id: 1, questionId: 1, content: [], acceptedAnswers: [] },
-      createdAt: '', updatedAt: '',
+      createdAt: '',
+      updatedAt: '',
     };
     expect(component.questionPreview(q)).toHaveLength(90);
   });

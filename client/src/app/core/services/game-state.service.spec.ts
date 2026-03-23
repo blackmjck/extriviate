@@ -66,7 +66,14 @@ function makeBoard() {
         gameId: 1,
         categoryId: 1,
         position: 1,
-        category: { id: 1, creatorId: 1, name: 'Science', description: null, createdAt: '', updatedAt: '' },
+        category: {
+          id: 1,
+          creatorId: 1,
+          name: 'Science',
+          description: null,
+          createdAt: '',
+          updatedAt: '',
+        },
         questions: [
           {
             id: 10,
@@ -122,7 +129,7 @@ function setup(authUserId: number | null = null, guestPlayerId: number | null = 
   const mockAuth = {
     currentUser: signal(
       authUserId !== null
-        ? ({ id: authUserId, displayName: 'Test', role: 'creator' as const, createdAt: '' })
+        ? { id: authUserId, displayName: 'Test', role: 'creator' as const, createdAt: '' }
         : null,
     ),
     isAuthenticated: computed(() => authUserId !== null),
@@ -215,7 +222,9 @@ describe('full_state_sync', () => {
     const { service, messages$ } = setup();
     messages$.next({
       type: 'full_state_sync',
-      state: makeFullStateSync({ players: [makePlayer({ playerId: 1 }), makePlayer({ playerId: 2 })] }),
+      state: makeFullStateSync({
+        players: [makePlayer({ playerId: 1 }), makePlayer({ playerId: 2 })],
+      }),
     });
     expect(service.players()).toHaveLength(2);
 
@@ -451,7 +460,7 @@ describe('buzz_received', () => {
   });
 
   it('does nothing when roundState is null', () => {
-    const { service, messages$ } = setup();
+    const { messages$ } = setup();
     // roundState is null by default (no full_state_sync)
     expect(() => {
       messages$.next({ type: 'buzz_received', playerId: 1, position: 0 });

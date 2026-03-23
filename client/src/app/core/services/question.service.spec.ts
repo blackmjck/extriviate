@@ -50,9 +50,7 @@ describe('QuestionService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.getQuestions(0, DEFAULT_PAGE_SIZE, null);
-      const req = httpMock.expectOne(
-        (r) => r.method === 'GET' && r.url.includes('/api/questions'),
-      );
+      const req = httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/api/questions'));
       expect(req.request.params.get('offset')).toBe('0');
       expect(req.request.params.get('limit')).toBe('20');
       expect(req.request.params.has('categoryId')).toBe(false);

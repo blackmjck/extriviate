@@ -4,53 +4,54 @@
 }
 
 .board-container {
-  width: 100%;
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
   padding: 8px;
+  width: 100%;
 }
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
+  grid-template-columns: repeat(6, 1fr);
   min-width: 600px;
 }
 
 .category-header {
+  align-items: center;
   background: var(--accent);
+  border-radius: 4px 4px 0 0;
   color: var(--on-accent);
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  min-height: 60px;
   padding: 12px 8px;
   text-align: center;
-  font-weight: 700;
-  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-radius: 4px 4px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60px;
 
   .category-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
   }
 }
 
 .cell {
+  align-items: center;
   background: var(--accent);
   border: 2px solid var(--border-subtle);
   border-radius: 4px;
-  padding: 16px 8px;
   cursor: pointer;
   display: flex;
-  align-items: center;
   justify-content: center;
   min-height: 64px;
+  padding: 16px 8px;
   transition:
     background-color 0.15s ease,
     opacity 0.2s ease,
@@ -68,8 +69,8 @@
   &.answered {
     background: var(--surface-1);
     border-color: transparent;
-    opacity: 0.3;
     cursor: default;
+    opacity: 0.3;
   }
 
   &.not-your-turn {
@@ -84,15 +85,15 @@
 
 .point-value {
   color: var(--on-accent);
-  font-weight: 800;
-  font-size: 1.4rem;
   font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .bottom-bar {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 12px;
   margin-top: 8px;
 
@@ -103,27 +104,27 @@
 }
 
 .orientation-prompt {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px 16px;
   margin-bottom: 8px;
   text-align: center;
 
   p {
-    font-size: 0.85rem;
     color: var(--on-surface);
+    font-size: 0.85rem;
     margin: 0;
   }
 
   .orientation-icon {
-    font-size: 2rem;
     display: block;
+    font-size: 2rem;
   }
 }
 
@@ -135,8 +136,8 @@
 
   .category-header {
     font-size: 0.55rem;
-    padding: 6px 2px;
     min-height: 36px;
+    padding: 6px 2px;
   }
 
   .cell {
@@ -152,14 +153,14 @@
 // Responsive: stack categories on small screens
 @media (max-width: 640px) {
   .board-grid {
-    min-width: unset;
     grid-template-columns: repeat(6, minmax(80px, 1fr));
+    min-width: unset;
   }
 
   .category-header {
     font-size: 0.65rem;
-    padding: 8px 4px;
     min-height: 48px;
+    padding: 8px 4px;
   }
 
   .cell {

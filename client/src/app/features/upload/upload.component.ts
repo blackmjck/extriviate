@@ -106,6 +106,4 @@ export class UploadComponent {
       this.uploading.set(false);
     }
   }
-
-
 }

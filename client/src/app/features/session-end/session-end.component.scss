@@ -1,45 +1,45 @@
 :host {
-  display: block;
-  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
+  display: block;
+  // min-height: 100vh
   padding: 48px 24px;
 }
 
 .session-end {
-  max-width: 720px;
-  margin: 0 auto;
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 40px;
+  margin: 0 auto;
+  max-width: 720px;
 }
 
 .title {
+  color: var(--accent);
   font-size: 2rem;
   font-weight: 700;
-  color: var(--accent);
-  text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0;
+  text-transform: uppercase;
 }
 
 // ---- Podium ----
 
 .podium {
-  display: flex;
   align-items: flex-end;
-  justify-content: center;
+  display: flex;
   gap: 16px;
-  width: 100%;
+  justify-content: center;
   max-width: 480px;
+  width: 100%;
 
   &__slot {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    gap: 8px;
   }
 
   &__medal {
@@ -49,35 +49,35 @@
   &__name {
     font-size: 0.95rem;
     font-weight: 600;
-    text-align: center;
+    max-width: 100%;
     overflow: hidden;
+    text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100%;
   }
 
   &__score {
+    color: var(--score-value);
     font-family: var(--font-score);
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--score-value);
   }
 
   &__bar {
-    width: 100%;
+    align-items: flex-end;
     background: var(--accent);
     border-radius: 6px 6px 0 0;
     display: flex;
-    align-items: flex-end;
     justify-content: center;
-    padding-bottom: 12px;
     min-height: 40px;
+    padding-bottom: 12px;
+    width: 100%;
   }
 
   &__rank {
+    color: var(--on-accent);
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--on-accent);
   }
 
   &__slot--rank-1 .podium__bar {
@@ -96,19 +96,19 @@
 // ---- Rankings table ----
 
 .rankings {
-  width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+  width: 100%;
 
   th {
-    text-align: left;
-    padding: 10px 12px;
     border-bottom: 2px solid var(--border-strong);
     color: var(--text-subtle);
-    font-weight: 500;
-    text-transform: uppercase;
     font-size: 0.75rem;
+    font-weight: 500;
     letter-spacing: 1px;
+    padding: 10px 12px;
+    text-align: left;
+    text-transform: uppercase;
   }
 
   &__row {
@@ -123,14 +123,14 @@
     }
 
     td {
-      padding: 10px 12px;
       border-bottom: 1px solid var(--surface-2);
+      padding: 10px 12px;
     }
   }
 
   &__rank {
-    width: 60px;
     text-align: center;
+    width: 60px;
   }
 
   &__name {
@@ -138,28 +138,28 @@
   }
 
   &__score {
-    width: 100px;
-    text-align: right;
+    color: var(--score-value);
     font-family: var(--font-score);
     font-weight: 700;
-    color: var(--score-value);
+    text-align: right;
+    width: 100px;
   }
 }
 
 // ---- Play Again ----
 
 .play-again-btn {
-  margin-top: 8px;
-  padding: 14px 40px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--on-accent);
   background: var(--accent);
   border: none;
   border-radius: 8px;
+  color: var(--on-accent);
   cursor: pointer;
-  text-transform: uppercase;
+  font-size: 1rem;
+  font-weight: 600;
   letter-spacing: 1px;
+  margin-top: 8px;
+  padding: 14px 40px;
+  text-transform: uppercase;
   transition:
     background 0.2s,
     transform 0.1s;

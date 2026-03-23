@@ -272,6 +272,51 @@ describe('PasswordStrengthMeterComponent', () => {
       await setPassword(fixture, 'password1'); // score=3 >= minLevel=3 → true
       expect(emissions.at(-1)).toBe(true);
     });
+
+    it('emits pass=false while the HIBP check is in flight', async () => {
+      mockZxcvbn.mockReturnValue(zxcvbnResult(3)); // strong score — would pass without HIBP block
+      const { fixture, component, mockCheckPwned } = setup();
+
+      // Establish a good score via the debounce pipeline first (mockCheckPwned → false)
+      await setPassword(fixture, 'correct-horse-battery-staple');
+
+      // Queue an unresolved promise for the next checkPassword call
+      let resolveCheck!: (v: boolean | undefined) => void;
+      const checkPromise = new Promise<boolean | undefined>((res) => { resolveCheck = res; });
+      mockCheckPwned.mockReturnValueOnce(checkPromise);
+
+      const passValues: boolean[] = [];
+      component.pass.subscribe((v) => passValues.push(v));
+      fixture.detectChanges(); // effect: !false && 3>=2 && !false → true
+
+      // Start checkPassword without awaiting — isPwnedChecking.set(true) runs synchronously
+      void component.checkPassword('correct-horse-battery-staple');
+      await Promise.resolve(); // let the signal update propagate
+      fixture.detectChanges();
+
+      // isPwnedChecking=true gates pass to false
+      expect(passValues.at(-1)).toBe(false);
+
+      // Resolve the HIBP check as not-pwned; pass must recover
+      resolveCheck(false);
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(passValues.at(-1)).toBe(true);
+    });
+
+    it('emits pass=false when isPwned is true regardless of score', async () => {
+      mockZxcvbn.mockReturnValue(zxcvbnResult(4)); // max score — would normally pass
+      const { fixture, component, mockCheckPwned } = setup();
+      mockCheckPwned.mockResolvedValue(true); // HIBP says this password is pwned
+
+      const passValues: boolean[] = [];
+      component.pass.subscribe((v) => passValues.push(v));
+      fixture.detectChanges();
+
+      await setPassword(fixture, 'correct-horse-battery-staple');
+      // score=4, isPwned=true, isPwnedChecking=false → pass must be false
+      expect(passValues.at(-1)).toBe(false);
+    });
   });
 
   // -------------------------------------------------------------------------

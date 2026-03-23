@@ -12,7 +12,9 @@
   } @else {
     <div class="join-card">
       <h1 class="session-name">{{ session()!.name }}</h1>
-      <p class="session-code">Code: <strong>{{ session()!.joinCode }}</strong></p>
+      <p class="session-code">
+        Code: <strong>{{ session()!.joinCode }}</strong>
+      </p>
 
       @if (errorMessage()) {
         <div class="error-banner">{{ errorMessage() }}</div>

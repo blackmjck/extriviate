@@ -391,9 +391,7 @@ describe('WebRtcService', () => {
       const { service, socketSend, playersSignal } = setup();
       service.generatePeerId();
 
-      playersSignal.set([
-        makePlayer({ playerId: 2, peerId: 'bob-peer' }),
-      ]);
+      playersSignal.set([makePlayer({ playerId: 2, peerId: 'bob-peer' })]);
 
       await service.connectToAllPeers();
 
@@ -830,9 +828,7 @@ describe('WebRtcService', () => {
       await tick();
 
       // An answer should have been sent — confirms the offer was processed
-      expect(socketSend).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'webrtc_answer' }),
-      );
+      expect(socketSend).toHaveBeenCalledWith(expect.objectContaining({ type: 'webrtc_answer' }));
     });
 
     it('falls back to playerId 0 when no matching player is found', async () => {
@@ -853,9 +849,7 @@ describe('WebRtcService', () => {
       await tick();
 
       // An answer should still be sent even without a known playerId
-      expect(socketSend).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'webrtc_answer' }),
-      );
+      expect(socketSend).toHaveBeenCalledWith(expect.objectContaining({ type: 'webrtc_answer' }));
     });
   });
 });

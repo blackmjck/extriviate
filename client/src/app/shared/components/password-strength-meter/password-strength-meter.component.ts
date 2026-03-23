@@ -40,6 +40,7 @@ export class PasswordStrengthMeterComponent {
   pass = output<boolean>();
 
   readonly isPwned = signal<boolean>(false);
+  readonly isPwnedChecking = signal<boolean>(false);
   readonly LABELS = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
   readonly segments: zxcvbnScore[] = [0, 1, 2, 3, 4]; // 5 bars = scores 0–4 mapped to 1–5
 
@@ -71,15 +72,23 @@ export class PasswordStrengthMeterComponent {
 
   constructor() {
     effect(() => {
-      this.pass.emit(this.score() >= this.minLevel());
+      this.pass.emit(
+        !this.isPwnedChecking() &&
+        this.score() >= this.minLevel() &&
+        !this.isPwned()
+      );
     });
   }
 
   async checkPassword(password: string): Promise<void> {
     if (password.length >= 8) {
+      this.isPwnedChecking.set(true);
       const pwned: boolean | undefined = await this.auth.checkPwnedPassword(password);
-
       this.isPwned.set(!!pwned);
+      this.isPwnedChecking.set(false);
+    } else {
+      this.isPwned.set(false);
+      this.isPwnedChecking.set(false);
     }
   }
 }

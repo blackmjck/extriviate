@@ -114,9 +114,7 @@ export class GameStateService {
         break;
 
       case 'player_removed':
-        this.players.update((players) =>
-          players.filter((p) => p.playerId !== message.playerId),
-        );
+        this.players.update((players) => players.filter((p) => p.playerId !== message.playerId));
         break;
 
       case 'host_assigned_player':

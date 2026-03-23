@@ -32,7 +32,11 @@ async function setup(): Promise<{
 
   const fixture = TestBed.createComponent(ConnectionStatusComponent);
   fixture.detectChanges();
-  return { fixture, component: fixture.componentInstance, el: fixture.nativeElement as HTMLElement };
+  return {
+    fixture,
+    component: fixture.componentInstance,
+    el: fixture.nativeElement as HTMLElement,
+  };
 }
 
 // ---------------------------------------------------------------------------

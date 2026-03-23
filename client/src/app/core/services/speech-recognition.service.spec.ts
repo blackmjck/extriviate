@@ -25,7 +25,6 @@ function makeMockCtor(): { ctor: new () => MockRecognition; getInstance: () => M
   let capturedInstance: MockRecognition | null = null;
 
   // Must be a regular function so `new MockCtor()` works.
-  // eslint-disable-next-line prefer-arrow/prefer-arrow-functions
   function MockCtor(this: MockRecognition) {
     this.continuous = false;
     this.interimResults = false;
@@ -34,6 +33,7 @@ function makeMockCtor(): { ctor: new () => MockRecognition; getInstance: () => M
     this.onresult = null;
     this.onend = null;
     this.onerror = null;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     capturedInstance = this;
   }
 
@@ -81,7 +81,7 @@ function setupWithApi(): { service: SpeechRecognitionService; recognition: MockR
 // Helper to build a fake SpeechRecognitionEvent
 
 function makeSpeechEvent(
-  results: Array<{ transcript: string; isFinal: boolean }>,
+  results: { transcript: string; isFinal: boolean }[],
 ): SpeechRecognitionEvent {
   const resultList = results.map(({ transcript, isFinal }) => {
     const alternative = { transcript, confidence: 1 };

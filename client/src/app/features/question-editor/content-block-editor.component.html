@@ -10,20 +10,26 @@
           title="Move up"
           [disabled]="$index === 0"
           (click)="moveUp($index)"
-        >↑</button>
+        >
+          ↑
+        </button>
         <button
           type="button"
           class="cbe__ctrl"
           title="Move down"
           [disabled]="$index === blocks().length - 1"
           (click)="moveDown($index)"
-        >↓</button>
+        >
+          ↓
+        </button>
         <button
           type="button"
           class="cbe__ctrl cbe__ctrl--remove"
           title="Remove block"
           (click)="remove($index)"
-        >✕</button>
+        >
+          ✕
+        </button>
       </div>
 
       @if (block.type === 'text') {

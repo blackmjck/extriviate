@@ -1,18 +1,18 @@
 :host {
-  display: block;
-  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
+  display: block;
+  // min-height: 100vh
   padding: 32px 24px;
 }
 
 .qlist {
-  max-width: 960px;
   margin: 0 auto;
+  max-width: 960px;
 
   &__header {
-    display: flex;
     align-items: center;
+    display: flex;
     gap: 16px;
     justify-content: space-between;
     margin-bottom: 32px;
@@ -27,19 +27,19 @@
   }
 
   &__filter {
-    display: flex;
     align-items: center;
+    display: flex;
     gap: 12px;
     margin-bottom: 24px;
   }
 
   &__items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   &__item {
@@ -75,66 +75,66 @@
   }
 
   &__category {
+    background: rgba(65, 105, 225, 0.12);
+    border-radius: 4px;
+    color: var(--accent);
+    display: block;
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--accent);
-    background: rgba(65, 105, 225, 0.12);
-    padding: 3px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
     overflow: hidden;
+    padding: 3px 8px;
     text-overflow: ellipsis;
-    display: block;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   &__preview {
-    flex: 1;
-    margin: 0;
-    font-size: 0.9rem;
     color: var(--text-muted);
-    white-space: nowrap;
+    flex: 1;
+    font-size: 0.9rem;
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__item-actions {
     display: flex;
-    gap: 8px;
     flex-shrink: 0;
+    gap: 8px;
   }
 
   &__empty {
-    display: flex;
     align-items: center;
+    color: var(--text-hint);
+    display: flex;
+    font-style: italic;
     gap: 12px;
     padding: 32px;
-    color: var(--text-hint);
-    font-style: italic;
   }
 }
 
 // ---- Filter ----
 
 .label {
+  color: var(--text-subtle);
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--text-subtle);
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .select {
-  padding: 8px 12px;
-  font-size: 0.875rem;
   background: var(--surface-2);
   border: 1px solid var(--border-moderate);
   border-radius: 6px;
   color: var(--text-muted);
-  outline: none;
   cursor: pointer;
+  font-size: 0.875rem;
+  outline: none;
+  padding: 8px 12px;
   transition: border-color 0.15s;
 
   &:focus {

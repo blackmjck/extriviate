@@ -86,7 +86,11 @@ describe('MediaControlsComponent', () => {
 
   it('camera button has aria-label "Turn camera off" when cameraActive is true', () => {
     const webrtcPatch = { cameraActive: signal(true) };
-    const el = setup(1, {} as MediaStream, webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>);
+    const el = setup(
+      1,
+      {} as MediaStream,
+      webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>,
+    );
     const cameraBtn = el.querySelectorAll('.control-btn')[0];
     expect(cameraBtn.getAttribute('aria-label')).toBe('Turn camera off');
   });
@@ -107,7 +111,11 @@ describe('MediaControlsComponent', () => {
 
   it('audio button has aria-label "Mute microphone" when audioMuted is false', () => {
     const webrtcPatch = { audioMuted: signal(false) };
-    const el = setup(1, {} as MediaStream, webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>);
+    const el = setup(
+      1,
+      {} as MediaStream,
+      webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>,
+    );
     const audioBtn = el.querySelectorAll('.control-btn')[1];
     expect(audioBtn.getAttribute('aria-label')).toBe('Mute microphone');
   });
@@ -147,7 +155,11 @@ describe('MediaControlsComponent', () => {
 
   it('toggleCamera() sends cameraActive and audioMuted values from signals', () => {
     const webrtcPatch = { cameraActive: signal(true), audioMuted: signal(false) };
-    setup(3, {} as MediaStream, webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>);
+    setup(
+      3,
+      {} as MediaStream,
+      webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>,
+    );
     component.toggleCamera();
     expect(socketStub.send).toHaveBeenCalledWith({
       type: 'media_state_update',
@@ -182,7 +194,11 @@ describe('MediaControlsComponent', () => {
 
   it('toggleAudio() sends current cameraActive and audioMuted signal values', () => {
     const webrtcPatch = { cameraActive: signal(false), audioMuted: signal(true) };
-    setup(5, {} as MediaStream, webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>);
+    setup(
+      5,
+      {} as MediaStream,
+      webrtcPatch as unknown as Partial<ReturnType<typeof buildWebRtcStub>>,
+    );
     component.toggleAudio();
     expect(socketStub.send).toHaveBeenCalledWith({
       type: 'media_state_update',

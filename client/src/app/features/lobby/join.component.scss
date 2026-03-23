@@ -1,17 +1,17 @@
 .join-page {
-  display: flex;
   align-items: center;
+  background-color: var(--bg-primary);
+  display: flex;
+  font-family: var(--font-ui);
   justify-content: center;
   // min-height: 100vh
   padding: 1rem;
-  background-color: var(--bg-primary);
-  font-family: var(--font-ui);
 }
 
 .loading-state,
 .error-state {
-  text-align: center;
   color: var(--text-secondary);
+  text-align: center;
 
   h2 {
     color: var(--text-primary);
@@ -21,13 +21,13 @@
 }
 
 .spinner {
-  width: 36px;
+  animation: spin 0.8s linear infinite;
+  border: 3px solid var(--border-subtle);
+  border-radius: 50%;
+  border-top-color: var(--accent);
   height: 36px;
   margin: 0 auto 1rem;
-  border: 3px solid var(--border-subtle);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  width: 36px;
 }
 
 @keyframes spin {
@@ -37,28 +37,28 @@
 }
 
 .join-card {
-  width: 100%;
-  max-width: 460px;
-  padding: 2rem;
-  border-radius: 12px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
+  border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 460px;
+  padding: 2rem;
+  width: 100%;
 }
 
 .session-name {
-  margin: 0 0 0.25rem;
+  color: var(--text-primary);
   font-family: var(--font-question);
   font-size: 1.5rem;
-  color: var(--text-primary);
+  margin: 0 0 0.25rem;
   text-align: center;
 }
 
 .session-code {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
   margin: 0 0 1.25rem;
   text-align: center;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
 
   strong {
     color: var(--score-value);
@@ -68,34 +68,34 @@
 }
 
 .error-banner {
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
+  border-radius: 8px;
   color: var(--error-text);
   font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
 }
 
 .method-tabs {
+  border: 1px solid var(--border-moderate);
+  border-radius: 8px;
   display: flex;
   gap: 0;
   margin-bottom: 1.25rem;
-  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--border-moderate);
 }
 
 .tab {
-  flex: 1;
-  padding: 0.625rem 0;
-  border: none;
   background: var(--surface-1);
+  border: none;
   color: var(--text-secondary);
+  cursor: pointer;
+  flex: 1;
+  font-family: var(--font-ui);
   font-size: 0.8125rem;
   font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
+  padding: 0.625rem 0;
   transition:
     background 0.2s,
     color 0.2s;
@@ -127,22 +127,22 @@
   gap: 0.375rem;
 
   label {
+    color: var(--text-muted);
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
     letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   input {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-moderate);
     background: var(--surface-2);
+    border: 1px solid var(--border-moderate);
+    border-radius: 8px;
     color: var(--text-primary);
-    font-size: 1rem;
     font-family: var(--font-ui);
+    font-size: 1rem;
     outline: none;
+    padding: 0.75rem 1rem;
     transition: border-color 0.2s;
 
     &::placeholder {
@@ -157,16 +157,16 @@
 }
 
 .btn-primary {
-  margin-top: 0.5rem;
-  padding: 0.875rem;
+  background: var(--accent);
   border: none;
   border-radius: 8px;
-  background: var(--accent);
   color: var(--on-accent);
+  cursor: pointer;
+  font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
+  margin-top: 0.5rem;
+  padding: 0.875rem;
   transition:
     opacity 0.2s,
     transform 0.1s;
@@ -180,7 +180,7 @@
   }
 
   &:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
+    opacity: 0.5;
   }
 }

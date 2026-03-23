@@ -102,6 +102,7 @@ export class LoginComponent {
       this.errorMessage.set(message);
     } finally {
       this.loading.set(false);
+      this.submitted.set(false);
     }
   }
 }

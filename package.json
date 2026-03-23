@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w @extriviate/server\" \"npm run dev -w @extriviate/client\"",
+    "start": "concurrently \"npm run dev -w @extriviate/server\" \"npm run dev -w @extriviate/client\"",
     "start:server": "npm run dev -w @extriviate/server",
     "start:client": "npm run start -w @extriviate/client",
     "build:shared": "npm run build -w @extriviate/shared",

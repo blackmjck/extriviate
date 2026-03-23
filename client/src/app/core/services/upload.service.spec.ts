@@ -110,9 +110,9 @@ describe('UploadService', () => {
         }),
         status: 200,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
       await expect(
@@ -139,9 +139,9 @@ describe('UploadService', () => {
         }),
         status: 403,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
       await expect(
@@ -163,9 +163,9 @@ describe('UploadService', () => {
         }),
         status: 0,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
       const promise = service.uploadToPresignedUrl('https://r2.example.com/upload', file, vi.fn());
@@ -190,9 +190,9 @@ describe('UploadService', () => {
         }),
         status: 0,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
       const promise = service.uploadToPresignedUrl('https://r2.example.com/upload', file, vi.fn());
@@ -220,9 +220,9 @@ describe('UploadService', () => {
         addEventListener: vi.fn(),
         status: 200,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const onProgress = vi.fn();
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
@@ -230,10 +230,18 @@ describe('UploadService', () => {
       service.uploadToPresignedUrl('https://r2.example.com/upload', file, onProgress);
 
       // Simulate two progress events
-      capturedHandlers.progress?.({ lengthComputable: true, loaded: 25, total: 100 } as ProgressEvent);
+      capturedHandlers.progress?.({
+        lengthComputable: true,
+        loaded: 25,
+        total: 100,
+      } as ProgressEvent);
       expect(onProgress).toHaveBeenCalledWith(0.25);
 
-      capturedHandlers.progress?.({ lengthComputable: true, loaded: 75, total: 100 } as ProgressEvent);
+      capturedHandlers.progress?.({
+        lengthComputable: true,
+        loaded: 75,
+        total: 100,
+      } as ProgressEvent);
       expect(onProgress).toHaveBeenCalledWith(0.75);
 
       expect(onProgress).toHaveBeenCalledTimes(2);
@@ -255,16 +263,20 @@ describe('UploadService', () => {
         addEventListener: vi.fn(),
         status: 200,
       };
-      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(
-        function () { return mockXhr; } as unknown as typeof XMLHttpRequest,
-      );
+      vi.spyOn(globalThis, 'XMLHttpRequest').mockImplementation(function () {
+        return mockXhr;
+      } as unknown as typeof XMLHttpRequest);
 
       const onProgress = vi.fn();
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
       service.uploadToPresignedUrl('https://r2.example.com/upload', file, onProgress);
 
       // Simulate a progress event where length is not known
-      capturedHandlers.progress?.({ lengthComputable: false, loaded: 50, total: 0 } as ProgressEvent);
+      capturedHandlers.progress?.({
+        lengthComputable: false,
+        loaded: 50,
+        total: 0,
+      } as ProgressEvent);
 
       expect(onProgress).not.toHaveBeenCalled();
     });

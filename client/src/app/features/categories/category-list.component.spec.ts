@@ -4,8 +4,22 @@ import { provideRouter } from '@angular/router';
 import { CategoryListComponent } from './category-list.component';
 import { CategoryService } from '../../core/services/category.service';
 
-const CAT_1 = { id: 1, creatorId: 1, name: 'Science', description: null, createdAt: '', updatedAt: '' };
-const CAT_2 = { id: 2, creatorId: 1, name: 'History', description: 'Old stuff', createdAt: '', updatedAt: '' };
+const CAT_1 = {
+  id: 1,
+  creatorId: 1,
+  name: 'Science',
+  description: null,
+  createdAt: '',
+  updatedAt: '',
+};
+const CAT_2 = {
+  id: 2,
+  creatorId: 1,
+  name: 'History',
+  description: 'Old stuff',
+  createdAt: '',
+  updatedAt: '',
+};
 
 function makeMockCategoryService(items = [CAT_1, CAT_2], total = 2) {
   return {

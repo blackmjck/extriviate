@@ -1,27 +1,27 @@
 :host {
-  display: block;
-  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
+  display: block;
+  // min-height: 100vh
   padding: 32px 24px;
 }
 
 .editor {
-  max-width: 1100px;
   margin: 0 auto;
+  max-width: 1100px;
 
   &__header {
-    display: flex;
     align-items: center;
+    display: flex;
     gap: 16px;
     margin-bottom: 32px;
   }
 
   &__title {
+    color: var(--accent);
     flex: 1;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--accent);
     margin: 0;
   }
 }
@@ -29,11 +29,11 @@
 // ---- Metadata ----
 
 .metadata {
-  display: flex;
-  gap: 24px;
   align-items: flex-end;
-  margin-bottom: 32px;
+  display: flex;
   flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 32px;
 
   &__field {
     display: flex;
@@ -41,30 +41,30 @@
     gap: 6px;
 
     &--toggle {
-      flex-direction: row;
       align-items: center;
+      flex-direction: row;
       gap: 10px;
     }
   }
 }
 
 .label {
+  color: var(--text-subtle);
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--text-subtle);
+  text-transform: uppercase;
 }
 
 .input {
-  padding: 10px 14px;
-  font-size: 0.95rem;
   background: var(--surface-2);
   border: 1px solid var(--border-moderate);
   border-radius: 6px;
   color: var(--text-muted);
-  outline: none;
+  font-size: 0.95rem;
   min-width: 280px;
+  outline: none;
+  padding: 10px 14px;
   transition: border-color 0.15s;
 
   &:focus {
@@ -79,8 +79,8 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
+    grid-template-columns: repeat(6, 1fr);
     min-width: 720px;
   }
 
@@ -91,21 +91,21 @@
   }
 
   &__category-header {
-    background: var(--accent);
-    color: var(--on-accent);
-    text-align: center;
-    padding: 14px 8px;
-    border-radius: 8px 8px 4px 4px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: background 0.15s;
-    min-height: 56px;
-    display: flex;
     align-items: center;
+    background: var(--accent);
+    border-radius: 8px 8px 4px 4px;
+    color: var(--on-accent);
+    cursor: pointer;
+    display: flex;
+    font-size: 0.85rem;
+    font-weight: 700;
     justify-content: center;
+    letter-spacing: 0.5px;
+    min-height: 56px;
+    padding: 14px 8px;
+    text-align: center;
+    text-transform: uppercase;
+    transition: background 0.15s;
 
     &:hover {
       background: var(--accent-light);
@@ -125,16 +125,16 @@
   }
 
   &__cell {
+    align-items: center;
     background: var(--surface-1);
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    padding: 16px 8px;
-    text-align: center;
-    min-height: 52px;
     display: flex;
-    align-items: center;
     justify-content: center;
+    min-height: 52px;
+    padding: 16px 8px;
     position: relative;
+    text-align: center;
     transition:
       border-color 0.15s,
       background 0.15s;
@@ -143,8 +143,8 @@
       cursor: pointer;
 
       &:hover {
-        border-color: rgba(65, 105, 225, 0.4);
         background: rgba(65, 105, 225, 0.06);
+        border-color: rgba(65, 105, 225, 0.4);
       }
     }
 
@@ -161,8 +161,8 @@
     }
 
     &--daily-double {
-      border: 2px solid var(--score-value);
       background: rgba(245, 200, 66, 0.07);
+      border: 2px solid var(--score-value);
       box-shadow: 0 0 8px rgba(245, 200, 66, 0.25);
     }
 
@@ -173,25 +173,25 @@
   }
 
   &__cell-add {
+    color: var(--accent);
     font-size: 1.25rem;
     font-weight: 300;
-    color: var(--accent);
     opacity: 0.5;
   }
 
   &__cell-remove {
-    position: absolute;
-    top: 3px;
-    right: 3px;
     background: transparent;
     border: none;
+    border-radius: 3px;
     color: var(--destructive);
+    cursor: pointer;
     font-size: 0.7rem;
     line-height: 1;
-    padding: 2px 4px;
-    cursor: pointer;
     opacity: 0;
-    border-radius: 3px;
+    padding: 2px 4px;
+    position: absolute;
+    right: 3px;
+    top: 3px;
     transition:
       opacity 0.15s,
       background 0.15s;
@@ -202,21 +202,21 @@
   }
 
   &__point-value {
+    color: var(--score-value);
     font-family: var(--font-score);
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--score-value);
   }
 
   &__dd-badge {
-    position: absolute;
     bottom: 3px;
-    left: 4px;
+    color: var(--score-value);
     font-size: 0.6rem;
     font-weight: 700;
+    left: 4px;
     letter-spacing: 0.5px;
-    color: var(--score-value);
     opacity: 0.8;
+    position: absolute;
   }
 
   &__cell-empty {
@@ -228,36 +228,36 @@
 // ---- Overlay ----
 
 .overlay {
-  position: fixed;
-  inset: 0;
+  align-items: center;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
+  inset: 0;
   justify-content: center;
-  z-index: 100;
   padding: 24px;
+  position: fixed;
+  z-index: 100;
 
   &__panel {
     background: var(--bg-overlay);
     border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    width: 100%;
-    max-width: 640px;
     max-height: 80vh;
+    max-width: 640px;
     overflow-y: auto;
     padding: 24px;
+    width: 100%;
   }
 
   &__header {
-    display: flex;
     align-items: center;
+    display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
 
     h2 {
+      color: var(--accent);
       font-size: 1.25rem;
       font-weight: 700;
-      color: var(--accent);
       margin: 0;
     }
   }
@@ -266,26 +266,26 @@
 // ---- Header Actions ----
 
 .editor__actions {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 16px;
 }
 
 .autosave-indicator {
-  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
   color: var(--text-subtle);
+  display: flex;
+  font-size: 0.85rem;
+  gap: 6px;
 }
 
 .autosave-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--text-hint);
-  border-top-color: var(--accent);
-  border-radius: 50%;
   animation: spin 0.7s linear infinite;
+  border: 2px solid var(--text-hint);
+  border-radius: 50%;
+  border-top-color: var(--accent);
+  height: 12px;
+  width: 12px;
 }
 
 @keyframes spin {
@@ -297,17 +297,17 @@
 // ---- States ----
 
 .loading {
-  text-align: center;
-  padding: 64px 0;
   color: var(--text-subtle);
+  padding: 64px 0;
+  text-align: center;
 }
 
 .error-banner {
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
-  color: var(--danger);
-  padding: 12px 16px;
   border-radius: 8px;
-  margin-bottom: 24px;
+  color: var(--danger);
   font-size: 0.9rem;
+  margin-bottom: 24px;
+  padding: 12px 16px;
 }

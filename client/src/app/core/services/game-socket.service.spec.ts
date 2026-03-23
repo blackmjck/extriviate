@@ -375,7 +375,9 @@ describe('premature flush prevention — pending queue held until server confirm
     // Only the auth message was sent; the queued buzz must be withheld
     expect(ws.send.mock.calls.length).toBe(1);
     expect(ws.send.mock.calls[0][0]).toContain('"type":"auth"');
-    expect(ws.send.mock.calls.some((c: unknown[]) => (c[0] as string).includes('buzz'))).toBe(false);
+    expect(ws.send.mock.calls.some((c: unknown[]) => (c[0] as string).includes('buzz'))).toBe(
+      false,
+    );
   });
 
   it('does not flush queued messages immediately after onopen when no identity is available', () => {

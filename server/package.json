@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "db:migrate": "for f in server/migrations/*.sql; do psql $DATABASE_URL -f \"$f\"; done",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:r2": "tsx scripts/test-r2.ts",

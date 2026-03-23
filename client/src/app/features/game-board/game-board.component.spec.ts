@@ -138,7 +138,15 @@ function setup() {
   fixture.componentRef.setInput('board', EMPTY_BOARD);
   fixture.componentRef.setInput('sessionId', 1);
 
-  return { fixture, component, roundState, currentPlayerId, mockGameState, mockSessionService, mockOrientation };
+  return {
+    fixture,
+    component,
+    roundState,
+    currentPlayerId,
+    mockGameState,
+    mockSessionService,
+    mockOrientation,
+  };
 }
 
 // ---- Tests ----------------------------------------------------------

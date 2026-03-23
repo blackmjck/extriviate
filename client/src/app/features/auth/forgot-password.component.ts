@@ -1,7 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { NgxTurnstileModule } from 'ngx-turnstile';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { NgxTurnstileComponent, NgxTurnstileModule } from 'ngx-turnstile';
 import { CF_TEST_SITEKEYS } from '@extriviate/shared';
 import { AuthService } from '../../core/services/auth.service';
 import { isApiErrorResponse } from '../../shared/utils/helpers';
@@ -14,8 +22,13 @@ import { environment } from '../../../environments/environment';
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
 })
-export class ForgotPasswordComponent {
+export class ForgotPasswordComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly turnstile = viewChild<NgxTurnstileComponent>('turnstile');
+
+  private captchaError = false;
 
   readonly CF_SITE_KEY = environment.production
     ? environment.cfSiteKey
@@ -25,6 +38,7 @@ export class ForgotPasswordComponent {
   turnstileToken = signal('');
   hp = signal(''); // expose a honeypot hidden input to catch bot autofill attempts
   errorMessage = signal('');
+  navMessage = signal('');
   responseMessage = signal('');
   loading = signal(false);
   submitted = signal(false);
@@ -41,11 +55,26 @@ export class ForgotPasswordComponent {
       this.isLocked(),
   );
 
+  ngOnInit(): void {
+    const error = this.route.snapshot.queryParamMap.get('error');
+    if (error === 'missing-token') {
+      this.navMessage.set(
+        'The reset link is invalid or has already been used. Please request a new one.',
+      );
+      // Strip the query param so it doesn't persist on refresh
+      this.router.navigate([], { replaceUrl: true, queryParams: {} });
+    }
+  }
+
   onCaptcha(msg: string | null, isError = false): void {
     if (isError) {
+      this.captchaError = true;
       this.errorMessage.set('CAPTCHA failed. Please refresh and try again.');
       this.turnstileToken.set('');
     } else {
+      // only clear the message if it was captcha related in the first place
+      if (this.captchaError) this.errorMessage.set('');
+      this.captchaError = false;
       this.turnstileToken.set(msg ?? '');
     }
   }
@@ -84,8 +113,8 @@ export class ForgotPasswordComponent {
     // trigger the email dispatch if you can
     try {
       const response = await this.auth.forgotPassword(this.email(), this.turnstileToken());
-      // display a positive response?
       this.responseMessage.set(response);
+      this.isLocked.set(true);
     } catch (err: unknown) {
       let message = '';
       if (isApiErrorResponse(err)) {
@@ -95,8 +124,11 @@ export class ForgotPasswordComponent {
         message = err.message;
       }
       this.errorMessage.set(message);
+      this.turnstile()?.reset();
+      this.turnstileToken.set('');
     } finally {
       this.loading.set(false);
+      this.submitted.set(false);
     }
   }
 }

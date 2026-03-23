@@ -76,7 +76,9 @@ function makeGame(overrides: Partial<Game> = {}): Game {
   };
 }
 
-function makeGameBoard(overrides: { game?: Partial<Game>; categories?: GameBoard['categories'] } = {}): GameBoard {
+function makeGameBoard(
+  overrides: { game?: Partial<Game>; categories?: GameBoard['categories'] } = {},
+): GameBoard {
   return {
     game: makeGame(overrides.game),
     categories: overrides.categories ?? [],
@@ -410,7 +412,14 @@ describe('GameEditorComponent - openCategoryManager()', () => {
     component.game.set(makeGame({ id: 7 }));
     component.openCategoryManager(1);
 
-    const cat: Category = { id: 99, creatorId: 1, name: 'Science', description: null, createdAt: '', updatedAt: '' };
+    const cat: Category = {
+      id: 99,
+      creatorId: 1,
+      name: 'Science',
+      description: null,
+      createdAt: '',
+      updatedAt: '',
+    };
     component.onCategoryAssigned(cat);
 
     const slot = component.board().find((s) => s.position === 1);
@@ -423,7 +432,14 @@ describe('GameEditorComponent - openCategoryManager()', () => {
     const { component } = setup();
     component.board.set([{ position: 1, gameCategory: null }]);
     // activeCategorySlot is null by default
-    const cat: Category = { id: 5, creatorId: 1, name: 'X', description: null, createdAt: '', updatedAt: '' };
+    const cat: Category = {
+      id: 5,
+      creatorId: 1,
+      name: 'X',
+      description: null,
+      createdAt: '',
+      updatedAt: '',
+    };
     component.onCategoryAssigned(cat);
     expect(component.board()[0].gameCategory).toBeNull();
   });
@@ -480,7 +496,12 @@ describe('GameEditorComponent - openQuestionPicker() / onQuestionPicked()', () =
         creatorId: 1,
         categoryId: 1,
         content: [{ type: 'text', value: 'Question text' }],
-        answer: { id: 77, questionId: 77, content: [{ type: 'text', value: 'Answer' }], acceptedAnswers: [] },
+        answer: {
+          id: 77,
+          questionId: 77,
+          content: [{ type: 'text', value: 'Answer' }],
+          acceptedAnswers: [],
+        },
         createdAt: '',
         updatedAt: '',
       },
@@ -608,10 +629,9 @@ describe('GameEditorComponent - autosave debounce', () => {
     component.board.set([makeSlot(1, [10])]);
 
     // Spy on performSave via autosaveNow; wrap both private methods with a spy
-    const performSaveSpy = vi.spyOn(
-      component as unknown as { performSave: () => Promise<void> },
-      'performSave',
-    ).mockResolvedValue(undefined);
+    const performSaveSpy = vi
+      .spyOn(component as unknown as { performSave: () => Promise<void> }, 'performSave')
+      .mockResolvedValue(undefined);
 
     // Three rapid dirty changes — each calls scheduleAutosave internally
     component.removeQuestion(1, 1);
@@ -638,10 +658,9 @@ describe('GameEditorComponent - autosave debounce', () => {
     component.game.set(makeGame({ id: 7 }));
     component.board.set([makeSlot(1, [10])]);
 
-    const performSaveSpy = vi.spyOn(
-      component as unknown as { performSave: () => Promise<void> },
-      'performSave',
-    ).mockResolvedValue(undefined);
+    const performSaveSpy = vi
+      .spyOn(component as unknown as { performSave: () => Promise<void> }, 'performSave')
+      .mockResolvedValue(undefined);
 
     component.removeQuestion(1, 1);
 
@@ -851,12 +870,13 @@ describe('GameEditorComponent - saveGame()', () => {
 
     await component.saveGame();
 
-    expect(gameService.updateGame).toHaveBeenCalledWith(10, expect.objectContaining({ title: 'Board Title' }));
+    expect(gameService.updateGame).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({ title: 'Board Title' }),
+    );
     expect(gameService.updateBoard).toHaveBeenCalledWith(
       10,
-      expect.arrayContaining([
-        expect.objectContaining({ categoryId: 10, position: 1 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ categoryId: 10, position: 1 })]),
     );
   });
 });
@@ -920,7 +940,10 @@ describe('GameEditorComponent - excludedCategoryIds computed', () => {
 
   it('returns empty set when no categories are assigned', () => {
     const { component } = setup();
-    component.board.set([{ position: 1, gameCategory: null }, { position: 2, gameCategory: null }]);
+    component.board.set([
+      { position: 1, gameCategory: null },
+      { position: 2, gameCategory: null },
+    ]);
     expect(component.excludedCategoryIds().size).toBe(0);
   });
 });

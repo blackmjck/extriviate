@@ -1,101 +1,101 @@
 .lobby-page {
-  display: flex;
   align-items: center;
+  background-color: var(--bg-primary);
+  display: flex;
+  font-family: var(--font-ui);
   justify-content: center;
   // min-height: 100vh
   padding: 1rem;
-  background-color: var(--bg-primary);
-  font-family: var(--font-ui);
 }
 
 .lobby-card {
-  width: 100%;
-  max-width: 520px;
-  padding: 2rem;
-  border-radius: 12px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
+  border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 520px;
+  padding: 2rem;
+  width: 100%;
 }
 
 .lobby-title {
-  margin: 0 0 1.5rem;
+  color: var(--text-primary);
   font-family: var(--font-question);
   font-size: 1.75rem;
-  color: var(--text-primary);
+  margin: 0 0 1.5rem;
   text-align: center;
 }
 
 .join-code-section {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   margin-bottom: 1.5rem;
 }
 
 .join-code-label {
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-secondary);
   margin-bottom: 0.5rem;
+  text-transform: uppercase;
 }
 
 .join-code-display {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 1rem 2rem;
+  background: var(--surface-1);
   border: 2px dashed var(--border-strong);
   border-radius: 12px;
-  background: var(--surface-1);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 2rem;
   transition:
     border-color 0.2s,
     background 0.2s;
 
   &:hover {
-    border-color: var(--accent);
     background: var(--accent-dim);
+    border-color: var(--accent);
   }
 }
 
 .code-text {
+  color: var(--score-value);
+  font-family: var(--font-ui);
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: 0.3em;
-  color: var(--score-value);
-  font-family: var(--font-ui);
 }
 
 .copy-hint {
-  font-size: 0.75rem;
   color: var(--text-subtle);
+  font-size: 0.75rem;
 }
 
 .error-banner {
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
+  border-radius: 8px;
   color: var(--error-text);
   font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
 }
 
 .media-prompt {
-  padding: 1rem;
-  margin-bottom: 1.25rem;
-  border-radius: 8px;
   background: var(--accent-dim);
   border: 1px solid rgba(65, 105, 225, 0.2);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
 
   &__text {
-    margin: 0 0 0.75rem;
-    font-size: 0.9rem;
     color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0 0 0.75rem;
   }
 
   &__actions {
@@ -105,16 +105,16 @@
 }
 
 .btn-enable-media {
-  flex: 1;
-  padding: 0.6rem 1rem;
+  background: var(--accent);
   border: none;
   border-radius: 6px;
-  background: var(--accent);
   color: var(--on-accent);
+  cursor: pointer;
+  flex: 1;
+  font-family: var(--font-ui);
   font-size: 0.875rem;
   font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
+  padding: 0.6rem 1rem;
 
   &:hover {
     opacity: 0.9;
@@ -122,14 +122,14 @@
 }
 
 .btn-skip-media {
-  padding: 0.6rem 1rem;
+  background: transparent;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: transparent;
   color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-family: var(--font-ui);
   cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  padding: 0.6rem 1rem;
 
   &:hover {
     background: var(--surface-2);
@@ -141,17 +141,17 @@
 }
 
 .section-header {
-  display: flex;
   align-items: center;
+  display: flex;
   justify-content: space-between;
   margin-bottom: 0.75rem;
 }
 
 .section-heading {
-  margin: 0;
+  color: var(--text-muted);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-muted);
+  margin: 0;
 
   .player-count {
     color: var(--text-subtle);
@@ -164,20 +164,20 @@
 }
 
 .btn-start {
-  width: 100%;
-  padding: 1rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  box-shadow: 0 4px 16px var(--accent-border);
   color: var(--on-accent);
+  cursor: pointer;
+  font-family: var(--font-ui);
   font-size: 1.125rem;
   font-weight: 700;
-  font-family: var(--font-ui);
-  cursor: pointer;
+  padding: 1rem;
   transition:
     opacity 0.2s,
     transform 0.1s;
-  box-shadow: 0 4px 16px var(--accent-border);
+  width: 100%;
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -189,15 +189,15 @@
   }
 
   &:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 
 .waiting-message {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-style: italic;
   margin: 0;
   padding: 1rem;
-  color: var(--text-secondary);
-  font-style: italic;
-  font-size: 0.9375rem;
 }

@@ -59,7 +59,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
 // session join page where both guests and logged-in users are valid.
 // Blacklist check is best-effort: if the token is revoked, request.user
 // is cleared so the route handler treats the caller as unauthenticated.
-export async function optionalAuth(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
+export async function optionalAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
     await request.jwtVerify();
     const payload = request.user;
@@ -67,7 +67,23 @@ export async function optionalAuth(request: FastifyRequest, _reply: FastifyReply
       const blacklisted = await request.server.isTokenBlacklisted(payload.jti);
       // 'as any' is used here because we can't assign request to type
       // FastifyRequest here without it yelling about jwtPayload
-      if (blacklisted) (request as any).user = undefined;
+      if (blacklisted) {
+        (request as any).user = undefined;
+        return;
+      }
+    }
+
+    const versionResult = await request.server.db.query<{ token_version: number }>(
+      'SELECT token_version FROM users WHERE id = $1 AND is_active = true',
+      [payload.sub]
+    );
+    const dbVersion = versionResult.rows[0]?.token_version ?? 0;
+    const payloadVersion = payload.tokenVersion ?? 0;
+    if (!versionResult.rows[0] || dbVersion !== payloadVersion) {
+      return reply.status(401).send({
+        success: false,
+        error: { message: 'Session has been invalidated', code: 'SESSION_INVALIDATED' },
+      });
     }
   } catch {
     // No valid token - that's fine, request.user simply won't be set.
@@ -94,15 +110,36 @@ export async function turnstileVerify(request: FastifyRequest, reply: FastifyRep
       secret:
         config.server.nodeEnv === 'production'
           ? config.turnstile.secretKey
-          : CF_SECRET_TEST_KEYS.PASS, // in the dev environment, the token always succeeds (outside of testing)
+          : CF_SECRET_TEST_KEYS.PASS,
       response: turnstileToken,
     };
 
-    const response = await fetch(CF_VERIFY_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    let response: Response;
+    try {
+      response = await fetch(CF_VERIFY_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      request.log.warn({ status: response.status }, 'Turnstile API returned non-2xx');
+      return reply.status(503).send({
+        success: false,
+        error: {
+          message: 'Security verification is temporarily unavailable. Please try again.',
+          code: 'CAPTCHA_UNAVAILABLE',
+        },
+      });
+    }
+
     const result: TurnstileValidationResponse = await response.json();
 
     if (!result.success) {
@@ -112,6 +149,17 @@ export async function turnstileVerify(request: FastifyRequest, reply: FastifyRep
       });
     }
   } catch (err) {
+    const isTimeout = (err as { name?: string }).name === 'AbortError';
+    if (isTimeout) {
+      request.log.warn('Turnstile verification timed out after 5s');
+      return reply.status(503).send({
+        success: false,
+        error: {
+          message: 'Security verification timed out. Please try again.',
+          code: 'CAPTCHA_UNAVAILABLE',
+        },
+      });
+    }
     return reply.status(400).send({
       success: false,
       error: { message: 'Bot verification failed', code: 'CAPTCHA_FAILED' },

@@ -25,7 +25,7 @@ function makePlayer(overrides: Partial<LivePlayer> = {}): LivePlayer {
 
 function buildWebRtcStub(
   peerIdValue: string | null = null,
-  initialRemoteStreams: Map<string, MediaStream> = new Map(),
+  initialRemoteStreams: Map<string, MediaStream> = new Map<string, MediaStream>(),
 ) {
   const localStream$ = signal<MediaStream | null>(null);
   const remoteStreams = signal<Map<string, MediaStream>>(initialRemoteStreams);
@@ -55,7 +55,7 @@ describe('PlayerGalleryComponent', () => {
       submittedAnswer?: string | null;
     } = {},
     peerIdValue: string | null = null,
-    initialRemoteStreams: Map<string, MediaStream> = new Map(),
+    initialRemoteStreams: Map<string, MediaStream> = new Map<string, MediaStream>(),
   ): HTMLElement {
     webrtcStub = buildWebRtcStub(peerIdValue, initialRemoteStreams);
 
@@ -76,8 +76,7 @@ describe('PlayerGalleryComponent', () => {
       fixture.componentRef.setInput('questionSelecterId', inputs.questionSelecterId);
     if (inputs.showScores !== undefined)
       fixture.componentRef.setInput('showScores', inputs.showScores);
-    if (inputs.layout !== undefined)
-      fixture.componentRef.setInput('layout', inputs.layout);
+    if (inputs.layout !== undefined) fixture.componentRef.setInput('layout', inputs.layout);
     if (inputs.submittedAnswer !== undefined)
       fixture.componentRef.setInput('submittedAnswer', inputs.submittedAnswer);
     fixture.detectChanges();
@@ -97,7 +96,10 @@ describe('PlayerGalleryComponent', () => {
   });
 
   it('renders one .player-card per player', () => {
-    const el = setup([makePlayer({ playerId: 1 }), makePlayer({ playerId: 2, displayName: 'Bob' })]);
+    const el = setup([
+      makePlayer({ playerId: 1 }),
+      makePlayer({ playerId: 2, displayName: 'Bob' }),
+    ]);
     expect(el.querySelectorAll('.player-card').length).toBe(2);
   });
 
@@ -179,26 +181,29 @@ describe('PlayerGalleryComponent', () => {
   });
 
   it('shows speech bubble for active player in row layout when submittedAnswer is set', () => {
-    const el = setup(
-      [makePlayer({ playerId: 1 })],
-      { layout: 'row', activePlayerId: 1, submittedAnswer: 'What is gravity?' },
-    );
+    const el = setup([makePlayer({ playerId: 1 })], {
+      layout: 'row',
+      activePlayerId: 1,
+      submittedAnswer: 'What is gravity?',
+    });
     expect(el.querySelector('app-speech-bubble')).not.toBeNull();
   });
 
   it('does not show speech bubble in grid layout', () => {
-    const el = setup(
-      [makePlayer({ playerId: 1 })],
-      { layout: 'grid', activePlayerId: 1, submittedAnswer: 'What is gravity?' },
-    );
+    const el = setup([makePlayer({ playerId: 1 })], {
+      layout: 'grid',
+      activePlayerId: 1,
+      submittedAnswer: 'What is gravity?',
+    });
     expect(el.querySelector('app-speech-bubble')).toBeNull();
   });
 
   it('does not show speech bubble when submittedAnswer is null', () => {
-    const el = setup(
-      [makePlayer({ playerId: 1 })],
-      { layout: 'row', activePlayerId: 1, submittedAnswer: null },
-    );
+    const el = setup([makePlayer({ playerId: 1 })], {
+      layout: 'row',
+      activePlayerId: 1,
+      submittedAnswer: null,
+    });
     expect(el.querySelector('app-speech-bubble')).toBeNull();
   });
 
@@ -208,7 +213,9 @@ describe('PlayerGalleryComponent', () => {
   });
 
   it('renders avatar image when avatarMode is static and avatarUrl is set', () => {
-    const el = setup([makePlayer({ avatarMode: 'static', avatarUrl: 'https://example.com/img.png' })]);
+    const el = setup([
+      makePlayer({ avatarMode: 'static', avatarUrl: 'https://example.com/img.png' }),
+    ]);
     const img = el.querySelector('.avatar-image') as HTMLImageElement | null;
     expect(img).not.toBeNull();
     expect(img?.src).toContain('example.com/img.png');
@@ -284,27 +291,35 @@ describe('PlayerGalleryComponent', () => {
     const fakeStream = {} as MediaStream;
     setup([makePlayer({ peerId: 'peer-remote', cameraActive: false })], {}, null);
     webrtcStub.remoteStreams.set(new Map([['peer-remote', fakeStream]]));
-    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-remote', cameraActive: false }))).toBe(false);
+    expect(
+      component.hasVideoStream(makePlayer({ peerId: 'peer-remote', cameraActive: false })),
+    ).toBe(false);
   });
 
   it('hasVideoStream() returns true when remote player has stream and cameraActive is true', () => {
     const fakeStream = {} as MediaStream;
     setup([makePlayer({ peerId: 'peer-remote', cameraActive: true })], {}, 'peer-local');
     webrtcStub.remoteStreams.set(new Map([['peer-remote', fakeStream]]));
-    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-remote', cameraActive: true }))).toBe(true);
+    expect(
+      component.hasVideoStream(makePlayer({ peerId: 'peer-remote', cameraActive: true })),
+    ).toBe(true);
   });
 
   it('hasVideoStream() returns true for local player when localStream is set and cameraActive is true', () => {
     const fakeStream = {} as MediaStream;
     setup([makePlayer({ peerId: 'peer-local', cameraActive: true })], {}, 'peer-local');
     webrtcStub.localStream$.set(fakeStream);
-    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-local', cameraActive: true }))).toBe(true);
+    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-local', cameraActive: true }))).toBe(
+      true,
+    );
   });
 
   it('hasVideoStream() returns false for local player when localStream is null', () => {
     setup([makePlayer({ peerId: 'peer-local', cameraActive: true })], {}, 'peer-local');
     // localStream$ defaults to null in stub
-    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-local', cameraActive: true }))).toBe(false);
+    expect(component.hasVideoStream(makePlayer({ peerId: 'peer-local', cameraActive: true }))).toBe(
+      false,
+    );
   });
 
   // ─── stream-attachment effect (lines 58-69) ────────────────────────────────
@@ -332,7 +347,9 @@ describe('PlayerGalleryComponent', () => {
     // JSDOM's HTMLVideoElement.srcObject setter is a no-op, so we verify the
     // effect ran without throwing and the video element is still in the DOM.
     expect(el.querySelector<HTMLVideoElement>('video[data-peer-id="peer-abc"]')).not.toBeNull();
-    expect(component.hasVideoStream(makePlayer({ playerId: 1, peerId: 'peer-abc', cameraActive: true }))).toBe(true);
+    expect(
+      component.hasVideoStream(makePlayer({ playerId: 1, peerId: 'peer-abc', cameraActive: true })),
+    ).toBe(true);
   });
 
   it('attaches local stream to the <video> element matching the local peerId', () => {
@@ -356,6 +373,8 @@ describe('PlayerGalleryComponent', () => {
 
     // Effect ran without error; video element is now in the DOM
     expect(el.querySelector<HTMLVideoElement>('video[data-peer-id="peer-me"]')).not.toBeNull();
-    expect(component.hasVideoStream(makePlayer({ playerId: 1, peerId: 'peer-me', cameraActive: true }))).toBe(true);
+    expect(
+      component.hasVideoStream(makePlayer({ playerId: 1, peerId: 'peer-me', cameraActive: true })),
+    ).toBe(true);
   });
 });

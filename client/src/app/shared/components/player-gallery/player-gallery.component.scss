@@ -10,13 +10,13 @@
 
 .layout-row {
   flex-direction: row;
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
   padding-bottom: 4px;
 
   .player-card {
-    min-width: 100px;
     max-width: 140px;
+    min-width: 100px;
   }
 }
 
@@ -32,26 +32,26 @@
 // ---- Player Card ----
 
 .player-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 10px;
-  overflow: visible; // allow speech bubble to escape card bounds
   background: var(--surface-1);
   border: 2px solid transparent;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 6px;
+  overflow: visible; // allow speech bubble to escape card bounds
+  padding: 8px;
+  position: relative;
   transition:
     border-color 0.2s,
     background 0.2s,
     opacity 0.3s;
-  flex-shrink: 0;
 
   &.active {
+    background: rgba(245, 200, 66, 0.08);
     border-color: var(--score-value);
     border-width: 3px; // wider border = non-color distinction from selector/normal
-    background: rgba(245, 200, 66, 0.08);
   }
 
   &.selector {
@@ -67,105 +67,105 @@
 // ---- Speech Bubble Anchor ----
 
 .bubble-anchor {
-  position: absolute;
   bottom: calc(100% + 4px); // sit just above the card
   left: 50%;
+  position: absolute;
   transform: translateX(-50%);
-  z-index: 20;
   white-space: nowrap;
+  z-index: 20;
 }
 
 // ---- Avatar Area ----
 
 .avatar-area {
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: 50%;
+  display: flex;
+  flex-shrink: 0;
+  height: 56px;
+  justify-content: center;
+  overflow: hidden;
   position: relative;
   width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--bg-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .avatar-video {
-  width: 100%;
   height: 100%;
   object-fit: cover;
+  width: 100%;
 }
 
 .avatar-image {
-  width: 100%;
   height: 100%;
   object-fit: cover;
+  width: 100%;
 }
 
 .avatar-initial {
+  align-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--on-accent);
-  background: var(--accent);
-  width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .disconnected-overlay {
-  position: absolute;
-  inset: 0;
+  align-items: center;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  inset: 0;
   justify-content: center;
+  position: absolute;
 }
 
 .disconnected-icon {
-  font-size: 1.25rem;
   color: var(--danger);
+  font-size: 1.25rem;
 }
 
 .audio-indicator {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
   background: var(--success);
   border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  bottom: 2px;
+  height: 10px;
+  position: absolute;
+  right: 2px;
+  width: 10px;
 }
 
 // ---- Player Info ----
 
 .player-info {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 2px;
-  width: 100%;
   min-width: 0;
+  width: 100%;
 }
 
 .player-name {
+  color: var(--text-primary);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-primary);
-  text-align: center;
   overflow: hidden;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
 }
 
 .player-score {
+  color: var(--score-value);
+  font-family: var(--font-score);
   font-size: 0.8125rem;
   font-weight: 700;
-  font-family: var(--font-score);
-  color: var(--score-value);
 
   &.negative {
     color: var(--danger);
@@ -176,18 +176,18 @@
 
 .badges {
   display: flex;
-  gap: 4px;
   flex-wrap: wrap;
+  gap: 4px;
   justify-content: center;
 }
 
 .badge {
-  padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.5625rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
+  padding: 1px 6px;
+  text-transform: uppercase;
 }
 
 .badge-host {
@@ -203,25 +203,25 @@
 // ---- Empty State ----
 
 .empty-state {
-  width: 100%;
-  text-align: center;
-  padding: 1rem;
   color: var(--text-secondary);
-  font-style: italic;
   font-size: 0.875rem;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
 }
 
 // ---- Responsive ----
 
 @media (max-width: 640px) {
   .layout-row .player-card {
-    min-width: 80px;
     max-width: 110px;
+    min-width: 80px;
   }
 
   .avatar-area {
-    width: 44px;
     height: 44px;
+    width: 44px;
   }
 
   .avatar-initial {

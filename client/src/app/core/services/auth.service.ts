@@ -52,16 +52,14 @@ export class AuthService {
   }
 
   // Send the secret reset token and new password for the user
-  async resetPassword(token: string, password: string, turnstileToken: string): Promise<never> {
-    const res = await firstValueFrom(
-      this.http.post<ApiResponse<never>>('/api/auth/reset-password', {
+  async resetPassword(token: string, password: string, turnstileToken: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<ApiResponse<void>>('/api/auth/reset-password', {
         token,
         newPassword: password,
         turnstileToken,
       }),
     );
-    // Return what you like; we won't be using it other than to signal success/failure
-    return res.data;
   }
 
   async login(email: string, password: string, turnstileToken: string): Promise<PublicUser> {
@@ -110,10 +108,14 @@ export class AuthService {
       // withCredentials: true is required so the browser sends the refresh
       // token cookie along with this request.
       this.http
-        .post('/api/auth/logout', {}, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        })
+        .post(
+          '/api/auth/logout',
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          },
+        )
         .subscribe({
           error: () => {
             // Ignore errors

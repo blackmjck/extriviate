@@ -99,7 +99,9 @@ describe('GameService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.updateGame(42, { title: 'New Title' });
-      const req = httpMock.expectOne((r) => r.method === 'PATCH' && r.url.includes('/api/games/42'));
+      const req = httpMock.expectOne(
+        (r) => r.method === 'PATCH' && r.url.includes('/api/games/42'),
+      );
       expect(req.request.body).toMatchObject({ title: 'New Title' });
       req.flush({ success: true, data: GAME });
       await promise;
@@ -128,7 +130,9 @@ describe('GameService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.deleteGame(42);
-      const req = httpMock.expectOne((r) => r.method === 'DELETE' && r.url.includes('/api/games/42'));
+      const req = httpMock.expectOne(
+        (r) => r.method === 'DELETE' && r.url.includes('/api/games/42'),
+      );
       req.flush({ success: true, data: null });
       await promise;
       httpMock.verify();

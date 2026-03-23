@@ -38,7 +38,10 @@ function makeRoundState(overrides: Partial<RoundStatePayload> = {}): RoundStateP
 // Setup helper
 // ---------------------------------------------------------------------------
 
-function setup(roundStateOverride: RoundStatePayload | null = null, currentPlayerId: number | null = 1) {
+function setup(
+  roundStateOverride: RoundStatePayload | null = null,
+  currentPlayerId: number | null = 1,
+) {
   const messages$ = new Subject<GameplayMessage>();
   const roundStateSignal = signal<RoundStatePayload | null>(roundStateOverride);
 
@@ -150,7 +153,9 @@ describe('timer behaviour', () => {
     // The effect computes remainingMs = deadline - Date.now() and calls startTimer().
     const { component, fixture, roundStateSignal } = setup();
     const futureDeadline = Date.now() + 7000;
-    roundStateSignal.set(makeRoundState({ phase: 'buzzers_open', timerDeadlineMs: futureDeadline }));
+    roundStateSignal.set(
+      makeRoundState({ phase: 'buzzers_open', timerDeadlineMs: futureDeadline }),
+    );
     fixture.detectChanges();
     // startTimer() sets timerValue to Math.ceil(remainingMs / 1000)
     // remainingMs ≈ 7000ms → timerValue ≈ 7

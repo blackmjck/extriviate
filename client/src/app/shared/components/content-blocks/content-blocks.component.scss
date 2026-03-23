@@ -29,11 +29,11 @@
   }
 
   &.code {
+    background: var(--surface-2);
+    border-radius: 4px;
     font-family: var(--font-score);
     font-size: 1.25rem;
-    background: var(--surface-2);
     padding: 0.2em 0.5em;
-    border-radius: 4px;
   }
 }
 
@@ -49,12 +49,12 @@
 }
 
 .block-image {
-  max-width: 100%;
-  max-height: 420px;
   border-radius: 8px;
-  object-fit: contain;
   display: block;
   margin: 0 auto;
+  max-height: 420px;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 // ---- Video ----
@@ -69,20 +69,20 @@
 }
 
 .block-video {
-  max-width: 100%;
-  max-height: 420px;
+  background: #000;
   border-radius: 8px;
   display: block;
   margin: 0 auto;
-  background: #000;
+  max-height: 420px;
+  max-width: 100%;
 }
 
 // ---- Shared caption ----
 
 .block-caption {
-  margin-top: 0.375em;
-  font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8125rem;
   font-style: italic;
+  margin-top: 0.375em;
   text-align: center;
 }

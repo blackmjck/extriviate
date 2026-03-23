@@ -1,11 +1,4 @@
-import {
-  Component,
-  inject,
-  input,
-  output,
-  computed,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, inject, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
 import type { GameBoard, GameCategory, GameQuestion } from '@extriviate/shared';
 import { GAME_QUESTION_ROWS } from '@extriviate/shared';
 import { GameStateService } from '../../core/services/game-state.service';
@@ -74,9 +67,7 @@ export class GameBoardComponent {
     return [...b.categories].sort((a, b) => a.position - b.position);
   });
 
-  readonly rowIndices = computed(() =>
-    Array.from({ length: GAME_QUESTION_ROWS }, (_, i) => i + 1),
-  );
+  readonly rowIndices = computed(() => Array.from({ length: GAME_QUESTION_ROWS }, (_, i) => i + 1));
 
   getQuestionAt(
     category: GameCategory & { questions: GameQuestion[] },

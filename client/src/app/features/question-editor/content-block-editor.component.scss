@@ -4,12 +4,12 @@
   gap: 12px;
 
   &__label {
+    color: var(--text-subtle);
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--text-subtle);
     margin: 0;
+    text-transform: uppercase;
   }
 
   &__empty {
@@ -20,19 +20,19 @@
   }
 
   &__block {
-    display: flex;
-    gap: 10px;
     background: var(--surface-1);
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
+    display: flex;
+    gap: 10px;
     padding: 12px;
   }
 
   &__block-controls {
     display: flex;
     flex-direction: column;
-    gap: 4px;
     flex-shrink: 0;
+    gap: 4px;
   }
 
   &__ctrl {
@@ -42,9 +42,9 @@
     color: var(--text-subtle);
     cursor: pointer;
     font-size: 0.75rem;
-    padding: 3px 7px;
-    min-height: 24px; // 2.5.8 target size minimum
     line-height: 1;
+    min-height: 24px; // 2.5.8 target size minimum
+    padding: 3px 7px;
     transition: background 0.15s, color 0.15s;
 
     &:hover:not(:disabled) {
@@ -53,13 +53,13 @@
     }
 
     &:disabled {
-      opacity: 0.3;
       cursor: default;
+      opacity: 0.3;
     }
 
     &--remove {
-      color: var(--destructive);
       border-color: rgba(192, 57, 43, 0.3);
+      color: var(--destructive);
 
       &:hover:not(:disabled) {
         background: rgba(192, 57, 43, 0.15);
@@ -69,35 +69,35 @@
   }
 
   &__block-body {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 8px;
     min-width: 0;
   }
 
   &__type-badge {
+    align-self: flex-start;
+    color: var(--accent);
     font-size: 0.7rem;
     font-weight: 700;
-    text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--accent);
-    align-self: flex-start;
+    text-transform: uppercase;
   }
 
   &__textarea {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 0.95rem;
-    font-family: inherit;
     background: var(--surface-2);
     border: 1px solid var(--border-moderate);
     border-radius: 6px;
-    color: var(--text-muted);
-    outline: none;
-    resize: vertical;
     box-sizing: border-box;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    padding: 10px 12px;
+    resize: vertical;
     transition: border-color 0.15s;
+    width: 100%;
 
     &:focus {
       border-color: var(--accent);
@@ -105,15 +105,15 @@
   }
 
   &__input {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 0.875rem;
     background: var(--surface-2);
     border: 1px solid var(--border-moderate);
     border-radius: 6px;
     color: var(--text-muted);
-    outline: none;
+    flex: 1;
+    font-size: 0.875rem;
     min-width: 0;
+    outline: none;
+    padding: 8px 12px;
     transition: border-color 0.15s;
 
     &:focus {
@@ -128,58 +128,58 @@
 
   &__url-row {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   &__upload-row {
-    display: flex;
     align-items: center;
-    gap: 10px;
+    display: flex;
     flex-wrap: wrap;
+    gap: 10px;
   }
 
   &__or {
-    font-size: 0.75rem;
     color: var(--text-hint);
     flex-shrink: 0;
+    font-size: 0.75rem;
   }
 
   &__preview {
-    max-width: 100%;
-    max-height: 160px;
-    border-radius: 6px;
-    object-fit: contain;
     background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    max-height: 160px;
+    max-width: 100%;
+    object-fit: contain;
   }
 
   &__add-row {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
     padding-top: 4px;
   }
 }
 
 // Shared button styles (scoped here to avoid global leakage)
 .btn {
-  padding: 8px 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 16px;
   transition: background 0.15s, opacity 0.15s;
 
   &:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
+    opacity: 0.4;
   }
 
   &--ghost {
     background: transparent;
-    color: var(--accent);
     border: 1px solid var(--accent-border);
+    color: var(--accent);
 
     &:hover:not(:disabled) {
       background: var(--accent-dim);
@@ -187,7 +187,7 @@
   }
 
   &--sm {
-    padding: 6px 12px;
     font-size: 0.8rem;
+    padding: 6px 12px;
   }
 }

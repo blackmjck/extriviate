@@ -30,9 +30,7 @@ export class HomeComponent {
 
   readonly submitted = signal(false);
 
-  readonly codeInvalid = computed(
-    () => this.submitted() && this.joinForm.controls.code.invalid,
-  );
+  readonly codeInvalid = computed(() => this.submitted() && this.joinForm.controls.code.invalid);
 
   onJoin(): void {
     this.submitted.set(true);

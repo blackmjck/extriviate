@@ -3,31 +3,31 @@
 }
 
 .footer-inner {
-  display: flex;
   align-items: center;
+  display: flex;
   font-size: 0.75rem;
-  justify-content: center;
   gap: 3rem;
-  padding: 12px 24px;
-  max-width: 960px;
+  justify-content: center;
   margin: 0 auto;
+  max-width: 960px;
+  padding: 12px 24px;
 }
 
 .copyright {
-  font-size: 0.75rem;
   color: var(--text-hint);
+  font-size: 0.75rem;
   font-style: normal; // <small> inherits no italic, but reset explicitly
 }
 
 .theme-select {
   background: transparent;
   border: none;
-  padding: 8px 4px;
-  min-height: 44px;
-  font-size: 0.75rem;
-  font-family: var(--font-ui);
   color: var(--text-hint);
   cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  min-height: 44px;
+  padding: 8px 4px;
   transition: color 0.15s;
 
   option {
@@ -41,10 +41,10 @@
 }
 
 .nav-link {
-  display: inline-block;
-  padding: 6px 0;
-  font-size: 0.75rem;
   color: var(--text-hint);
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 6px 0;
   text-decoration: none;
   transition: color 0.15s;
 

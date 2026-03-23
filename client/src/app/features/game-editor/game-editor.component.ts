@@ -11,7 +11,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import type {
   Game,
-  GameBoard,
   GameCategory,
   GameQuestion,
   Category,

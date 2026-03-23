@@ -50,7 +50,11 @@
 
       <div class="cat-form__actions">
         <button class="btn btn--primary" type="submit" [disabled]="saving() || form.invalid">
-          @if (saving()) { Saving… } @else { {{ editing() ? 'Update' : 'Create' }} }
+          @if (saving()) {
+            Saving…
+          } @else {
+            {{ editing() ? 'Update' : 'Create' }}
+          }
         </button>
         <button class="btn btn--ghost" type="button" (click)="cancelForm()">Cancel</button>
       </div>
@@ -64,7 +68,9 @@
       <div class="empty-state">
         <p>You haven't created any categories yet.</p>
         @if (!showForm()) {
-          <button class="btn btn--primary" (click)="openCreateForm()">Create Your First Category</button>
+          <button class="btn btn--primary" (click)="openCreateForm()">
+            Create Your First Category
+          </button>
         }
       </div>
     } @else {
@@ -79,7 +85,9 @@
             </div>
             <div class="cat-item__actions">
               <button class="btn btn--ghost btn--sm" (click)="openEditForm(cat)">Edit</button>
-              <button class="btn btn--danger-ghost btn--sm" (click)="deleteCategory(cat.id)">Delete</button>
+              <button class="btn btn--danger-ghost btn--sm" (click)="deleteCategory(cat.id)">
+                Delete
+              </button>
             </div>
           </li>
         }
@@ -87,7 +95,9 @@
 
       @if (totalPages() > 1) {
         <div class="pagination">
-          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">
+            Previous
+          </button>
           <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
           <button class="btn btn--ghost" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
         </div>

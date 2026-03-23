@@ -13,7 +13,9 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "prettier": "npx prettier --write \"./src/**/*.{ts,js,json,html,yml,md}\" --log-level error",
+    "prettier:check": "npx prettier --check ./src/**/*.{ts,js,json,html,yml,md}"
   },
   "prettier": {
     "printWidth": 100,
@@ -56,6 +58,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "angular-eslint": "21.3.0",
     "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
     "jsdom": "^29.0.1",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.56.1",

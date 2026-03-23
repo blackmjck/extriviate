@@ -1,18 +1,18 @@
 :host {
-  display: block;
-  // min-height: 100vh
   background: var(--bg-primary);
   color: var(--text-muted);
+  display: block;
+  // min-height: 100vh
   padding: 32px 24px;
 }
 
 .profile-page {
-  max-width: 960px;
   margin: 0 auto;
+  max-width: 960px;
 
   &__header {
-    display: flex;
     align-items: center;
+    display: flex;
     gap: 16px;
     justify-content: space-between;
     margin-bottom: 32px;
@@ -28,24 +28,24 @@
 }
 
 .profile-card {
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
-  border-radius: 10px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
 
   &__name-row {
-    display: flex;
     align-items: center;
-    gap: 0.75rem;
+    display: flex;
     flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 0.25rem;
   }
 
   &__name {
+    color: var(--text-primary);
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary);
   }
 
   &__name-form {
@@ -53,57 +53,57 @@
   }
 
   &__name-label {
+    color: var(--text-secondary);
     display: block;
-    margin-bottom: 0.4rem;
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
   }
 
   &__name-input {
-    flex: 1;
-    min-width: 0;
-    padding: 0.45rem 0.65rem;
+    background: var(--surface-2);
     border: 1px solid var(--border-strong);
     border-radius: 6px;
-    background: var(--surface-2);
     color: var(--text-primary);
-    font-size: 1rem;
+    flex: 1;
     font-family: inherit;
+    font-size: 1rem;
+    min-width: 0;
+    padding: 0.45rem 0.65rem;
 
     &:focus {
-      outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-border);
+      outline: none;
     }
   }
 
   &__name-actions {
     display: flex;
-    gap: 0.5rem;
     flex-shrink: 0;
+    gap: 0.5rem;
   }
 
   &__field-error {
-    display: block;
-    margin-top: 0.3rem;
-    font-size: 0.8rem;
     color: var(--error-text);
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
   }
 
   &__role {
+    color: var(--accent);
     font-size: 0.8rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--accent);
+    text-transform: uppercase;
   }
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
 
   @media (max-width: 400px) {
     grid-template-columns: 1fr;
@@ -111,14 +111,14 @@
 }
 
 .stat-card {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1.5rem 1rem;
-  border-radius: 10px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem 1rem;
   text-decoration: none;
   transition:
     background 0.15s,
@@ -130,19 +130,19 @@
   }
 
   &__value {
-    font-size: 2.5rem;
-    font-weight: 800;
     color: var(--score-value);
     font-family: var(--font-score);
+    font-size: 2.5rem;
+    font-weight: 800;
     line-height: 1;
     margin-bottom: 0.5rem;
   }
 
   &__label {
+    color: var(--text-secondary);
     font-size: 0.8rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--text-secondary);
+    text-transform: uppercase;
   }
 }

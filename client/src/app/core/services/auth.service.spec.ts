@@ -668,7 +668,10 @@ describe('AuthService', () => {
       const req = httpMock.expectOne('/api/auth/forgot-password');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({ email: 'alice@example.com', turnstileToken: 'cf-token' });
-      req.flush({ success: true, data: { response: 'If that email exists, a reset link has been sent.' } });
+      req.flush({
+        success: true,
+        data: { response: 'If that email exists, a reset link has been sent.' },
+      });
 
       await promise;
       httpMock.verify();
@@ -680,7 +683,10 @@ describe('AuthService', () => {
       const promise = service.forgotPassword('alice@example.com', 'cf-token');
       httpMock
         .expectOne('/api/auth/forgot-password')
-        .flush({ success: true, data: { response: 'If that email exists, a reset link has been sent.' } });
+        .flush({
+          success: true,
+          data: { response: 'If that email exists, a reset link has been sent.' },
+        });
 
       expect(await promise).toBe('If that email exists, a reset link has been sent.');
       httpMock.verify();
@@ -692,7 +698,10 @@ describe('AuthService', () => {
       const promise = service.forgotPassword('alice@example.com', 'cf-token');
       httpMock
         .expectOne('/api/auth/forgot-password')
-        .flush({ success: false, error: { message: 'Too many requests', code: 'RATE_LIMITED' } }, { status: 429, statusText: 'Too Many Requests' });
+        .flush(
+          { success: false, error: { message: 'Too many requests', code: 'RATE_LIMITED' } },
+          { status: 429, statusText: 'Too Many Requests' },
+        );
 
       await expect(promise).rejects.toThrow();
       httpMock.verify();
@@ -707,7 +716,11 @@ describe('AuthService', () => {
       const promise = service.resetPassword('reset-token-abc', 'new-password', 'cf-token');
       const req = httpMock.expectOne('/api/auth/reset-password');
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ token: 'reset-token-abc', newPassword: 'new-password', turnstileToken: 'cf-token' });
+      expect(req.request.body).toEqual({
+        token: 'reset-token-abc',
+        newPassword: 'new-password',
+        turnstileToken: 'cf-token',
+      });
       req.flush({ success: true, data: null });
 
       await promise;
@@ -718,9 +731,7 @@ describe('AuthService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.resetPassword('reset-token-abc', 'new-password', 'cf-token');
-      httpMock
-        .expectOne('/api/auth/reset-password')
-        .flush({ success: true, data: null });
+      httpMock.expectOne('/api/auth/reset-password').flush({ success: true, data: null });
 
       await expect(promise).resolves.not.toThrow();
       httpMock.verify();
@@ -732,7 +743,13 @@ describe('AuthService', () => {
       const promise = service.resetPassword('expired-token', 'new-password', 'cf-token');
       httpMock
         .expectOne('/api/auth/reset-password')
-        .flush({ success: false, error: { message: 'Invalid or expired reset token', code: 'INVALID_RESET_TOKEN' } }, { status: 400, statusText: 'Bad Request' });
+        .flush(
+          {
+            success: false,
+            error: { message: 'Invalid or expired reset token', code: 'INVALID_RESET_TOKEN' },
+          },
+          { status: 400, statusText: 'Bad Request' },
+        );
 
       await expect(promise).rejects.toThrow();
       httpMock.verify();

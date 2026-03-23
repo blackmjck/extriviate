@@ -11,7 +11,6 @@
     </header>
 
     <form class="host-session__form" (submit)="$event.preventDefault(); startSession()">
-
       <!-- Session name -->
       <div class="form-field">
         <label class="form-field__label" for="session-name">Session name</label>
@@ -90,15 +89,14 @@
       <!-- Actions -->
       <div class="host-session__actions">
         <a [routerLink]="['/games', game()!.id]" class="btn btn--ghost">Cancel</a>
-        <button
-          type="submit"
-          class="btn btn--primary"
-          [disabled]="!canSubmit()"
-        >
-          @if (submitting()) { Starting… } @else { Start Session }
+        <button type="submit" class="btn btn--primary" [disabled]="!canSubmit()">
+          @if (submitting()) {
+            Starting…
+          } @else {
+            Start Session
+          }
         </button>
       </div>
-
     </form>
   </div>
 }

@@ -40,19 +40,12 @@
         <app-media-controls [playerId]="localPlayerId()" />
       </div>
 
-      <app-player-gallery
-        [players]="players()"
-        layout="grid"
-      />
+      <app-player-gallery [players]="players()" layout="grid" />
     </div>
 
     <div class="lobby-actions">
       @if (isHost()) {
-        <button
-          class="btn-start"
-          (click)="startGame()"
-          [disabled]="starting()"
-        >
+        <button class="btn-start" (click)="startGame()" [disabled]="starting()">
           @if (starting()) {
             Starting...
           } @else {

@@ -106,6 +106,7 @@ export class SignupComponent {
       this.errorMessage.set(message);
     } finally {
       this.loading.set(false);
+      this.submitted.set(false);
     }
   }
 }

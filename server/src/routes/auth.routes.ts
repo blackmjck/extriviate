@@ -124,14 +124,18 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           .status(201)
           .send({ success: true, data: { user, tokens: { accessToken: tokens.accessToken } } });
       } catch (err: unknown) {
-        const { statusCode, message, code } = err as {
-          statusCode?: number;
-          message?: string;
-          code?: string;
-        };
-        return reply.status(statusCode ?? 500).send({
+        const e = err as { statusCode?: number; message?: string; code?: string };
+        const status = e.statusCode ?? 500;
+        if (status >= 500) {
+          fastify.log.error(err);
+          return reply.status(500).send({
+            success: false,
+            error: { message: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' },
+          });
+        }
+        return reply.status(status).send({
           success: false,
-          error: { message: message, code: code },
+          error: { message: e.message, code: e.code },
         });
       }
     }
@@ -187,7 +191,15 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        return reply.status(statusCode ?? 500).send({
+        if (!statusCode || statusCode >= 500) {
+          fastify.log.error(err);
+          return reply.status(500).send({
+            success: false,
+            error: { message: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' },
+          });
+        }
+
+        return reply.status(statusCode).send({
           success: false,
           error: { message, code },
         });
@@ -294,13 +306,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       preHandler: [turnstileVerify],
       config: {
         rateLimit: {
+          // Route-level: 10/hour per IP — this is intentionally looser than the per-email
+          // Redis limit (3/10min). Returning 200 for rate-limited emails (instead of 429)
+          // prevents confirming whether an address is registered. The IP limit is a backstop
+          // against high-volume probing across many different addresses.
           max: 10,
           timeWindow: 60 * 60 * 1000, // 1 hour
-          // Why 10 per hour?
-          // This is stricter than others because it generates an email as a result
-          // and we want to prevent spamming both to avoid user phishing attempts
-          // and so that our email provider doesn't mark the application as a spambot
-          // and cancel our service.
         },
       },
       schema: {
@@ -322,19 +333,27 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           data: { response: res.response },
         });
       } catch (err: unknown) {
-        const { message, code, statusCode } = err as HttpError;
-        return reply.status(statusCode ?? 500).send({
+        const e = err as HttpError;
+        if (!e.statusCode || e.statusCode >= 500) {
+          fastify.log.error(err);
+          return reply.status(500).send({
+            success: false,
+            error: { message: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' },
+          });
+        }
+        return reply.status(e.statusCode).send({
           success: false,
-          error: { message, code: code ?? 'INTERNAL_ERROR' },
+          error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' },
         });
       }
     }
   );
 
   // POST /api/auth/reset-password
-  fastify.post<{ Body: { token: string; newPassword: string } }>(
+  fastify.post<{ Body: { token: string; newPassword: string; turnstileToken: string } }>(
     '/reset-password',
     {
+      preHandler: [turnstileVerify],
       config: {
         rateLimit: {
           max: 5,
@@ -346,10 +365,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       schema: {
         body: {
           type: 'object',
-          required: ['token', 'newPassword'],
+          required: ['token', 'newPassword', 'turnstileToken'],
           properties: {
             token: { type: 'string', minLength: 1 },
             newPassword: { type: 'string', minLength: 8, maxLength: 72 },
+            turnstileToken: { type: 'string', minLength: 1 },
           },
         },
       },
@@ -362,10 +382,17 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           data: { message: 'Password updated successfully.' },
         });
       } catch (err: unknown) {
-        const { message, code, statusCode } = err as HttpError;
-        return reply.status(statusCode ?? 500).send({
+        const e = err as HttpError;
+        if (!e.statusCode || e.statusCode >= 500) {
+          fastify.log.error(err);
+          return reply.status(500).send({
+            success: false,
+            error: { message: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' },
+          });
+        }
+        return reply.status(e.statusCode).send({
           success: false,
-          error: { message, code: code ?? 'INTERNAL_ERROR' },
+          error: { message: e.message, code: e.code ?? 'INTERNAL_ERROR' },
         });
       }
     }
@@ -423,7 +450,16 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           await fastify.blacklistToken(payload.jti, payload.exp);
         }
 
-        // ROTATION STEP 2: Issue a completely new token pair
+        // ROTATION STEP 2: Validate tokenVersion against the DB before issuing new tokens.
+        // Copying the incoming JWT's value allows indefinite cycling after a password reset:
+        // the old version propagates forever because requireAuth is the only layer that
+        // ever rejects it — the refresh layer never stops minting new tokens with the stale version.
+        const dbVersion = await authService.validateTokenVersion(
+          Number(payload.sub),
+          payload.tokenVersion
+        );
+
+        // ROTATION STEP 3: Issue a completely new token pair using the DB-authoritative version.
         // A fresh jti means this is a brand new identity - the old jti is dead.
         const newJti = randomUUID();
         const newPayload = {
@@ -431,13 +467,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           email: payload.email,
           role: payload.role,
           jti: newJti,
-          ...(payload.tokenVersion !== undefined ? { tokenVersion: payload.tokenVersion } : {}),
+          tokenVersion: dbVersion, // from the DB, never copied from the incoming JWT
         };
 
         const newAccessToken = fastify.signAccessToken(newPayload);
         const newRefreshToken = fastify.signRefreshToken(newPayload);
 
-        // ROTATION STEP 3: Replace the cookie with the new refresh token.
+        // ROTATION STEP 4: Replace the cookie with the new refresh token.
         // The browser will overwrite the old cookie with the new one automatically
         // because they share the same cookie name, path, and domain.
         reply.setCookie(
@@ -447,7 +483,17 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         return reply.send({ success: true, data: { accessToken: newAccessToken } });
-      } catch {
+      } catch (err) {
+        const e = err as HttpError;
+        // Give clients a definitive signal when their session has been invalidated
+        // (e.g. after a password reset) so they stop cycling and re-authenticate.
+        if (e.code === 'SESSION_INVALIDATED' || e.code === 'USER_NOT_FOUND') {
+          reply.clearCookie('refresh_token', getRefreshCookieOptions(config.server.nodeEnv));
+          return reply.status(401).send({
+            success: false,
+            error: { message: e.message, code: e.code },
+          });
+        }
         // Token was invalid or expired - clear the cookie so the browser stops sending it.
         reply.clearCookie('refresh_token', getRefreshCookieOptions(config.server.nodeEnv));
         return reply.status(401).send({

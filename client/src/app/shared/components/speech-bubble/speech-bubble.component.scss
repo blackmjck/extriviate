@@ -9,63 +9,63 @@ $bubble-bg: #fff;
 .bubble {
   background: $bubble-bg;
   border-radius: 12px;
-  padding: 8px 14px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
   color: #111827;
   font-family: var(--font-ui);
   font-size: 0.875rem;
   font-weight: 500;
   max-width: 200px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+  padding: 8px 14px;
   position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   // Shared tail base
   &::before {
     content: '';
+    height: 0;
     position: absolute;
     width: 0;
-    height: 0;
   }
 
   // Tail at bottom — bubble appears above the avatar
   &.tail-bottom::before {
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
     border-left: $tail-size solid transparent;
     border-right: $tail-size solid transparent;
     border-top: $tail-size solid $bubble-bg;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
   }
 
   // Tail at top — bubble appears below the avatar
   &.tail-top::before {
+    border-bottom: $tail-size solid $bubble-bg;
+    border-left: $tail-size solid transparent;
+    border-right: $tail-size solid transparent;
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border-left: $tail-size solid transparent;
-    border-right: $tail-size solid transparent;
-    border-bottom: $tail-size solid $bubble-bg;
   }
 
   // Tail on left — bubble extends rightward, avatar is to the left
   &.tail-left::before {
+    border-bottom: $tail-size solid transparent;
+    border-right: $tail-size solid $bubble-bg;
+    border-top: $tail-size solid transparent;
     right: 100%;
     top: 50%;
     transform: translateY(-50%);
-    border-top: $tail-size solid transparent;
-    border-bottom: $tail-size solid transparent;
-    border-right: $tail-size solid $bubble-bg;
   }
 
   // Tail on right — bubble extends leftward, avatar is to the right
   &.tail-right::before {
+    border-bottom: $tail-size solid transparent;
+    border-left: $tail-size solid $bubble-bg;
+    border-top: $tail-size solid transparent;
     left: 100%;
     top: 50%;
     transform: translateY(-50%);
-    border-top: $tail-size solid transparent;
-    border-bottom: $tail-size solid transparent;
-    border-left: $tail-size solid $bubble-bg;
   }
 }

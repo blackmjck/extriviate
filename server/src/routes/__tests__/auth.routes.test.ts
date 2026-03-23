@@ -7,13 +7,14 @@ import { config } from '../../config.js';
 
 // vi.hoisted variables are available inside vi.mock() factories because
 // both are hoisted above imports. Regular const/let at module scope are not.
-const { mockSignUp, mockLogin, mockLogout, mockIsPwnedPassword, mockForgotPassword, mockResetPassword } = vi.hoisted(() => ({
+const { mockSignUp, mockLogin, mockLogout, mockIsPwnedPassword, mockForgotPassword, mockResetPassword, mockValidateTokenVersion } = vi.hoisted(() => ({
   mockSignUp: vi.fn(),
   mockLogin: vi.fn(),
   mockLogout: vi.fn(),
   mockIsPwnedPassword: vi.fn(),
   mockForgotPassword: vi.fn(),
   mockResetPassword: vi.fn(),
+  mockValidateTokenVersion: vi.fn(),
 }));
 
 vi.mock('../../services/auth.service.js', () => ({
@@ -25,6 +26,7 @@ vi.mock('../../services/auth.service.js', () => ({
       isPwnedPassword: mockIsPwnedPassword,
       forgotPassword: mockForgotPassword,
       resetPassword: mockResetPassword,
+      validateTokenVersion: mockValidateTokenVersion,
     };
   }),
 }));
@@ -194,20 +196,21 @@ describe('POST /api/auth/signup', () => {
     }
   });
 
-  test('returns 500 when the service throws an error with no statusCode', async () => {
-    mockSignUp.mockRejectedValue(new Error('Unexpected database failure'));
+  test('returns 500 with generic message and does not leak internal details when signUp throws an unexpected error', async () => {
+    mockSignUp.mockRejectedValue(new Error('connection pool exhausted'));
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/signup',
-      payload: { email: 'alice@example.com', password: 'password123', displayName: 'Alice' },
+      payload: { email: 'a@b.com', password: 'password1', displayName: 'A' },
     });
 
     expect(res.statusCode).toBe(500);
-    expect(res.json()).toMatchObject({
-      success: false,
-      error: { message: 'Unexpected database failure' },
-    });
+    const body = res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(body.error.message).toBe('An unexpected error occurred.');
+    expect(JSON.stringify(body)).not.toContain('pool');
   });
 });
 
@@ -315,20 +318,21 @@ describe('POST /api/auth/login', () => {
     expect(JSON.stringify(res.json())).not.toContain('login-refresh-secret');
   });
 
-  test('returns 500 when the service throws an error with no statusCode', async () => {
-    mockLogin.mockRejectedValue(new Error('Connection pool exhausted'));
+  test('returns 500 with generic message and does not leak internal details when login throws an unexpected error', async () => {
+    mockLogin.mockRejectedValue(new Error('connection timeout'));
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { email: 'alice@example.com', password: 'password123' },
+      payload: { email: 'a@b.com', password: 'password1' },
     });
 
     expect(res.statusCode).toBe(500);
-    expect(res.json()).toMatchObject({
-      success: false,
-      error: { message: 'Connection pool exhausted' },
-    });
+    const body = res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(body.error.message).toBe('An unexpected error occurred.');
+    expect(JSON.stringify(body)).not.toContain('timeout');
   });
 });
 
@@ -606,9 +610,11 @@ describe('POST /api/auth/refresh', () => {
     ({ app, mockIsBlacklisted, mockBlacklistToken } = buildApp());
     await app.ready();
     vi.clearAllMocks();
-    // restore default after clearAllMocks wipes call history
+    // restore defaults after clearAllMocks wipes call history
     // (clearAllMocks does not reset implementations, but be explicit for clarity)
     mockIsBlacklisted.mockResolvedValue(false);
+    // Default: token version 0 matches DB version 0 — overridden per-test when needed
+    mockValidateTokenVersion.mockResolvedValue(0);
   });
 
   afterEach(() => app.close());
@@ -763,9 +769,11 @@ describe('POST /api/auth/refresh', () => {
     expect(cookie.toLowerCase()).not.toContain('secure'); // nodeEnv is 'test'
   });
 
-  test('propagates tokenVersion from the incoming refresh token into both new tokens', async () => {
+  test('new tokens carry tokenVersion returned by validateTokenVersion, not the incoming JWT value', async () => {
+    // Incoming JWT has tokenVersion 1, but DB (via mock) returns 5
+    mockValidateTokenVersion.mockResolvedValue(5);
     const oldRefreshToken = app.jwt.sign(
-      { sub: '1', email: '', role: 'player', jti: 'old-jti', tokenVersion: 3 },
+      { sub: '1', email: '', role: 'player', jti: 'old-jti', tokenVersion: 1 },
       { expiresIn: '7d' }
     );
 
@@ -778,29 +786,95 @@ describe('POST /api/auth/refresh', () => {
     expect(res.statusCode).toBe(200);
 
     const newAccessPayload = (app.jwt.decode(res.json().data.accessToken) as any).payload;
-    expect(newAccessPayload.tokenVersion).toBe(3);
+    expect(newAccessPayload.tokenVersion).toBe(5); // from DB, not from incoming JWT
 
     const newRefreshValue = (res.headers['set-cookie'] as string).match(/refresh_token=([^;]+)/)?.[1];
     const newRefreshPayload = (app.jwt.decode(newRefreshValue!) as any).payload;
-    expect(newRefreshPayload.tokenVersion).toBe(3);
+    expect(newRefreshPayload.tokenVersion).toBe(5);
   });
 
-  test('issues tokens without tokenVersion when the incoming token had none (pre-migration compat)', async () => {
+  test('validateTokenVersion is called with the numeric userId and tokenVersion from the incoming JWT', async () => {
     const oldRefreshToken = app.jwt.sign(
-      { sub: '1', email: '', role: 'player', jti: 'old-jti' }, // no tokenVersion
+      { sub: '42', email: '', role: 'player', jti: 'old-jti', tokenVersion: 0 },
+      { expiresIn: '7d' }
+    );
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      headers: { Cookie: `refresh_token=${oldRefreshToken}` },
+    });
+
+    expect(mockValidateTokenVersion).toHaveBeenCalledWith(42, 0);
+  });
+
+  test('returns 401 SESSION_INVALIDATED and clears the cookie when validateTokenVersion rejects with SESSION_INVALIDATED', async () => {
+    mockValidateTokenVersion.mockRejectedValue(
+      Object.assign(new Error('Session has been invalidated'), {
+        code: 'SESSION_INVALIDATED',
+        statusCode: 401,
+      })
+    );
+    const refreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: 'some-jti', tokenVersion: 0 },
       { expiresIn: '7d' }
     );
 
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/refresh',
-      headers: { Cookie: `refresh_token=${oldRefreshToken}` },
+      headers: { Cookie: `refresh_token=${refreshToken}` },
     });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('SESSION_INVALIDATED');
+    expect(res.headers['set-cookie']).toMatch(/Max-Age=0|expires=Thu, 01 Jan 1970/i);
+  });
 
-    const newAccessPayload = (app.jwt.decode(res.json().data.accessToken) as any).payload;
-    expect(newAccessPayload.tokenVersion).toBeUndefined();
+  test('returns 401 USER_NOT_FOUND and clears the cookie when validateTokenVersion rejects with USER_NOT_FOUND', async () => {
+    mockValidateTokenVersion.mockRejectedValue(
+      Object.assign(new Error('Account not found'), {
+        code: 'USER_NOT_FOUND',
+        statusCode: 401,
+      })
+    );
+    const refreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: 'some-jti' },
+      { expiresIn: '7d' }
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      headers: { Cookie: `refresh_token=${refreshToken}` },
+    });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('USER_NOT_FOUND');
+    expect(res.headers['set-cookie']).toMatch(/Max-Age=0|expires=Thu, 01 Jan 1970/i);
+  });
+
+  test('still blacklists the old jti before SESSION_INVALIDATED is returned (rotation step 1 is non-reversible)', async () => {
+    const oldJti = 'already-blacklisted-jti';
+    mockValidateTokenVersion.mockRejectedValue(
+      Object.assign(new Error('Session has been invalidated'), {
+        code: 'SESSION_INVALIDATED',
+        statusCode: 401,
+      })
+    );
+    const refreshToken = app.jwt.sign(
+      { sub: '1', email: '', role: 'player', jti: oldJti, tokenVersion: 0 },
+      { expiresIn: '7d' }
+    );
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      headers: { Cookie: `refresh_token=${refreshToken}` },
+    });
+
+    // Old token was blacklisted in rotation step 1, before validateTokenVersion was called
+    expect(mockBlacklistToken).toHaveBeenCalledWith(oldJti, expect.any(Number));
   });
 });
 
@@ -864,7 +938,7 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.json()).toEqual({ success: true, data: { response: message } });
   });
 
-  test('proxies the service statusCode and error code on failure', async () => {
+  test('returns 500 INTERNAL_ERROR and does not leak details when service throws a 5xx error', async () => {
     const err = Object.assign(new Error('Failed to send reset email. Please try again.'), {
       code: 'EMAIL_SEND_FAILED',
       statusCode: 503,
@@ -877,11 +951,11 @@ describe('POST /api/auth/forgot-password', () => {
       payload: { email: 'alice@example.com', turnstileToken: 'tok' },
     });
 
-    expect(res.statusCode).toBe(503);
-    expect(res.json()).toMatchObject({
-      success: false,
-      error: { code: 'EMAIL_SEND_FAILED' },
-    });
+    expect(res.statusCode).toBe(500);
+    const body = res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+    expect(body.error.message).toBe('An unexpected error occurred.');
   });
 
   test('returns 500 INTERNAL_ERROR when the service throws without a statusCode', async () => {
@@ -991,7 +1065,7 @@ describe('POST /api/auth/reset-password', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/auth/reset-password',
-        payload: { token: 'valid-token', newPassword },
+        payload: { token: 'valid-token', newPassword, turnstileToken: 'tok' },
       });
       expect(res.statusCode, `expected 200 for ${newPassword.length}-char password`).toBe(200);
     }
@@ -1003,7 +1077,7 @@ describe('POST /api/auth/reset-password', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/reset-password',
-      payload: { token: 'valid-token', newPassword: 'NewPassword1!' },
+      payload: { token: 'valid-token', newPassword: 'NewPassword1!', turnstileToken: 'tok' },
     });
 
     expect(res.statusCode).toBe(200);
@@ -1023,7 +1097,7 @@ describe('POST /api/auth/reset-password', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/reset-password',
-      payload: { token: 'bad-token', newPassword: 'NewPassword1!' },
+      payload: { token: 'bad-token', newPassword: 'NewPassword1!', turnstileToken: 'tok' },
     });
 
     expect(res.statusCode).toBe(400);
@@ -1033,22 +1107,20 @@ describe('POST /api/auth/reset-password', () => {
     });
   });
 
-  test('does not require a turnstileToken — no Turnstile check on this route', async () => {
-    mockResetPassword.mockResolvedValue(undefined);
-
+  test('rejects a body missing turnstileToken with 400 before calling AuthService', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/reset-password',
-      // no turnstileToken field
-      payload: { token: 'valid-token', newPassword: 'NewPassword1!' },
+      payload: { token: 'valid-token', newPassword: 'NewPassword1!' }, // no turnstileToken
     });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(400);
+    expect(mockResetPassword).not.toHaveBeenCalled();
   });
 
   test('returns 429 RATE_LIMITED after 5 requests from the same IP within 15 minutes', async () => {
     mockResetPassword.mockResolvedValue(undefined);
-    const validPayload = { token: 'some-token', newPassword: 'NewPassword1!' };
+    const validPayload = { token: 'some-token', newPassword: 'NewPassword1!', turnstileToken: 'tok' };
 
     for (let i = 0; i < 5; i++) {
       const res = await app.inject({

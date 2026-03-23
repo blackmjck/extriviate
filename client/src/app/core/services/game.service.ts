@@ -26,10 +26,7 @@ export class GameService {
     );
   }
 
-  async getGames(
-    offset = 0,
-    limit = 12,
-  ): Promise<ApiResponse<PaginatedResponse<Game>>> {
+  async getGames(offset = 0, limit = 12): Promise<ApiResponse<PaginatedResponse<Game>>> {
     return await firstValueFrom(
       this.http.get<ApiResponse<PaginatedResponse<Game>>>(`${environment.apiUrl}/api/games`, {
         params: { limit, offset },

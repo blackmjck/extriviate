@@ -42,11 +42,16 @@ const dbUserRow: DbUser = {
 function makeMockQs(): QueryService {
   return {
     findActiveUserByEmail: vi.fn(),
+    findActiveUserById: vi.fn(),
+    findUserTokenVersion: vi.fn(),
     createUser: vi.fn(),
     findPasswordResetToken: vi.fn(),
     createPasswordResetToken: vi.fn(),
+    deletePasswordResetTokenByHash: vi.fn(),
+    deleteExpiredPasswordResetTokensForUser: vi.fn(),
     updateUserPassword: vi.fn(),
-    markPasswordResetTokenUsed: vi.fn(),
+    incrementTokenVersion: vi.fn(),
+    deleteUsedPasswordResetToken: vi.fn(),
     deleteUnusedPasswordResetTokensForUser: vi.fn(),
   } as unknown as QueryService;
 }
@@ -79,7 +84,7 @@ const mockFastify = {
   signAccessToken: vi.fn<(payload: Record<string, unknown>) => string>(() => 'mock-access-token'),
   signRefreshToken: vi.fn<(payload: Record<string, unknown>) => string>(() => 'mock-refresh-token'),
   blacklistToken: vi.fn(),
-  log: { error: vi.fn() },
+  log: { error: vi.fn(), warn: vi.fn() },
 };
 
 // ---------------------------------------------------------------------------
@@ -256,6 +261,22 @@ describe('AuthService', () => {
       ).rejects.toMatchObject({ code: 'EMAIL_TAKEN', statusCode: 409 });
 
       expect(bcrypt.hash).toHaveBeenCalled();
+    });
+
+    test('throws EMAIL_TAKEN before hashing when an active user already owns the email', async () => {
+      vi.mocked(mockQs.findActiveUserByEmail).mockResolvedValueOnce(dbUserRow);
+
+      await expect(
+        service.signUp({
+          email: 'alice@example.com',
+          password: 'pw123456',
+          displayName: 'Alice',
+          turnstileToken: 't',
+        })
+      ).rejects.toMatchObject({ code: 'EMAIL_TAKEN', statusCode: 409 });
+
+      expect(bcrypt.hash).not.toHaveBeenCalled();
+      expect(mockQs.createUser).not.toHaveBeenCalled();
     });
   });
 
@@ -452,6 +473,50 @@ describe('AuthService', () => {
     });
   });
 
+  describe('validateTokenVersion()', () => {
+    test('returns the DB version when user is found and versions match', async () => {
+      vi.mocked(mockQs.findUserTokenVersion).mockResolvedValue(2);
+
+      const result = await service.validateTokenVersion(1, 2);
+
+      expect(result).toBe(2);
+      expect(mockQs.findUserTokenVersion).toHaveBeenCalledWith(1);
+    });
+
+    test('throws USER_NOT_FOUND (401) when the user does not exist or is inactive', async () => {
+      vi.mocked(mockQs.findUserTokenVersion).mockResolvedValue(null);
+
+      await expect(service.validateTokenVersion(1, 0)).rejects.toMatchObject({
+        code: 'USER_NOT_FOUND',
+        statusCode: 401,
+      });
+    });
+
+    test('throws SESSION_INVALIDATED (401) when payloadVersion mismatches DB version', async () => {
+      vi.mocked(mockQs.findUserTokenVersion).mockResolvedValue(3);
+
+      await expect(service.validateTokenVersion(1, 2)).rejects.toMatchObject({
+        code: 'SESSION_INVALIDATED',
+        statusCode: 401,
+      });
+    });
+
+    test('treats undefined payloadVersion as 0 — succeeds when DB version is also 0', async () => {
+      vi.mocked(mockQs.findUserTokenVersion).mockResolvedValue(0);
+
+      await expect(service.validateTokenVersion(1, undefined)).resolves.toBe(0);
+    });
+
+    test('treats undefined payloadVersion as 0 — rejects when DB version is 1', async () => {
+      vi.mocked(mockQs.findUserTokenVersion).mockResolvedValue(1);
+
+      await expect(service.validateTokenVersion(1, undefined)).rejects.toMatchObject({
+        code: 'SESSION_INVALIDATED',
+        statusCode: 401,
+      });
+    });
+  });
+
   describe('forgotPassword()', () => {
     beforeEach(() => {
       mockEmailsSend.mockResolvedValue({ data: { id: 'email-1' }, error: null });
@@ -554,21 +619,22 @@ describe('AuthService', () => {
       );
     });
 
-    test('throws EMAIL_SEND_FAILED (503) when Resend returns an error object', async () => {
+    test('cleans up the token and returns the generic response when Resend returns an error object', async () => {
       mockRedis.get.mockResolvedValue('0');
-      mockRedis.incr.mockResolvedValue(1);
       vi.mocked(mockQs.findActiveUserByEmail).mockResolvedValue(dbUserRow);
       vi.mocked(mockQs.createPasswordResetToken).mockResolvedValue(undefined);
+      vi.mocked(mockQs.deletePasswordResetTokenByHash).mockResolvedValue(undefined);
       mockEmailsSend.mockResolvedValue({
         data: null,
         error: { message: 'Resend API error', name: 'api_error', statusCode: 500 },
       });
 
-      await expect(service.forgotPassword('alice@example.com')).rejects.toMatchObject({
-        code: 'EMAIL_SEND_FAILED',
-        statusCode: 503,
-      });
-      expect(mockFastify.log.error).toHaveBeenCalledOnce();
+      const result = await service.forgotPassword('alice@example.com');
+
+      expect(result).toEqual({ response: "If that email is registered, you'll receive a link shortly." });
+      expect(mockQs.deletePasswordResetTokenByHash).toHaveBeenCalledOnce();
+      // log.error is only called when the SDK throws, not when it resolves with an error object
+      expect(mockFastify.log.error).not.toHaveBeenCalled();
     });
   });
 
@@ -584,8 +650,12 @@ describe('AuthService', () => {
 
     beforeEach(() => {
       vi.mocked(bcrypt.hash).mockResolvedValue('new-hashed-pw' as any);
+      vi.mocked(mockQs.findActiveUserById).mockResolvedValue({
+        id: 1, display_name: 'Alice', role: 'creator', created_at: '2025-01-01T00:00:00Z',
+      } as any);
       vi.mocked(mockQs.updateUserPassword).mockResolvedValue(undefined);
-      vi.mocked(mockQs.markPasswordResetTokenUsed).mockResolvedValue(true);
+      vi.mocked(mockQs.incrementTokenVersion).mockResolvedValue(undefined);
+      vi.mocked(mockQs.deleteUsedPasswordResetToken).mockResolvedValue(true);
       vi.mocked(mockQs.deleteUnusedPasswordResetTokensForUser).mockResolvedValue(undefined);
     });
 
@@ -626,7 +696,7 @@ describe('AuthService', () => {
       expect(mockFastify.db.connect).not.toHaveBeenCalled();
     });
 
-    test('hashes the new password, updates the user, marks the token used, deletes stale tokens, and commits', async () => {
+    test('hashes the new password, updates the user, increments token version, claims token, deletes stale tokens, and commits', async () => {
       vi.mocked(mockQs.findPasswordResetToken).mockResolvedValue(validTokenRecord);
 
       await service.resetPassword('raw-token', 'NewPassword1!');
@@ -636,7 +706,8 @@ describe('AuthService', () => {
       expect(mockQs.updateUserPassword).toHaveBeenCalledWith(
         validTokenRecord.user_id, 'new-hashed-pw', mockClient
       );
-      expect(mockQs.markPasswordResetTokenUsed).toHaveBeenCalledWith(validTokenRecord.id, mockClient);
+      expect(mockQs.incrementTokenVersion).toHaveBeenCalledWith(validTokenRecord.user_id, mockClient);
+      expect(mockQs.deleteUsedPasswordResetToken).toHaveBeenCalledWith(validTokenRecord.id, mockClient);
       expect(mockQs.deleteUnusedPasswordResetTokensForUser).toHaveBeenCalledWith(
         validTokenRecord.user_id, mockClient
       );
@@ -668,7 +739,7 @@ describe('AuthService', () => {
 
     test('throws INVALID_RESET_TOKEN and rolls back when the token is concurrently claimed', async () => {
       vi.mocked(mockQs.findPasswordResetToken).mockResolvedValue(validTokenRecord);
-      vi.mocked(mockQs.markPasswordResetTokenUsed).mockResolvedValue(false); // race lost
+      vi.mocked(mockQs.deleteUsedPasswordResetToken).mockResolvedValue(false); // race lost
 
       await expect(service.resetPassword('raw-token', 'NewPassword1!')).rejects.toMatchObject({
         code: 'INVALID_RESET_TOKEN',
@@ -688,6 +759,18 @@ describe('AuthService', () => {
       expect(mockQs.deleteUnusedPasswordResetTokensForUser).toHaveBeenCalledWith(
         validTokenRecord.user_id, mockClient
       );
+    });
+
+    test('throws INVALID_RESET_TOKEN and rolls back when the user is no longer active', async () => {
+      vi.mocked(mockQs.findPasswordResetToken).mockResolvedValue(validTokenRecord);
+      vi.mocked(mockQs.findActiveUserById).mockResolvedValue(null);
+
+      await expect(service.resetPassword('raw-token', 'NewPassword1!')).rejects.toMatchObject({
+        code: 'INVALID_RESET_TOKEN',
+        statusCode: 400,
+      });
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockClient.release).toHaveBeenCalledOnce();
     });
   });
 

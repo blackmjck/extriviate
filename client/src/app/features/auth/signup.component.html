@@ -60,6 +60,8 @@
           placeholder="Create a password"
           required
           autocomplete="new-password"
+          minlength="8"
+          maxlength="72"
         />
         @if (password().length) {
           <app-password-strength-meter

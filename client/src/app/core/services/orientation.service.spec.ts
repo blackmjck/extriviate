@@ -26,7 +26,8 @@ function setupMatchMedia(portraitMatches: boolean, smallScreenMatches: boolean) 
   };
 
   // The service calls matchMedia with the portrait query first, then the small-screen query.
-  const matchMediaMock = vi.fn()
+  const matchMediaMock = vi
+    .fn()
     .mockReturnValueOnce(portraitMql)
     .mockReturnValueOnce(smallScreenMql);
 
@@ -159,7 +160,10 @@ describe('OrientationService', () => {
       });
       TestBed.inject(OrientationService);
       TestBed.resetTestingModule();
-      expect(smallScreenMql.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+      expect(smallScreenMql.removeEventListener).toHaveBeenCalledWith(
+        'change',
+        expect.any(Function),
+      );
     });
   });
 });

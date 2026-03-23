@@ -39,8 +39,8 @@ function buildApp() {
 }
 
 function mockCloudflare(fetchMock: ReturnType<typeof vi.fn>, success: boolean) {
-  // unused param satisfies linter; fetch is a global stub
   fetchMock.mockResolvedValue({
+    ok: true,
     json: vi.fn().mockResolvedValue({ success }),
   });
 }
@@ -376,5 +376,43 @@ describe('turnstileVerify', () => {
     const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(requestBody.secret).toBe(CF_SECRET_TEST_KEYS.PASS);
     expect(requestBody.secret).not.toBe('prod-secret');
+  });
+
+  // Cloudflare returns a non-2xx HTTP status (e.g. 503 during an outage)
+  test('returns 503 CAPTCHA_UNAVAILABLE when Cloudflare returns a non-2xx response', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/verify',
+      payload: { turnstileToken: 'some-token' },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'CAPTCHA_UNAVAILABLE' },
+    });
+  });
+
+  // fetch aborted by the 5-second AbortController timeout
+  test('returns 503 CAPTCHA_UNAVAILABLE when the Cloudflare request times out', async () => {
+    mockFetch.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/verify',
+      payload: { turnstileToken: 'some-token' },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'CAPTCHA_UNAVAILABLE' },
+    });
   });
 });

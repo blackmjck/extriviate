@@ -44,7 +44,7 @@ describe('CategoryManagerComponent', () => {
 
   async function setup(
     categories: Category[] = [makeCategory()],
-    excludedIds: Set<number> = new Set(),
+    excludedIds: Set<number> = new Set<number>(),
   ): Promise<HTMLElement> {
     catStub = buildCategoryServiceStub(categories);
 
@@ -82,7 +82,10 @@ describe('CategoryManagerComponent', () => {
   });
 
   it('renders a list item for each loaded category', async () => {
-    const cats = [makeCategory({ id: 1, name: 'Science' }), makeCategory({ id: 2, name: 'History' })];
+    const cats = [
+      makeCategory({ id: 1, name: 'Science' }),
+      makeCategory({ id: 2, name: 'History' }),
+    ];
     const el = await setup(cats);
     expect(el.querySelectorAll('.cat-list__item').length).toBe(2);
   });

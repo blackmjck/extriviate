@@ -58,8 +58,8 @@ describe('SessionService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.getSession('ABC123');
-      const req = httpMock.expectOne((r) =>
-        r.method === 'GET' && r.url.includes('/api/sessions/ABC123'),
+      const req = httpMock.expectOne(
+        (r) => r.method === 'GET' && r.url.includes('/api/sessions/ABC123'),
       );
       req.flush({ success: true, data: SESSION });
       const result = await promise;
@@ -73,7 +73,12 @@ describe('SessionService', () => {
     it('POSTs /api/sessions with the body', async () => {
       const { service, httpMock } = setup();
 
-      const body = { gameId: 42, name: 'Trivia', mode: 'computer_hosted' as const, turnBased: false };
+      const body = {
+        gameId: 42,
+        name: 'Trivia',
+        mode: 'computer_hosted' as const,
+        turnBased: false,
+      };
       const promise = service.createSession(body);
       const req = httpMock.expectOne((r) => r.method === 'POST' && r.url.includes('/api/sessions'));
       expect(req.request.body).toMatchObject(body);
@@ -89,8 +94,8 @@ describe('SessionService', () => {
 
       const body = { method: 'guest' as const, displayName: 'Bob' };
       const promise = service.joinSession(5, body);
-      const req = httpMock.expectOne((r) =>
-        r.method === 'POST' && r.url.includes('/api/sessions/5/join'),
+      const req = httpMock.expectOne(
+        (r) => r.method === 'POST' && r.url.includes('/api/sessions/5/join'),
       );
       expect(req.request.body).toMatchObject(body);
       req.flush({ success: true, data: { player: PLAYER, session: SESSION, tokens: null } });
@@ -104,8 +109,8 @@ describe('SessionService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.updateStatus(5, 'active');
-      const req = httpMock.expectOne((r) =>
-        r.method === 'PATCH' && r.url.includes('/api/sessions/5/status'),
+      const req = httpMock.expectOne(
+        (r) => r.method === 'PATCH' && r.url.includes('/api/sessions/5/status'),
       );
       expect(req.request.body).toMatchObject({ status: 'active' });
       req.flush({ success: true, data: { ...SESSION, status: 'active' } });
@@ -119,8 +124,8 @@ describe('SessionService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.selectQuestion(5, 99);
-      const req = httpMock.expectOne((r) =>
-        r.method === 'POST' && r.url.includes('/api/sessions/5/questions/99/select'),
+      const req = httpMock.expectOne(
+        (r) => r.method === 'POST' && r.url.includes('/api/sessions/5/questions/99/select'),
       );
       req.flush({ success: true, data: {} });
       await promise;
@@ -144,8 +149,8 @@ describe('SessionService', () => {
       const { service, httpMock } = setup();
 
       const promise = service.evaluateAnswer(5, 3, true);
-      const req = httpMock.expectOne((r) =>
-        r.method === 'POST' && r.url.includes('/api/sessions/5/evaluate'),
+      const req = httpMock.expectOne(
+        (r) => r.method === 'POST' && r.url.includes('/api/sessions/5/evaluate'),
       );
       expect(req.request.body).toMatchObject({ playerId: 3, correct: true });
       req.flush({ success: true, data: {} });

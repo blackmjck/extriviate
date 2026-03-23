@@ -31,9 +31,7 @@ export class SessionService {
 
   async getSession(joinCode: string): Promise<ApiResponse<GameSession>> {
     return await firstValueFrom(
-      this.http.get<ApiResponse<GameSession>>(
-        `${environment.apiUrl}/api/sessions/${joinCode}`,
-      ),
+      this.http.get<ApiResponse<GameSession>>(`${environment.apiUrl}/api/sessions/${joinCode}`),
     );
   }
 

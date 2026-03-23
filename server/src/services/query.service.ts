@@ -44,34 +44,30 @@ export class QueryService {
     questionId: number,
     content: unknown,
     acceptedAnswers?: string[],
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<DbAnswer> {
     const result = await this.conn(client).query<DbAnswer>(
       `INSERT INTO answers (question_id, content, accepted_answers)
        VALUES ($1, $2, $3)
        RETURNING id, question_id, content, accepted_answers, created_at`,
-      [questionId, JSON.stringify(content), acceptedAnswers ?? []],
+      [questionId, JSON.stringify(content), acceptedAnswers ?? []]
     );
     return result.rows[0];
   }
 
-  async updateAnswer(
-    questionId: number,
-    content: unknown,
-    client?: PoolClient,
-  ): Promise<void> {
-    await this.conn(client).query(
-      'UPDATE answers SET content = $1 WHERE question_id = $2',
-      [JSON.stringify(content), questionId],
-    );
+  async updateAnswer(questionId: number, content: unknown, client?: PoolClient): Promise<void> {
+    await this.conn(client).query('UPDATE answers SET content = $1 WHERE question_id = $2', [
+      JSON.stringify(content),
+      questionId,
+    ]);
   }
 
   // ---- Categories ----
 
-  async countCategories(creatorId: number): Promise<number> {
-    const result = await this.db.query<{ count: string }>(
+  async countCategories(creatorId: number, client?: PoolClient): Promise<number> {
+    const result = await this.conn(client).query<{ count: string }>(
       'SELECT COUNT(*) FROM categories WHERE creator_id = $1',
-      [creatorId],
+      [creatorId]
     );
     return parseInt(result.rows[0].count, 10);
   }
@@ -80,33 +76,31 @@ export class QueryService {
     creatorId: number,
     name: string,
     description: string | null,
+    client?: PoolClient
   ): Promise<DbCategory> {
-    const result = await this.db.query<DbCategory>(
+    const result = await this.conn(client).query<DbCategory>(
       `INSERT INTO categories (creator_id, name, description)
        VALUES ($1, $2, $3)
        RETURNING id, creator_id, name, description, created_at, updated_at`,
-      [creatorId, name, description],
+      [creatorId, name, description]
     );
     return result.rows[0];
   }
 
-  async deleteCategory(categoryId: number, creatorId: number): Promise<boolean> {
-    const result = await this.db.query(
+  async deleteCategory(categoryId: number, creatorId: number, client?: PoolClient): Promise<boolean> {
+    const result = await this.conn(client).query(
       'DELETE FROM categories WHERE id = $1 AND creator_id = $2 RETURNING id',
-      [categoryId, creatorId],
+      [categoryId, creatorId]
     );
     return result.rows.length > 0;
   }
 
-  async findCategoryById(
-    categoryId: number,
-    creatorId: number,
-  ): Promise<DbCategory | null> {
-    const result = await this.db.query<DbCategory>(
+  async findCategoryById(categoryId: number, creatorId: number, client?: PoolClient): Promise<DbCategory | null> {
+    const result = await this.conn(client).query<DbCategory>(
       `SELECT id, creator_id, name, description, created_at, updated_at
        FROM categories
        WHERE id = $1 AND creator_id = $2`,
-      [categoryId, creatorId],
+      [categoryId, creatorId]
     );
     return result.rows[0] ?? null;
   }
@@ -114,27 +108,23 @@ export class QueryService {
   async findCategoryForCreator(
     categoryId: number,
     creatorId: number,
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<{ id: number } | null> {
     const result = await this.conn(client).query<{ id: number }>(
       'SELECT id FROM categories WHERE id = $1 AND creator_id = $2',
-      [categoryId, creatorId],
+      [categoryId, creatorId]
     );
     return result.rows[0] ?? null;
   }
 
-  async listCategories(
-    creatorId: number,
-    limit: number,
-    offset: number,
-  ): Promise<DbCategory[]> {
-    const result = await this.db.query<DbCategory>(
+  async listCategories(creatorId: number, limit: number, offset: number, client?: PoolClient): Promise<DbCategory[]> {
+    const result = await this.conn(client).query<DbCategory>(
       `SELECT id, creator_id, name, description, created_at, updated_at
        FROM categories
        WHERE creator_id = $1
        ORDER BY name ASC
        LIMIT $2 OFFSET $3`,
-      [creatorId, limit, offset],
+      [creatorId, limit, offset]
     );
     return result.rows;
   }
@@ -144,41 +134,42 @@ export class QueryService {
     creatorId: number,
     name: string | null,
     description: string | null,
+    client?: PoolClient
   ): Promise<DbCategory | null> {
-    const result = await this.db.query<DbCategory>(
+    const result = await this.conn(client).query<DbCategory>(
       `UPDATE categories
        SET name = COALESCE($1, name),
            description = COALESCE($2, description),
            updated_at = NOW()
        WHERE id = $3 AND creator_id = $4
        RETURNING id, creator_id, name, description, created_at, updated_at`,
-      [name, description, categoryId, creatorId],
+      [name, description, categoryId, creatorId]
     );
     return result.rows[0] ?? null;
   }
 
   // ---- Games ----
 
-  async countGameCategories(gameId: number): Promise<number> {
-    const result = await this.db.query<{ count: string }>(
+  async countGameCategories(gameId: number, client?: PoolClient): Promise<number> {
+    const result = await this.conn(client).query<{ count: string }>(
       'SELECT COUNT(*) FROM game_categories WHERE game_id = $1',
-      [gameId],
+      [gameId]
     );
     return parseInt(result.rows[0].count, 10);
   }
 
-  async countGames(creatorId: number): Promise<number> {
-    const result = await this.db.query<{ count: string }>(
+  async countGames(creatorId: number, client?: PoolClient): Promise<number> {
+    const result = await this.conn(client).query<{ count: string }>(
       'SELECT COUNT(*) FROM games WHERE creator_id = $1',
-      [creatorId],
+      [creatorId]
     );
     return parseInt(result.rows[0].count, 10);
   }
 
-  async countGameQuestionsWithPointValue(gameId: number): Promise<number> {
-    const result = await this.db.query<{ count: string }>(
+  async countGameQuestionsWithPointValue(gameId: number, client?: PoolClient): Promise<number> {
+    const result = await this.conn(client).query<{ count: string }>(
       'SELECT COUNT(*) FROM game_questions WHERE game_id = $1 AND point_value > 0',
-      [gameId],
+      [gameId]
     );
     return parseInt(result.rows[0].count, 10);
   }
@@ -187,26 +178,23 @@ export class QueryService {
     creatorId: number,
     title: string,
     dailyDoublesEnabled: boolean,
+    client?: PoolClient
   ): Promise<DbGame> {
-    const result = await this.db.query<DbGame>(
+    const result = await this.conn(client).query<DbGame>(
       `INSERT INTO games (creator_id, title, daily_doubles_enabled)
        VALUES ($1, $2, $3)
        RETURNING id, creator_id, title, daily_doubles_enabled, is_published,
                  require_question_format, use_ai_evaluation, created_at, updated_at`,
-      [creatorId, title, dailyDoublesEnabled],
+      [creatorId, title, dailyDoublesEnabled]
     );
     return result.rows[0];
   }
 
   // client is required — deleteGame is only called inside a caller-managed transaction
-  async deleteGame(
-    gameId: number,
-    creatorId: number,
-    client: PoolClient,
-  ): Promise<boolean> {
+  async deleteGame(gameId: number, creatorId: number, client: PoolClient): Promise<boolean> {
     const result = await client.query(
       'DELETE FROM games WHERE id = $1 AND creator_id = $2 RETURNING id',
-      [gameId, creatorId],
+      [gameId, creatorId]
     );
     return result.rows.length > 0;
   }
@@ -219,23 +207,23 @@ export class QueryService {
   }
 
   // Used by session-state-builder — does not enforce creator ownership
-  async findGameById(gameId: number): Promise<DbGame | null> {
-    const result = await this.db.query<DbGame>(
+  async findGameById(gameId: number, client?: PoolClient): Promise<DbGame | null> {
+    const result = await this.conn(client).query<DbGame>(
       `SELECT id, creator_id, title, daily_doubles_enabled, is_published,
               require_question_format, use_ai_evaluation, created_at, updated_at
        FROM games WHERE id = $1`,
-      [gameId],
+      [gameId]
     );
     return result.rows[0] ?? null;
   }
 
   // Used by routes — enforces creator ownership
-  async findGameForOwner(gameId: number, creatorId: number): Promise<DbGame | null> {
-    const result = await this.db.query<DbGame>(
+  async findGameForOwner(gameId: number, creatorId: number, client?: PoolClient): Promise<DbGame | null> {
+    const result = await this.conn(client).query<DbGame>(
       `SELECT id, creator_id, title, daily_doubles_enabled, is_published,
               require_question_format, use_ai_evaluation, created_at, updated_at
        FROM games WHERE id = $1 AND creator_id = $2`,
-      [gameId, creatorId],
+      [gameId, creatorId]
     );
     return result.rows[0] ?? null;
   }
@@ -245,13 +233,13 @@ export class QueryService {
     gameId: number,
     categoryId: number,
     position: number,
-    client: PoolClient,
+    client: PoolClient
   ): Promise<DbGameCategory> {
     const result = await client.query<DbGameCategory>(
       `INSERT INTO game_categories (game_id, category_id, position)
        VALUES ($1, $2, $3)
        RETURNING id, game_id, category_id, position, created_at`,
-      [gameId, categoryId, position],
+      [gameId, categoryId, position]
     );
     return result.rows[0];
   }
@@ -264,20 +252,20 @@ export class QueryService {
     rowPosition: number,
     pointValue: number,
     isDailyDouble: boolean,
-    client: PoolClient,
+    client: PoolClient
   ): Promise<void> {
     await client.query(
       `INSERT INTO game_questions
          (game_id, game_category_id, question_id, row_position, point_value, is_daily_double)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [gameId, gameCategoryId, questionId, rowPosition, pointValue, isDailyDouble],
+      [gameId, gameCategoryId, questionId, rowPosition, pointValue, isDailyDouble]
     );
   }
 
   // Returns full JOIN result used by GET /api/games/:id and the session-state-builder.
   // Includes category_creator_id so both call sites can map correctly.
-  async listGameCategoriesWithCategoryData(gameId: number): Promise<DbGameCategoryRow[]> {
-    const result = await this.db.query<DbGameCategoryRow>(
+  async listGameCategoriesWithCategoryData(gameId: number, client?: PoolClient): Promise<DbGameCategoryRow[]> {
+    const result = await this.conn(client).query<DbGameCategoryRow>(
       `SELECT gc.id, gc.game_id, gc.category_id, gc.position, gc.created_at,
               c.name AS category_name, c.description AS category_description,
               c.creator_id AS category_creator_id,
@@ -286,15 +274,15 @@ export class QueryService {
        JOIN categories c ON c.id = gc.category_id
        WHERE gc.game_id = $1
        ORDER BY gc.position`,
-      [gameId],
+      [gameId]
     );
     return result.rows;
   }
 
   // Returns full JOIN result used by GET /api/games/:id and the session-state-builder.
   // Includes question_creator_id and accepted_answers so both call sites can map correctly.
-  async listGameQuestionsWithData(gameId: number): Promise<DbGameQuestionRow[]> {
-    const result = await this.db.query<DbGameQuestionRow>(
+  async listGameQuestionsWithData(gameId: number, client?: PoolClient): Promise<DbGameQuestionRow[]> {
+    const result = await this.conn(client).query<DbGameQuestionRow>(
       `SELECT gq.id, gq.game_id, gq.game_category_id, gq.question_id, gq.row_position,
               gq.point_value, gq.is_daily_double, gq.is_answered,
               q.creator_id AS question_creator_id,
@@ -307,18 +295,14 @@ export class QueryService {
        LEFT JOIN answers a ON a.question_id = q.id
        WHERE gq.game_id = $1
        ORDER BY gq.row_position`,
-      [gameId],
+      [gameId]
     );
     return result.rows;
   }
 
-  async listGames(
-    creatorId: number,
-    limit: number,
-    offset: number,
-  ): Promise<DbGameListItem[]> {
+  async listGames(creatorId: number, limit: number, offset: number, client?: PoolClient): Promise<DbGameListItem[]> {
     const totalQuestions = GAME_CATEGORY_COUNT * GAME_QUESTION_ROWS;
-    const result = await this.db.query<DbGameListItem>(
+    const result = await this.conn(client).query<DbGameListItem>(
       `SELECT g.id, g.title, g.daily_doubles_enabled, g.is_published,
               g.created_at, g.updated_at,
               (
@@ -330,7 +314,7 @@ export class QueryService {
        WHERE g.creator_id = $1
        ORDER BY g.updated_at DESC
        LIMIT $2 OFFSET $3`,
-      [creatorId, limit, offset, GAME_CATEGORY_COUNT, totalQuestions],
+      [creatorId, limit, offset, GAME_CATEGORY_COUNT, totalQuestions]
     );
     return result.rows;
   }
@@ -341,8 +325,9 @@ export class QueryService {
     title: string | null,
     dailyDoublesEnabled: boolean | null,
     isPublished: boolean | null,
+    client?: PoolClient
   ): Promise<DbGame | null> {
-    const result = await this.db.query<DbGame>(
+    const result = await this.conn(client).query<DbGame>(
       `UPDATE games
        SET title = COALESCE($1, title),
            daily_doubles_enabled = COALESCE($2, daily_doubles_enabled),
@@ -351,7 +336,7 @@ export class QueryService {
        WHERE id = $4 AND creator_id = $5
        RETURNING id, creator_id, title, daily_doubles_enabled, is_published,
                  require_question_format, use_ai_evaluation, created_at, updated_at`,
-      [title, dailyDoublesEnabled, isPublished, gameId, creatorId],
+      [title, dailyDoublesEnabled, isPublished, gameId, creatorId]
     );
     return result.rows[0] ?? null;
   }
@@ -362,60 +347,71 @@ export class QueryService {
     userId: number,
     tokenHash: string,
     expiresAt: Date,
+    client?: PoolClient
   ): Promise<void> {
-    await this.db.query(
+    await this.conn(client).query(
       `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
        VALUES ($1, $2, $3)`,
-      [userId, tokenHash, expiresAt],
+      [userId, tokenHash, expiresAt]
     );
   }
 
-  // client is required — called inside the reset-password transaction
-  async deleteUnusedPasswordResetTokensForUser(
-    userId: number,
-    client: PoolClient,
-  ): Promise<void> {
-    await client.query(
-      'DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL',
-      [userId],
-    );
+  async deletePasswordResetTokenByHash(hash: string, client?: PoolClient): Promise<void> {
+    await this.conn(client).query('DELETE FROM password_reset_tokens WHERE token_hash = $1', [hash]);
   }
 
-  async findPasswordResetToken(tokenHash: string): Promise<DbPasswordResetToken | null> {
-    const result = await this.db.query<DbPasswordResetToken>(
-      `SELECT id, user_id, token_hash, expires_at, used_at, created_at
-       FROM password_reset_tokens
-       WHERE token_hash = $1`,
-      [tokenHash],
+  async deleteExpiredPasswordResetTokensForUser(userId: number, client?: PoolClient): Promise<void> {
+    await this.conn(client).query(
+      'DELETE FROM password_reset_tokens WHERE user_id = $1 AND expires_at < NOW()',
+      [userId]
     );
-    return result.rows[0] ?? null;
   }
 
   // client is required — called inside the reset-password transaction.
   // Returns false when the token was already claimed (concurrent race condition).
-  async markPasswordResetTokenUsed(
-    tokenId: string,
-    client: PoolClient,
-  ): Promise<boolean> {
+  async deleteUsedPasswordResetToken(tokenId: string, client: PoolClient): Promise<boolean> {
     const result = await client.query(
-      'UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL',
-      [tokenId],
+      'DELETE FROM password_reset_tokens WHERE id = $1 AND used_at IS NULL AND expires_at > NOW()',
+      [tokenId]
     );
     return (result.rowCount ?? 0) > 0;
   }
 
+  // client is required — called inside the reset-password transaction
+  async deleteUnusedPasswordResetTokensForUser(userId: number, client: PoolClient): Promise<void> {
+    await client.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [
+      userId,
+    ]);
+  }
+
+  async findPasswordResetToken(tokenHash: string, client?: PoolClient): Promise<DbPasswordResetToken | null> {
+    const result = await this.conn(client).query<DbPasswordResetToken>(
+      `SELECT id, user_id, token_hash, expires_at, used_at, created_at
+       FROM password_reset_tokens
+       WHERE token_hash = $1`,
+      [tokenHash]
+    );
+    return result.rows[0] ?? null;
+  }
+
+  async incrementTokenVersion(userId: number, client: PoolClient): Promise<void> {
+    await client.query('UPDATE users SET token_version = token_version + 1 WHERE id = $1', [
+      userId,
+    ]);
+  }
+
   // ---- Questions ----
 
-  async countQuestions(creatorId: number, categoryId?: number): Promise<number> {
+  async countQuestions(creatorId: number, categoryId?: number, client?: PoolClient): Promise<number> {
     const params: unknown[] = [creatorId];
     let where = 'q.creator_id = $1';
     if (categoryId !== undefined) {
       params.push(categoryId);
       where += ` AND q.category_id = $${params.length}`;
     }
-    const result = await this.db.query<{ count: string }>(
+    const result = await this.conn(client).query<{ count: string }>(
       `SELECT COUNT(*) FROM questions q WHERE ${where}`,
-      params,
+      params
     );
     return parseInt(result.rows[0].count, 10);
   }
@@ -424,21 +420,21 @@ export class QueryService {
     creatorId: number,
     categoryId: number,
     content: unknown,
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<DbQuestion> {
     const result = await this.conn(client).query<DbQuestion>(
       `INSERT INTO questions (creator_id, category_id, content)
        VALUES ($1, $2, $3)
        RETURNING id, creator_id, category_id, content, created_at, updated_at`,
-      [creatorId, categoryId, JSON.stringify(content)],
+      [creatorId, categoryId, JSON.stringify(content)]
     );
     return result.rows[0];
   }
 
-  async deleteQuestion(questionId: number, creatorId: number): Promise<boolean> {
-    const result = await this.db.query(
+  async deleteQuestion(questionId: number, creatorId: number, client?: PoolClient): Promise<boolean> {
+    const result = await this.conn(client).query(
       'DELETE FROM questions WHERE id = $1 AND creator_id = $2 RETURNING id',
-      [questionId, creatorId],
+      [questionId, creatorId]
     );
     return result.rows.length > 0;
   }
@@ -446,11 +442,11 @@ export class QueryService {
   async findQuestionForCreator(
     questionId: number,
     creatorId: number,
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<{ id: number } | null> {
     const result = await this.conn(client).query<{ id: number }>(
       'SELECT id FROM questions WHERE id = $1 AND creator_id = $2',
-      [questionId, creatorId],
+      [questionId, creatorId]
     );
     return result.rows[0] ?? null;
   }
@@ -460,7 +456,7 @@ export class QueryService {
   async findQuestionWithAnswer(
     questionId: number,
     creatorId?: number,
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<DbQuestionWithAnswer | null> {
     const params: unknown[] = [questionId];
     let where = 'q.id = $1';
@@ -474,7 +470,7 @@ export class QueryService {
        FROM questions q
        LEFT JOIN answers a ON a.question_id = q.id
        WHERE ${where}`,
-      params,
+      params
     );
     return result.rows[0] ?? null;
   }
@@ -484,6 +480,7 @@ export class QueryService {
     limit: number,
     offset: number,
     categoryId?: number,
+    client?: PoolClient
   ): Promise<DbQuestionWithAnswer[]> {
     const params: unknown[] = [creatorId];
     let where = 'q.creator_id = $1';
@@ -491,7 +488,7 @@ export class QueryService {
       params.push(categoryId);
       where += ` AND q.category_id = $${params.length}`;
     }
-    const result = await this.db.query<DbQuestionWithAnswer>(
+    const result = await this.conn(client).query<DbQuestionWithAnswer>(
       `SELECT q.id, q.creator_id, q.category_id, q.content, q.created_at, q.updated_at,
               a.id AS answer_id, a.content AS answer_content
        FROM questions q
@@ -499,19 +496,15 @@ export class QueryService {
        WHERE ${where}
        ORDER BY q.created_at DESC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, limit, offset],
+      [...params, limit, offset]
     );
     return result.rows;
   }
 
-  async updateQuestion(
-    questionId: number,
-    content: unknown,
-    client?: PoolClient,
-  ): Promise<void> {
+  async updateQuestion(questionId: number, content: unknown, client?: PoolClient): Promise<void> {
     await this.conn(client).query(
       'UPDATE questions SET content = $1, updated_at = NOW() WHERE id = $2',
-      [JSON.stringify(content), questionId],
+      [JSON.stringify(content), questionId]
     );
   }
 
@@ -521,20 +514,21 @@ export class QueryService {
     sessionId: number,
     displayName: string,
     userId: number | null,
+    client?: PoolClient
   ): Promise<DbSessionPlayer> {
-    const result = await this.db.query<DbSessionPlayer>(
+    const result = await this.conn(client).query<DbSessionPlayer>(
       `INSERT INTO session_players (session_id, user_id, display_name, final_score)
        VALUES ($1, $2, $3, 0)
        RETURNING *`,
-      [sessionId, userId, displayName],
+      [sessionId, userId, displayName]
     );
     return result.rows[0];
   }
 
-  async checkJoinCodeCollision(joinCode: string): Promise<boolean> {
-    const result = await this.db.query(
+  async checkJoinCodeCollision(joinCode: string, client?: PoolClient): Promise<boolean> {
+    const result = await this.conn(client).query(
       `SELECT id FROM game_sessions WHERE join_code = $1 AND status != 'completed'`,
-      [joinCode],
+      [joinCode]
     );
     return result.rows.length > 0;
   }
@@ -546,71 +540,68 @@ export class QueryService {
     joinCode: string,
     mode: SessionMode,
     turnBased: boolean,
+    client?: PoolClient
   ): Promise<DbGameSession> {
-    const result = await this.db.query<DbGameSession>(
+    const result = await this.conn(client).query<DbGameSession>(
       `INSERT INTO game_sessions (game_id, host_id, name, join_code, status, mode, turn_based)
        VALUES ($1, $2, $3, $4, 'lobby', $5, $6)
        RETURNING *`,
-      [gameId, hostId, name, joinCode, mode, turnBased],
+      [gameId, hostId, name, joinCode, mode, turnBased]
     );
     return result.rows[0];
   }
 
-  async findPlayerByUserId(
-    sessionId: number,
-    userId: number,
-  ): Promise<DbSessionPlayer | null> {
-    const result = await this.db.query<DbSessionPlayer>(
+  async findPlayerByUserId(sessionId: number, userId: number, client?: PoolClient): Promise<DbSessionPlayer | null> {
+    const result = await this.conn(client).query<DbSessionPlayer>(
       'SELECT * FROM session_players WHERE session_id = $1 AND user_id = $2',
-      [sessionId, userId],
+      [sessionId, userId]
     );
     return result.rows[0] ?? null;
   }
 
-  async findSessionById(sessionId: number): Promise<DbGameSession | null> {
-    const result = await this.db.query<DbGameSession>(
-      'SELECT * FROM game_sessions WHERE id = $1',
-      [sessionId],
-    );
+  async findSessionById(sessionId: number, client?: PoolClient): Promise<DbGameSession | null> {
+    const result = await this.conn(client).query<DbGameSession>('SELECT * FROM game_sessions WHERE id = $1', [
+      sessionId,
+    ]);
     return result.rows[0] ?? null;
   }
 
-  async findSessionByJoinCode(joinCode: string): Promise<DbGameSession | null> {
-    const result = await this.db.query<DbGameSession>(
+  async findSessionByJoinCode(joinCode: string, client?: PoolClient): Promise<DbGameSession | null> {
+    const result = await this.conn(client).query<DbGameSession>(
       `SELECT * FROM game_sessions WHERE join_code = $1 AND status IN ('lobby', 'active')`,
-      [joinCode.toUpperCase()],
+      [joinCode.toUpperCase()]
     );
     return result.rows[0] ?? null;
   }
 
-  async getPlayers(sessionId: number): Promise<DbSessionPlayer[]> {
-    const result = await this.db.query<DbSessionPlayer>(
+  async getPlayers(sessionId: number, client?: PoolClient): Promise<DbSessionPlayer[]> {
+    const result = await this.conn(client).query<DbSessionPlayer>(
       `SELECT * FROM session_players
        WHERE session_id = $1
        ORDER BY final_score DESC, display_name ASC`,
-      [sessionId],
+      [sessionId]
     );
     return result.rows;
   }
 
-  async markQuestionAnswered(gameId: number, questionId: number): Promise<void> {
-    await this.db.query(
+  async markQuestionAnswered(gameId: number, questionId: number, client?: PoolClient): Promise<void> {
+    await this.conn(client).query(
       'UPDATE game_questions SET is_answered = true WHERE game_id = $1 AND question_id = $2',
-      [gameId, questionId],
+      [gameId, questionId]
     );
   }
 
-  async removePlayer(sessionId: number, playerId: number): Promise<boolean> {
-    const result = await this.db.query(
+  async removePlayer(sessionId: number, playerId: number, client?: PoolClient): Promise<boolean> {
+    const result = await this.conn(client).query(
       'DELETE FROM session_players WHERE id = $1 AND session_id = $2 RETURNING id',
-      [playerId, sessionId],
+      [playerId, sessionId]
     );
     return result.rows.length > 0;
   }
 
-  async setRanks(sessionId: number): Promise<DbSessionPlayer[]> {
+  async setRanks(sessionId: number, client?: PoolClient): Promise<DbSessionPlayer[]> {
     // RANK() OVER gives tied players the same rank (e.g., two players at 800 both rank 1st)
-    const result = await this.db.query<DbSessionPlayer>(
+    const result = await this.conn(client).query<DbSessionPlayer>(
       `UPDATE session_players sp
        SET rank = ranked.rank
        FROM (
@@ -620,26 +611,27 @@ export class QueryService {
        ) ranked
        WHERE sp.id = ranked.id AND sp.session_id = $1
        RETURNING sp.*`,
-      [sessionId],
+      [sessionId]
     );
     return result.rows;
   }
 
-  async updateScore(playerId: number, newScore: number): Promise<void> {
-    await this.db.query(
-      'UPDATE session_players SET final_score = $1 WHERE id = $2',
-      [newScore, playerId],
-    );
+  async updateScore(playerId: number, newScore: number, client?: PoolClient): Promise<void> {
+    await this.conn(client).query('UPDATE session_players SET final_score = $1 WHERE id = $2', [
+      newScore,
+      playerId,
+    ]);
   }
 
   async updateSessionStatus(
     sessionId: number,
     status: SessionStatus,
+    client?: PoolClient
   ): Promise<DbGameSession | null> {
     const extra = status === 'completed' ? ', ended_at = NOW()' : '';
-    const result = await this.db.query<DbGameSession>(
+    const result = await this.conn(client).query<DbGameSession>(
       `UPDATE game_sessions SET status = $1${extra} WHERE id = $2 RETURNING *`,
-      [status, sessionId],
+      [status, sessionId]
     );
     return result.rows[0] ?? null;
   }
@@ -652,99 +644,103 @@ export class QueryService {
     publicUrl: string,
     mimeType: string,
     sizeBytes: number,
+    client?: PoolClient
   ): Promise<DbUpload> {
-    const result = await this.db.query<DbUpload>(
+    const result = await this.conn(client).query<DbUpload>(
       `INSERT INTO uploads (owner_id, key, public_url, mime_type, size_bytes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, owner_id, key, public_url, mime_type, size_bytes, created_at`,
-      [ownerId, key, publicUrl, mimeType, sizeBytes],
+      [ownerId, key, publicUrl, mimeType, sizeBytes]
     );
     return result.rows[0];
   }
 
-  async countUploads(ownerId: number): Promise<number> {
-    const result = await this.db.query<{ count: string }>(
+  async countUploads(ownerId: number, client?: PoolClient): Promise<number> {
+    const result = await this.conn(client).query<{ count: string }>(
       'SELECT COUNT(*) FROM uploads WHERE owner_id = $1',
-      [ownerId],
+      [ownerId]
     );
     return parseInt(result.rows[0].count, 10);
   }
 
-  async deleteUpload(uploadId: number): Promise<void> {
-    await this.db.query('DELETE FROM uploads WHERE id = $1', [uploadId]);
+  async deleteUpload(uploadId: number, client?: PoolClient): Promise<void> {
+    await this.conn(client).query('DELETE FROM uploads WHERE id = $1', [uploadId]);
   }
 
-  async findUploadById(uploadId: number, ownerId: number): Promise<DbUpload | null> {
-    const result = await this.db.query<DbUpload>(
+  async findUploadById(uploadId: number, ownerId: number, client?: PoolClient): Promise<DbUpload | null> {
+    const result = await this.conn(client).query<DbUpload>(
       `SELECT id, owner_id, key, public_url, mime_type, size_bytes, created_at
        FROM uploads WHERE id = $1 AND owner_id = $2`,
-      [uploadId, ownerId],
+      [uploadId, ownerId]
     );
     return result.rows[0] ?? null;
   }
 
-  async listUploads(ownerId: number, limit: number, offset: number): Promise<DbUpload[]> {
-    const result = await this.db.query<DbUpload>(
+  async listUploads(ownerId: number, limit: number, offset: number, client?: PoolClient): Promise<DbUpload[]> {
+    const result = await this.conn(client).query<DbUpload>(
       `SELECT id, owner_id, key, public_url, mime_type, size_bytes, created_at
        FROM uploads
        WHERE owner_id = $1
        ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
-      [ownerId, limit, offset],
+      [ownerId, limit, offset]
     );
     return result.rows;
   }
 
   // ---- Users ----
 
-  async createUser(
-    email: string,
-    displayName: string,
-    passwordHash: string,
-  ): Promise<DbUser> {
-    const result = await this.db.query<DbUser>(
+  async createUser(email: string, displayName: string, passwordHash: string, client?: PoolClient): Promise<DbUser> {
+    const result = await this.conn(client).query<DbUser>(
       `INSERT INTO users (email, display_name, password_hash)
        VALUES ($1, $2, $3)
        RETURNING id, email, display_name, password_hash, role, is_active,
                  created_at, updated_at, token_version`,
-      [email, displayName, passwordHash],
+      [email, displayName, passwordHash]
     );
     return result.rows[0];
   }
 
-  async deactivateUser(userId: number): Promise<void> {
-    await this.db.query(
-      'UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1',
-      [userId],
-    );
+  async deactivateUser(userId: number, client?: PoolClient): Promise<void> {
+    await this.conn(client).query('UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1', [
+      userId,
+    ]);
   }
 
-  async findActiveUserByEmail(email: string): Promise<DbUser | null> {
-    const result = await this.db.query<DbUser>(
+  async findActiveUserByEmail(email: string, client?: PoolClient): Promise<DbUser | null> {
+    const result = await this.conn(client).query<DbUser>(
       'SELECT * FROM users WHERE email = $1 AND is_active = true',
-      [email],
+      [email]
     );
     return result.rows[0] ?? null;
   }
 
-  async findActiveUserById(userId: number): Promise<DbPublicUser | null> {
-    const result = await this.db.query<DbPublicUser>(
+  async findActiveUserById(userId: number, client?: PoolClient): Promise<DbPublicUser | null> {
+    const result = await this.conn(client).query<DbPublicUser>(
       'SELECT id, display_name, role, created_at FROM users WHERE id = $1 AND is_active = true',
-      [userId],
+      [userId]
     );
     return result.rows[0] ?? null;
   }
 
-  async findUserHashById(userId: number): Promise<{ password_hash: string } | null> {
-    const result = await this.db.query<{ password_hash: string }>(
+  async findUserTokenVersion(userId: number, client?: PoolClient): Promise<number | null> {
+    const result = await this.conn(client).query<{ token_version: number }>(
+      'SELECT token_version FROM users WHERE id = $1 AND is_active = true',
+      [userId]
+    );
+    return result.rows[0]?.token_version ?? null;
+  }
+
+  async findUserHashById(userId: number, client?: PoolClient): Promise<{ password_hash: string } | null> {
+    const result = await this.conn(client).query<{ password_hash: string }>(
       'SELECT password_hash FROM users WHERE id = $1 AND is_active = true',
-      [userId],
+      [userId]
     );
     return result.rows[0] ?? null;
   }
 
-  async getUserStats(userId: number): Promise<DbUserStats> {
-    const result = await this.db.query<DbUserStats>(
+  async getUserStats(userId: number, client?: PoolClient): Promise<DbUserStats> {
+    const result = await this.conn(client).query<DbUserStats>(
       `SELECT
         (SELECT COUNT(*) FROM games WHERE creator_id = $1) AS games_created,
         (SELECT COUNT(*) FROM categories WHERE creator_id = $1) AS categories_created,
@@ -752,7 +748,7 @@ export class QueryService {
         (SELECT COUNT(*) FROM session_players sp
           JOIN game_sessions gs ON gs.id = sp.session_id
           WHERE sp.user_id = $1 AND gs.status = 'completed') AS sessions_played`,
-      [userId],
+      [userId]
     );
     return result.rows[0];
   }
@@ -760,14 +756,15 @@ export class QueryService {
   async updateUserDisplayName(
     userId: number,
     displayName: string | null,
+    client?: PoolClient
   ): Promise<DbPublicUser | null> {
-    const result = await this.db.query<DbPublicUser>(
+    const result = await this.conn(client).query<DbPublicUser>(
       `UPDATE users
        SET display_name = COALESCE($1, display_name),
            updated_at = NOW()
        WHERE id = $2 AND is_active = true
        RETURNING id, display_name, role, created_at`,
-      [displayName, userId],
+      [displayName, userId]
     );
     return result.rows[0] ?? null;
   }
@@ -775,11 +772,11 @@ export class QueryService {
   async updateUserPassword(
     userId: number,
     passwordHash: string,
-    client?: PoolClient,
+    client?: PoolClient
   ): Promise<void> {
     await this.conn(client).query(
-      'UPDATE users SET password_hash = $1, updated_at = NOW(), token_version = token_version + 1 WHERE id = $2',
-      [passwordHash, userId],
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [passwordHash, userId]
     );
   }
 }

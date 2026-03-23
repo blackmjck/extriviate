@@ -27,7 +27,10 @@
           <div class="game-card">
             <div class="game-card__body">
               <h3 class="game-card__title">{{ game.title }}</h3>
-              <span class="game-card__status" [class.game-card__status--published]="game.isPublished">
+              <span
+                class="game-card__status"
+                [class.game-card__status--published]="game.isPublished"
+              >
                 {{ game.isPublished ? 'Published' : 'Draft' }}
               </span>
             </div>
@@ -53,7 +56,9 @@
 
       @if (totalPages() > 1) {
         <div class="pagination">
-          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">Previous</button>
+          <button class="btn btn--ghost" [disabled]="!hasPrev()" (click)="prevPage()">
+            Previous
+          </button>
           <span class="pagination__info">Page {{ currentPage() }} of {{ totalPages() }}</span>
           <button class="btn btn--ghost" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
         </div>

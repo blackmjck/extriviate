@@ -2,9 +2,10 @@ import { Component, input, output, provideZonelessChangeDetection } from '@angul
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { HttpErrorResponse } from '@angular/common/http';
 import { vi } from 'vitest';
 import { NgxTurnstileModule } from 'ngx-turnstile';
-import { ResetPasswordComponent } from './reset-password.component';
+import { ForgotPasswordComponent } from './forgot-password.component';
 import { AuthService } from '../../core/services/auth.service';
 
 // ---------------------------------------------------------------------------
@@ -24,44 +25,51 @@ class TurnstileStub {
 // ---------------------------------------------------------------------------
 // Fixtures
 
-const mockResetPassword = vi.fn();
+function makeApiError(message: string, code = 'SOME_ERROR', status = 400): HttpErrorResponse {
+  return new HttpErrorResponse({ error: { error: { message, code } }, status });
+}
 
 // ---------------------------------------------------------------------------
 // Setup
 
-async function setup(opts: { token?: string | null } = {}): Promise<{
-  fixture: ComponentFixture<ResetPasswordComponent>;
-  component: ResetPasswordComponent;
+const mockForgotPassword = vi.fn();
+
+function host(f: ComponentFixture<ForgotPasswordComponent>): HTMLElement {
+  return f.nativeElement as HTMLElement;
+}
+
+async function setup(opts: { errorParam?: string | null } = {}): Promise<{
+  fixture: ComponentFixture<ForgotPasswordComponent>;
+  component: ForgotPasswordComponent;
   router: Router;
 }> {
-  const token = opts.token !== undefined ? opts.token : 'test-reset-token';
+  const errorParam = opts.errorParam !== undefined ? opts.errorParam : null;
 
   await TestBed.configureTestingModule({
-    imports: [ResetPasswordComponent],
+    imports: [ForgotPasswordComponent],
     providers: [
       provideZonelessChangeDetection(),
       provideRouter([]),
-      // Override the ActivatedRoute AFTER provideRouter so it takes precedence
       {
         provide: ActivatedRoute,
         useValue: {
           snapshot: {
             queryParamMap: {
-              get: (k: string) => (k === 'token' ? token : null),
+              get: (k: string) => (k === 'error' ? errorParam : null),
             },
           },
         },
       },
-      { provide: AuthService, useValue: { resetPassword: mockResetPassword } },
+      { provide: AuthService, useValue: { forgotPassword: mockForgotPassword } },
     ],
   })
-    .overrideComponent(ResetPasswordComponent, {
+    .overrideComponent(ForgotPasswordComponent, {
       remove: { imports: [NgxTurnstileModule] },
       add: { imports: [TurnstileStub] },
     })
     .compileComponents();
 
-  const fixture = TestBed.createComponent(ResetPasswordComponent);
+  const fixture = TestBed.createComponent(ForgotPasswordComponent);
   const component = fixture.componentInstance;
   const router = TestBed.inject(Router);
   vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -72,10 +80,10 @@ async function setup(opts: { token?: string | null } = {}): Promise<{
 
 // ---------------------------------------------------------------------------
 
-describe('ResetPasswordComponent', () => {
+describe('ForgotPasswordComponent', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    mockResetPassword.mockReset();
+    mockForgotPassword.mockReset();
   });
 
   afterEach(() => {
@@ -86,13 +94,18 @@ describe('ResetPasswordComponent', () => {
 
   // -------------------------------------------------------------------------
   describe('initial state', () => {
+    it('should create', async () => {
+      const { component } = await setup();
+      expect(component).toBeTruthy();
+    });
+
     it('starts with all signals at their empty/false defaults', async () => {
       const { component } = await setup();
-      expect(component.password()).toBe('');
-      expect(component.confirmPassword()).toBe('');
+      expect(component.email()).toBe('');
       expect(component.turnstileToken()).toBe('');
       expect(component.hp()).toBe('');
       expect(component.errorMessage()).toBe('');
+      expect(component.navMessage()).toBe('');
       expect(component.responseMessage()).toBe('');
       expect(component.loading()).toBe(false);
       expect(component.submitted()).toBe(false);
@@ -104,7 +117,6 @@ describe('ResetPasswordComponent', () => {
   describe('computed: showLoading', () => {
     it('is true when turnstileToken is empty', async () => {
       const { component } = await setup();
-      // token is empty by default
       expect(component.showLoading()).toBe(true);
     });
 
@@ -146,10 +158,9 @@ describe('ResetPasswordComponent', () => {
 
   // -------------------------------------------------------------------------
   describe('computed: disabled', () => {
-    it('is false when passwords match, turnstileToken is set, and no error or lock', async () => {
+    it('is false when email and turnstileToken are set and no error or lock', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
       expect(component.disabled()).toBe(false);
     });
@@ -159,7 +170,7 @@ describe('ResetPasswordComponent', () => {
       expect(component.disabled()).toBe(true);
     });
 
-    it('is true when password is missing', async () => {
+    it('is true when email is missing', async () => {
       const { component } = await setup();
       component.turnstileToken.set('cf-token');
       expect(component.disabled()).toBe(true);
@@ -167,78 +178,57 @@ describe('ResetPasswordComponent', () => {
 
     it('is true when turnstileToken is missing', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      // turnstileToken is '' — showLoading() returns true → disabled
+      component.email.set('alice@example.com');
       expect(component.disabled()).toBe(true);
     });
 
     it('is true when errorMessage is set', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      component.errorMessage.set('Something went wrong');
+      component.errorMessage.set('oops');
       expect(component.disabled()).toBeTruthy();
     });
 
     it('is true when isLocked is true', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
       component.isLocked.set(true);
-      expect(component.disabled()).toBe(true);
-    });
-
-    it('is true when confirmPassword is missing', async () => {
-      const { component } = await setup();
-      component.password.set('new-password');
-      component.turnstileToken.set('cf-token');
-      expect(component.disabled()).toBe(true);
-    });
-
-    it('is true when passwords do not match', async () => {
-      const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('different-password');
-      component.turnstileToken.set('cf-token');
       expect(component.disabled()).toBe(true);
     });
   });
 
   // -------------------------------------------------------------------------
   describe('ngOnInit()', () => {
-    it('strips the token from the URL when a token is present', async () => {
-      const { router } = await setup({ token: 'test-reset-token' });
-      // The URL-strip navigate call uses replaceUrl: true
-      expect(router.navigate).toHaveBeenCalledWith(
-        [],
-        expect.objectContaining({ replaceUrl: true }),
+    it('sets navMessage and strips the query param when ?error=missing-token is present', async () => {
+      const { component, router } = await setup({ errorParam: 'missing-token' });
+      expect(component.navMessage()).toBe(
+        'The reset link is invalid or has already been used. Please request a new one.',
       );
+      expect(router.navigate).toHaveBeenCalledWith([], {
+        replaceUrl: true,
+        queryParams: {},
+      });
     });
 
-    it('redirects to /forgot-password with missing-token error when token is absent', async () => {
-      const { router } = await setup({ token: null });
-      // The first navigate call is redirectWithError() — before the URL strip
-      expect(router.navigate).toHaveBeenNthCalledWith(1, ['/forgot-password'], {
-        queryParams: { error: 'missing-token' },
-      });
+    it('leaves navMessage empty when no error query param is present', async () => {
+      const { component } = await setup();
+      expect(component.navMessage()).toBe('');
+    });
+
+    it('does not call router.navigate when no error query param is present', async () => {
+      const { router } = await setup();
+      expect(router.navigate).not.toHaveBeenCalled();
     });
   });
 
   // -------------------------------------------------------------------------
   describe('onCaptcha()', () => {
-    it('sets turnstileToken to the provided string on success', async () => {
+    it('sets turnstileToken on successful resolution', async () => {
       const { component } = await setup();
-      component.onCaptcha('captcha-token-abc');
-      expect(component.turnstileToken()).toBe('captcha-token-abc');
-    });
-
-    it('clears errorMessage on successful captcha resolution', async () => {
-      const { component } = await setup();
-      component.errorMessage.set('previous error');
-      component.onCaptcha('captcha-token-abc');
-      expect(component.errorMessage()).toBe('');
+      component.onCaptcha('captcha-token-123');
+      expect(component.turnstileToken()).toBe('captcha-token-123');
     });
 
     it('sets turnstileToken to empty string when msg is null', async () => {
@@ -254,6 +244,22 @@ describe('ResetPasswordComponent', () => {
       component.onCaptcha('widget error', true);
       expect(component.errorMessage()).toBe('CAPTCHA failed. Please refresh and try again.');
       expect(component.turnstileToken()).toBe('');
+    });
+
+    it('clears a prior captcha errorMessage when the widget resolves successfully', async () => {
+      const { component } = await setup();
+      component.onCaptcha(null, true); // sets captchaError = true and errorMessage
+      component.onCaptcha('new-token'); // should clear errorMessage because captchaError is true
+      expect(component.errorMessage()).toBe('');
+      expect(component.turnstileToken()).toBe('new-token');
+    });
+
+    it('does NOT clear errorMessage on success when the error was not captcha-related', async () => {
+      const { component } = await setup();
+      component.errorMessage.set('Some other error');
+      component.onCaptcha('new-token'); // captchaError is false
+      expect(component.errorMessage()).toBe('Some other error');
+      expect(component.turnstileToken()).toBe('new-token');
     });
   });
 
@@ -294,46 +300,8 @@ describe('ResetPasswordComponent', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('redirectWithError()', () => {
-    it('calls router.navigate to /forgot-password with missing-token error', async () => {
-      const { component, router } = await setup();
-      // Reset spy count from ngOnInit calls
-      vi.mocked(router.navigate).mockClear();
-      component.redirectWithError();
-      expect(router.navigate).toHaveBeenCalledWith(['/forgot-password'], {
-        queryParams: { error: 'missing-token' },
-      });
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe('onSubmit(): state reset', () => {
-    it('clears errorMessage and responseMessage and sets submitted/loading before awaiting', async () => {
-      const { component } = await setup();
-      // Pre-set a stale error to verify it gets cleared
-      component.errorMessage.set('stale error');
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
-      component.turnstileToken.set('cf-token');
-
-      // Use a never-resolving promise so we can inspect mid-flight state
-      mockResetPassword.mockReturnValue(new Promise((resolve) => void resolve));
-      const promise = component.onSubmit();
-
-      // Synchronously check the mid-flight state — before the promise resolves
-      expect(component.submitted()).toBe(true);
-      expect(component.loading()).toBe(true);
-      expect(component.errorMessage()).toBe('');
-      expect(component.responseMessage()).toBe('');
-
-      // Clean up — we don't await the never-resolving promise; just discard it
-      void promise;
-    });
-  });
-
-  // -------------------------------------------------------------------------
   describe('onSubmit(): honeypot', () => {
-    it('delays 1 s, sets a vague error, and never calls auth.resetPassword', async () => {
+    it('delays 1 s, sets a vague error, and never calls auth.forgotPassword', async () => {
       const { component } = await setup();
       component.hp.set('bot@evil.com');
 
@@ -343,61 +311,64 @@ describe('ResetPasswordComponent', () => {
 
       expect(component.errorMessage()).toBe('There was an error.');
       expect(component.loading()).toBe(false);
-      expect(mockResetPassword).not.toHaveBeenCalled();
+      expect(mockForgotPassword).not.toHaveBeenCalled();
     });
   });
 
   // -------------------------------------------------------------------------
   describe('onSubmit(): success', () => {
-    it('calls auth.resetPassword with the reset token, password, and captcha token', async () => {
-      const { component } = await setup({ token: 'test-reset-token' });
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+    it('calls auth.forgotPassword with the email and turnstile token', async () => {
+      const { component } = await setup();
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      mockResetPassword.mockResolvedValue(undefined);
+      mockForgotPassword.mockResolvedValue('If that email exists, a reset link has been sent.');
 
       await component.onSubmit();
 
-      expect(mockResetPassword).toHaveBeenCalledWith(
-        'test-reset-token',
-        'new-password',
-        'cf-token',
-      );
+      expect(mockForgotPassword).toHaveBeenCalledWith('alice@example.com', 'cf-token');
     });
 
-    it('sets a success responseMessage after the promise resolves', async () => {
+    it('sets responseMessage to the server response string', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      mockResetPassword.mockResolvedValue(undefined);
+      mockForgotPassword.mockResolvedValue('If that email exists, a reset link has been sent.');
 
       await component.onSubmit();
 
       expect(component.responseMessage()).toBe(
-        'Success! Your password has been changed. You will be redirected to login with your new password.',
+        'If that email exists, a reset link has been sent.',
       );
     });
 
-    it('navigates to /login after a 3-second delay following success', async () => {
-      const { component, router } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+    it('sets isLocked to true after a successful submission', async () => {
+      const { component } = await setup();
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      mockResetPassword.mockResolvedValue(undefined);
+      mockForgotPassword.mockResolvedValue('Check your inbox.');
 
       await component.onSubmit();
-      vi.advanceTimersByTime(3000);
 
-      expect(router.navigate).toHaveBeenCalledWith(['/login']);
+      expect(component.isLocked()).toBe(true);
+    });
+
+    it('clears a pre-existing errorMessage before submitting', async () => {
+      const { component } = await setup();
+      component.email.set('alice@example.com');
+      component.turnstileToken.set('cf-token');
+      component.errorMessage.set('stale error');
+      mockForgotPassword.mockResolvedValue('Check your inbox.');
+
+      await component.onSubmit();
+
+      expect(component.errorMessage()).toBe('');
     });
 
     it('resets loading to false after the promise settles', async () => {
       const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      mockResetPassword.mockResolvedValue(undefined);
+      mockForgotPassword.mockResolvedValue('Check your inbox.');
 
       await component.onSubmit();
 
@@ -406,36 +377,44 @@ describe('ResetPasswordComponent', () => {
   });
 
   // -------------------------------------------------------------------------
-  describe('onSubmit(): error', () => {
-    it('sets a generic errorMessage and clears loading on failure', async () => {
-      const { component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+  describe('onSubmit(): error handling', () => {
+    async function submitWithError(component: ForgotPasswordComponent, err: unknown) {
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
-      mockResetPassword.mockRejectedValue(new Error('invalid token'));
-
+      mockForgotPassword.mockRejectedValue(err);
       await component.onSubmit();
+    }
 
-      expect(component.errorMessage()).toBe(
-        'This reset link is invalid or has expired. Please request a new one.',
-      );
-      expect(component.loading()).toBe(false);
-      expect(component.responseMessage()).toBe('');
-      expect(component.turnstileToken()).toBe('');
+    it('sets errorMessage from the API error response', async () => {
+      const { component } = await setup();
+      await submitWithError(component, makeApiError('Too many requests', 'RATE_LIMITED', 429));
+      expect(component.errorMessage()).toBe('Too many requests');
     });
 
-    it('resets the turnstile widget after a failed submission', async () => {
+    it('sets errorMessage from a generic Error instance', async () => {
+      const { component } = await setup();
+      await submitWithError(component, new Error('Network failure'));
+      expect(component.errorMessage()).toBe('Network failure');
+    });
+
+    it('resets the turnstile widget on error', async () => {
       const { fixture, component } = await setup();
       const stub = fixture.debugElement.query(By.directive(TurnstileStub))
         ?.componentInstance as TurnstileStub;
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
-      component.turnstileToken.set('cf-token');
-      mockResetPassword.mockRejectedValue(new Error('invalid'));
-
-      await component.onSubmit();
-
+      await submitWithError(component, new Error('fail'));
       expect(stub.reset).toHaveBeenCalled();
+    });
+
+    it('clears turnstileToken on error', async () => {
+      const { component } = await setup();
+      await submitWithError(component, new Error('fail'));
+      expect(component.turnstileToken()).toBe('');
+    });
+
+    it('resets loading to false after an error', async () => {
+      const { component } = await setup();
+      await submitWithError(component, new Error('fail'));
+      expect(component.loading()).toBe(false);
     });
   });
 
@@ -443,87 +422,83 @@ describe('ResetPasswordComponent', () => {
   describe('template', () => {
     it('does not render .response-banner when responseMessage is empty', async () => {
       const { fixture } = await setup();
-      expect(fixture.nativeElement.querySelector('.response-banner')).toBeNull();
+      expect(host(fixture).querySelector('.response-banner')).toBeNull();
     });
 
     it('renders .response-banner with correct text when responseMessage is set', async () => {
       const { fixture, component } = await setup();
-      component.responseMessage.set('Success! Your password has been changed.');
+      component.responseMessage.set('Check your inbox!');
       fixture.detectChanges();
-      const banner = fixture.nativeElement.querySelector('.response-banner');
+      const banner = host(fixture).querySelector('.response-banner');
       expect(banner).toBeTruthy();
-      expect(banner.textContent.trim()).toBe('Success! Your password has been changed.');
+      expect(banner!.textContent!.trim()).toBe('Check your inbox!');
+    });
+
+    it('does not render .info-banner when navMessage is empty', async () => {
+      const { fixture } = await setup();
+      expect(host(fixture).querySelector('.info-banner')).toBeNull();
+    });
+
+    it('renders .info-banner with correct text when navMessage is set', async () => {
+      const { fixture, component } = await setup();
+      component.navMessage.set('Your session has expired.');
+      fixture.detectChanges();
+      const banner = host(fixture).querySelector('.info-banner');
+      expect(banner).toBeTruthy();
+      expect(banner!.textContent!.trim()).toBe('Your session has expired.');
     });
 
     it('does not render .error-banner when errorMessage is empty', async () => {
       const { fixture } = await setup();
-      expect(fixture.nativeElement.querySelector('.error-banner')).toBeNull();
+      expect(host(fixture).querySelector('.error-banner')).toBeNull();
     });
 
     it('renders .error-banner with correct text when errorMessage is set', async () => {
       const { fixture, component } = await setup();
       component.errorMessage.set('Something went wrong');
       fixture.detectChanges();
-      const banner = fixture.nativeElement.querySelector('.error-banner');
+      const banner = host(fixture).querySelector('.error-banner');
       expect(banner).toBeTruthy();
-      expect(banner.textContent.trim()).toBe('Something went wrong');
+      expect(banner!.textContent!.trim()).toBe('Something went wrong');
     });
 
     it('disables the submit button initially', async () => {
       const { fixture } = await setup();
-      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
       expect(btn.disabled).toBe(true);
     });
 
-    it('enables the submit button when passwords match and turnstileToken is set', async () => {
+    it('enables the submit button when email and turnstileToken are set without errors', async () => {
       const { fixture, component } = await setup();
-      component.password.set('new-password');
-      component.confirmPassword.set('new-password');
+      component.email.set('alice@example.com');
       component.turnstileToken.set('cf-token');
       fixture.detectChanges();
-      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
       expect(btn.disabled).toBe(false);
     });
 
-    it('shows a field-error span when confirmPassword is non-empty and differs from password', async () => {
-      const { fixture, component } = await setup();
-      component.password.set('abc');
-      component.confirmPassword.set('xyz');
-      fixture.detectChanges();
-      const err = fixture.nativeElement.querySelector('.field-error') as HTMLElement;
-      expect(err).toBeTruthy();
-      expect(err.textContent!.trim()).toBe('Passwords do not match');
-    });
-
-    it('does not show a field-error span when confirmPassword is empty', async () => {
-      const { fixture, component } = await setup();
-      component.password.set('abc');
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('.field-error')).toBeNull();
-    });
-
-    it('shows "Loading..." button text when showLoading is true and showWorking is false', async () => {
-      // Default state: no turnstileToken → showLoading true, showWorking false
+    it('shows "Loading..." button text when no token is present', async () => {
       const { fixture } = await setup();
-      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
       expect(btn.textContent!.trim()).toBe('Loading...');
     });
 
-    it('shows "Resetting..." button text when both loading and submitted are true', async () => {
-      const { fixture, component } = await setup();
-      component.loading.set(true);
-      component.submitted.set(true);
-      fixture.detectChanges();
-      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
-      expect(btn.textContent!.trim()).toBe('Resetting...');
-    });
-
-    it('shows "Reset" button text when turnstileToken is set and neither loading nor submitted', async () => {
+    it('shows "Recover" button text when token is set and not loading', async () => {
       const { fixture, component } = await setup();
       component.turnstileToken.set('cf-token');
       fixture.detectChanges();
-      const btn = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
-      expect(btn.textContent!.trim()).toBe('Reset');
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      expect(btn.textContent!.trim()).toBe('Recover');
+    });
+
+    it('shows "Checking..." button text when both loading and submitted are true', async () => {
+      const { fixture, component } = await setup();
+      component.turnstileToken.set('cf-token');
+      component.loading.set(true);
+      component.submitted.set(true);
+      fixture.detectChanges();
+      const btn = host(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      expect(btn.textContent!.trim()).toBe('Checking...');
     });
   });
 });

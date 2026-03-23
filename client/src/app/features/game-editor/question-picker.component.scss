@@ -4,33 +4,33 @@
   gap: 12px;
 
   &__pv-row {
-    display: flex;
     align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
     gap: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-subtle);
   }
 
   &__dd-row {
-    padding: 8px 0;
     border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 0;
   }
 
   &__dd-label {
-    display: flex;
     align-items: center;
-    min-height: 24px; // 2.5.8 target size minimum
-    gap: 8px;
-    font-size: 0.875rem;
     color: var(--text-muted);
     cursor: pointer;
+    display: flex;
+    font-size: 0.875rem;
+    gap: 8px;
+    min-height: 24px; // 2.5.8 target size minimum
     user-select: none;
 
     input[type='checkbox'] {
-      width: 16px;
-      height: 16px;
       accent-color: var(--accent);
       cursor: pointer;
+      height: 16px;
+      width: 16px;
 
       &:disabled {
         cursor: not-allowed;
@@ -39,21 +39,21 @@
   }
 
   &__dd-limit {
-    font-size: 0.75rem;
     color: var(--text-hint);
+    font-size: 0.75rem;
     font-style: italic;
   }
 
   &__pv-input {
-    width: 100px;
-    padding: 7px 10px;
-    font-size: 0.9rem;
     background: var(--surface-2);
     border: 1px solid var(--border-moderate);
     border-radius: 6px;
     color: var(--text-muted);
+    font-size: 0.9rem;
     outline: none;
+    padding: 7px 10px;
     transition: border-color 0.15s;
+    width: 100px;
 
     &:focus {
       border-color: var(--accent);
@@ -61,21 +61,21 @@
   }
 
   &__list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   &__item {
-    display: flex;
     align-items: center;
-    gap: 12px;
     background: var(--surface-1);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
+    display: flex;
+    gap: 12px;
     padding: 10px 12px;
     transition: border-color 0.15s;
 
@@ -85,79 +85,79 @@
   }
 
   &__preview {
-    flex: 1;
-    margin: 0;
-    font-size: 0.875rem;
     color: var(--text-muted);
-    white-space: nowrap;
+    flex: 1;
+    font-size: 0.875rem;
+    margin: 0;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 0;
+    white-space: nowrap;
   }
 
   &__empty {
     color: var(--text-hint);
-    font-style: italic;
     font-size: 0.875rem;
+    font-style: italic;
     padding: 16px 0;
   }
 
   &__pagination {
-    display: flex;
     align-items: center;
-    justify-content: center;
+    display: flex;
     gap: 12px;
+    justify-content: center;
   }
 
   &__page {
-    font-size: 0.8rem;
     color: var(--text-subtle);
+    font-size: 0.8rem;
   }
 
   &__footer {
-    padding-top: 12px;
     border-top: 1px solid var(--border-subtle);
+    padding-top: 12px;
   }
 }
 
 .label {
+  color: var(--text-subtle);
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--text-subtle);
+  text-transform: uppercase;
 }
 
 .loading-text {
   color: var(--text-subtle);
   font-size: 0.875rem;
-  text-align: center;
-  padding: 16px 0;
   margin: 0;
+  padding: 16px 0;
+  text-align: center;
 }
 
 .error-banner {
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
-  color: var(--danger);
-  padding: 10px 14px;
   border-radius: 6px;
+  color: var(--danger);
   font-size: 0.875rem;
+  padding: 10px 14px;
 }
 
 .btn {
-  padding: 8px 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 16px;
   transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
 
   &:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
+    opacity: 0.4;
   }
 
   &--primary {
@@ -172,8 +172,8 @@
 
   &--ghost {
     background: transparent;
-    color: var(--accent);
     border: 1px solid var(--accent-border);
+    color: var(--accent);
 
     &:hover:not(:disabled) {
       background: var(--accent-dim);
@@ -181,13 +181,13 @@
   }
 
   &--sm {
-    padding: 6px 12px;
     font-size: 0.8rem;
+    padding: 6px 12px;
   }
 
   &--xs {
-    padding: 4px 10px;
-    min-height: 24px; // 2.5.8 target size minimum
     font-size: 0.75rem;
+    min-height: 24px; // 2.5.8 target size minimum
+    padding: 4px 10px;
   }
 }

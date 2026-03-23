@@ -17,7 +17,11 @@ function setup(blocks: ContentBlock[]): {
   const fixture = TestBed.createComponent(ContentBlocksComponent);
   fixture.componentRef.setInput('blocks', blocks);
   fixture.detectChanges();
-  return { fixture, component: fixture.componentInstance, el: fixture.nativeElement as HTMLElement };
+  return {
+    fixture,
+    component: fixture.componentInstance,
+    el: fixture.nativeElement as HTMLElement,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +138,9 @@ describe('ContentBlocksComponent', () => {
     });
 
     it('sets the alt attribute when alt is provided', () => {
-      const { el } = setup([{ type: 'image', url: 'http://cdn.example.com/photo.jpg', alt: 'A scenic view' }]);
+      const { el } = setup([
+        { type: 'image', url: 'http://cdn.example.com/photo.jpg', alt: 'A scenic view' },
+      ]);
       expect(el.querySelector('img.block-image')!.getAttribute('alt')).toBe('A scenic view');
     });
 
@@ -144,7 +150,9 @@ describe('ContentBlocksComponent', () => {
     });
 
     it('renders a <figcaption> when alt is provided', () => {
-      const { el } = setup([{ type: 'image', url: 'http://cdn.example.com/photo.jpg', alt: 'Caption here' }]);
+      const { el } = setup([
+        { type: 'image', url: 'http://cdn.example.com/photo.jpg', alt: 'Caption here' },
+      ]);
       const caption = el.querySelector('figcaption.block-caption');
       expect(caption).not.toBeNull();
       expect(caption!.textContent?.trim()).toBe('Caption here');
@@ -177,7 +185,9 @@ describe('ContentBlocksComponent', () => {
     });
 
     it('renders a <figcaption> when caption is provided', () => {
-      const { el } = setup([{ type: 'video', url: 'http://cdn.example.com/clip.mp4', caption: 'Intro video' }]);
+      const { el } = setup([
+        { type: 'video', url: 'http://cdn.example.com/clip.mp4', caption: 'Intro video' },
+      ]);
       const caption = el.querySelector('figcaption.block-caption');
       expect(caption).not.toBeNull();
       expect(caption!.textContent?.trim()).toBe('Intro video');
@@ -189,7 +199,9 @@ describe('ContentBlocksComponent', () => {
     });
 
     it('renders a <track> element when caption is provided', () => {
-      const { el } = setup([{ type: 'video', url: 'http://cdn.example.com/clip.mp4', caption: 'Intro video' }]);
+      const { el } = setup([
+        { type: 'video', url: 'http://cdn.example.com/clip.mp4', caption: 'Intro video' },
+      ]);
       const track = el.querySelector('track');
       expect(track).not.toBeNull();
       expect(track!.getAttribute('kind')).toBe('captions');
