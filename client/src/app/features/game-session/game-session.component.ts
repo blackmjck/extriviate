@@ -23,6 +23,7 @@ import { ConnectionStatusComponent } from '../../shared/components/connection-st
 @Component({
   selector: 'app-game-session',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { role: 'main' },
   imports: [
     LobbyComponent,
     GameBoardComponent,

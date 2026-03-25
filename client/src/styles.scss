@@ -229,6 +229,7 @@
   --accent-light: #ff2d42;
   --accent-dim: rgba(232, 28, 49, 0.15);
   --accent-border: rgba(232, 28, 49, 0.5);
+  --on-accent: #fff; /* best achievable on #e81c31 ≈ 4.42:1; large text passes AA */
 
   --score-value: #f5c518;
   --warning: #ff6b35;
