@@ -20,8 +20,8 @@
   }
 
   &__block {
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    background: var(--neutral-surface);
+    border: 1px solid var(--neutral-border);
     border-radius: 8px;
     display: flex;
     gap: 10px;
@@ -37,7 +37,7 @@
 
   &__ctrl {
     background: transparent;
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--neutral-border-strong);
     border-radius: 4px;
     color: var(--text-subtle);
     cursor: pointer;
@@ -48,8 +48,8 @@
     transition: background 0.15s, color 0.15s;
 
     &:hover:not(:disabled) {
-      background: var(--border-subtle);
-      color: var(--text-muted);
+      background: var(--neutral-border);
+      color: var(--text-subtle);
     }
 
     &:disabled {
@@ -59,11 +59,11 @@
 
     &--remove {
       border-color: rgba(192, 57, 43, 0.3);
-      color: var(--destructive);
+      color: var(--danger-bg-strong);
 
       &:hover:not(:disabled) {
         background: rgba(192, 57, 43, 0.15);
-        color: var(--danger);
+        color: var(--danger-bg);
       }
     }
   }
@@ -78,7 +78,7 @@
 
   &__type-badge {
     align-self: flex-start;
-    color: var(--accent);
+    color: var(--primary-bg);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 1px;
@@ -86,11 +86,11 @@
   }
 
   &__textarea {
-    background: var(--surface-2);
-    border: 1px solid var(--border-moderate);
+    background: var(--elevation-1);
+    border: 1px solid var(--neutral-border-md);
     border-radius: 6px;
     box-sizing: border-box;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-family: inherit;
     font-size: 0.95rem;
     outline: none;
@@ -100,15 +100,15 @@
     width: 100%;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
     }
   }
 
   &__input {
-    background: var(--surface-2);
-    border: 1px solid var(--border-moderate);
+    background: var(--elevation-1);
+    border: 1px solid var(--neutral-border-md);
     border-radius: 6px;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     flex: 1;
     font-size: 0.875rem;
     min-width: 0;
@@ -117,7 +117,7 @@
     transition: border-color 0.15s;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
     }
 
     &--alt,
@@ -179,10 +179,10 @@
   &--ghost {
     background: transparent;
     border: 1px solid var(--accent-border);
-    color: var(--accent);
+    color: var(--primary-bg);
 
     &:hover:not(:disabled) {
-      background: var(--accent-dim);
+      background: var(--primary-surface);
     }
   }
 

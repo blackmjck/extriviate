@@ -1,0 +1,61 @@
+// _00.primitives.scss
+// ⚠️  PRIVATE — use semantic tokens from _01.tokens.scss in components.
+//    These are the raw ingredients; semantic tokens are the recipe.
+
+:root {
+  // Blue family (Light theme primary; retained for light-theme override)
+  --_blue-50:  #eef1ff;
+  --_blue-100: #d9deff;
+  --_blue-200: #bfcfff;
+  --_blue-300: #8aa8ff;
+  --_blue-400: #5578e8;
+  --_blue-500: #4169e1;
+  --_blue-600: #2f57d4;
+  --_blue-650: #2248c0;  // ← light-theme primary bg — 7.68:1 with white (AAA)
+  --_blue-660: #1e45b0;  // ← light-theme primary hover — 8.34:1 with white (AAA)
+  --_blue-700: #1a3eb8;
+  --_blue-800: #0d2690;
+  --_blue-900: #061260;
+
+  // Gold family (Dark theme primary + both themes accent/score)
+  --_gold-100: #fff8d9;
+  --_gold-200: #ffedb0;
+  --_gold-300: #ffd966;
+  --_gold-400: #f5c842;  // accent/score in light theme
+  --_gold-500: #f5c518;  // ← Dark theme primary interactive color
+  --_gold-600: #c9a000;  // focus-ring on dark (3:1+ contrast against cobalt bg)
+  --_gold-700: #a87c00;  // light-theme warning text (legacy; use --_amber-900 for AAA)
+  --_gold-800: #604700;  // light theme score text — ≥7.38:1 on all light surfaces (AAA)
+
+  // Red family (danger role both themes)
+  --_red-300:  #ffa5a5;  // error text on dark bg
+  --_red-400:  #8e1515;  // danger bg-hover — 9.34:1 with white fg (AAA)
+  --_red-500:  #a31515;  // danger bg — 7.91:1 with white fg (AAA)
+  --_red-600:  #8b1a0f;  // danger strong — 9.47:1 with white fg (AAA)
+  --_red-700:  #922b21;  // light-theme danger text
+
+  // Orange/Amber family (warning in Dark theme — distinct from gold primary)
+  --_orange-400: #ff9900;  // ← Dark theme warning bg
+  --_orange-500: #e07800;  // warning hover
+  --_amber-900:  #5c3d00;  // light theme warning text — ≥8.34:1 on all light surfaces (AAA)
+
+  // Green family (success both themes)
+  --_green-300: #6ee7a0;   // success text on dark bg
+  --_green-400: #40d47a;
+  --_green-500: #2ecc71;   // ← success background
+  --_green-600: #27ae60;   // published state
+  --_green-700: #1a8f4e;   // light-theme success text (legacy; use --_green-800 for AAA)
+  --_green-800: #0b5228;   // light theme success text — ≥7.92:1 on all light surfaces (AAA)
+
+  // Neutral family — deep cobalt (Dark theme backgrounds)
+  --_neutral-50:  #ffffff;   // primary text on cobalt
+  --_neutral-100: #c8c8dc;   // neutral/desaturated secondary text
+  --_neutral-200: #d4c27a;   // warm cream secondary text (cobalt-contrast)
+  --_neutral-300: #adbce3;   // hint text — ≥7.26:1 on all dark surfaces (AAA)
+  --_neutral-400: #3a4a7a;   // interactive dark border
+  --_neutral-500: #1e3070;
+  --_neutral-600: #132577;   // ← card/panel background
+  --_neutral-700: #0d1f5c;   // ← secondary/raised background
+  --_neutral-800: #060e28;   // ← sunken background
+  --_neutral-900: #08143a;   // ← page background (Dark theme)
+}

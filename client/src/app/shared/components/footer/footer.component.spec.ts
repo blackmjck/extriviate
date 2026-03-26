@@ -50,11 +50,11 @@ describe('FooterComponent', () => {
 
   // -- Theme select -----------------------------------------------------------
 
-  it('renders a <select> with one option per theme (6 total)', () => {
+  it('renders a <select> with one option per theme (2 total)', () => {
     const { fixture } = setup();
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
     expect(select).not.toBeNull();
-    expect(select.options.length).toBe(5);
+    expect(select.options.length).toBe(2);
   });
 
   it('select has an accessible label', () => {
@@ -70,30 +70,30 @@ describe('FooterComponent', () => {
     const { fixture } = setup();
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
     const values = Array.from(select.options).map((o) => o.value);
-    expect(values).toEqual(['quiz-show', 'light', 'dark', 'showcase', 'glitzy']);
+    expect(values).toEqual(['dark', 'light']);
   });
 
   it('marks the current theme option as selected', () => {
-    const { fixture } = setup('showcase');
+    const { fixture } = setup('light');
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
     const selected = Array.from(select.options).find((o) => o.selected);
-    expect(selected?.value).toBe('showcase');
+    expect(selected?.value).toBe('light');
   });
 
   it('updates selected option when theme signal changes', () => {
     const { fixture, themeSignal } = setup('dark');
-    themeSignal.set('glitzy');
+    themeSignal.set('light');
     fixture.detectChanges();
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
     const selected = Array.from(select.options).find((o) => o.selected);
-    expect(selected?.value).toBe('glitzy');
+    expect(selected?.value).toBe('light');
   });
 
   it('calls setTheme with the chosen value on change', () => {
     const { fixture, mockThemeService } = setup();
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('select');
-    select.value = 'quiz-show';
+    select.value = 'light';
     select.dispatchEvent(new Event('change'));
-    expect(mockThemeService.setTheme).toHaveBeenCalledWith('quiz-show');
+    expect(mockThemeService.setTheme).toHaveBeenCalledWith('light');
   });
 });

@@ -3,8 +3,8 @@
 }
 
 .host-panel {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -13,8 +13,8 @@
 }
 
 .panel-title {
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-primary);
+  border-bottom: 1px solid var(--neutral-border);
+  color: var(--text-default);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -37,7 +37,7 @@
 }
 
 .phase-value {
-  color: var(--score-value);
+  color: var(--text-score);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -70,29 +70,29 @@
   }
 
   &.release {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--primary-bg);
+    color: var(--primary-fg);
   }
 
   &.lock {
-    background: var(--border-subtle);
-    border: 1px solid var(--border-strong);
-    color: var(--text-primary);
+    background: var(--neutral-border);
+    border: 1px solid var(--neutral-border-strong);
+    color: var(--text-default);
   }
 
   &.correct {
-    background: var(--success);
-    color: var(--on-success);
+    background: var(--success-bg);
+    color: var(--success-fg);
   }
 
   &.wrong {
-    background: var(--danger);
-    color: var(--on-danger);
+    background: var(--danger-bg);
+    color: var(--danger-fg);
   }
 }
 
 .evaluation-section {
-  background: var(--surface-1);
+  background: var(--neutral-surface);
   border-radius: 8px;
   display: flex;
   flex-direction: column;

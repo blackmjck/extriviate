@@ -134,6 +134,22 @@ export class AuthService {
     this.accessToken = res.data.accessToken;
   }
 
+  private refreshPromise: Promise<void> | null = null;
+
+  /**
+   * Like refreshToken(), but concurrent calls share the same in-flight request.
+   * Token rotation means only one refresh can succeed per expiry window — serialising
+   * concurrent 401 retries here prevents TOKEN_REVOKED errors on the 2nd–Nth caller.
+   */
+  refreshTokenOnce(): Promise<void> {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.refreshToken().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.refreshPromise;
+  }
+
   async loadUser(): Promise<void> {
     if (!this.accessToken) {
       // No access token in memory — try a silent refresh using the cookie.

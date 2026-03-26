@@ -1,0 +1,67 @@
+// _04.spacing.scss
+// Fixed spacing scale (4px base), semantic gap aliases, page layout tokens,
+// and SCSS responsive mixins (compile-time only — cannot use CSS custom properties).
+
+:root {
+  // Fixed scale — 4px base unit
+  --space-0:    0;
+  --space-px:   1px;
+  --space-0_5:  0.125rem;  //  2px
+  --space-1:    0.25rem;   //  4px
+  --space-1_5:  0.375rem;  //  6px
+  --space-2:    0.5rem;    //  8px
+  --space-2_5:  0.625rem;  // 10px
+  --space-3:    0.75rem;   // 12px
+  --space-4:    1rem;      // 16px
+  --space-5:    1.25rem;   // 20px
+  --space-6:    1.5rem;    // 24px
+  --space-8:    2rem;      // 32px
+  --space-10:   2.5rem;    // 40px
+  --space-12:   3rem;      // 48px
+  --space-16:   4rem;      // 64px
+  --space-20:   5rem;      // 80px
+  --space-24:   6rem;      // 96px
+
+  // Semantic gap aliases — use these in components
+  --gap-xs: var(--space-1);     //  4px — tight badge/tag grouping
+  --gap-sm: var(--space-2);     //  8px — compact element grouping
+  --gap-md: var(--space-4);     // 16px — standard section gap
+  --gap-lg: var(--space-6);     // 24px — loose section spacing
+  --gap-xl: var(--space-8);     // 32px — page section separation
+
+  // Page layout
+  --page-padding-x:      var(--space-6);   // 24px desktop
+  --page-padding-y:      var(--space-8);   // 32px desktop
+  --page-max-width:      960px;            // standard content width
+  --page-max-width-wide: 1200px;           // game board / wide layouts
+}
+
+// Responsive overrides — reduce page padding on mobile
+@media (max-width: 639px) {
+  :root {
+    --page-padding-x: var(--space-4);  // 16px mobile
+    --page-padding-y: var(--space-5);  // 20px mobile
+  }
+}
+
+// ——— SCSS Responsive Mixins (compile-time only) ———
+// Media queries cannot use CSS custom properties. Use these in component SCSS files.
+// To use: @use 'src/styles/04.spacing' as *; then @include md { ... }
+
+$bp-sm:   640px;   // landscape phone and up
+$bp-md:   768px;   // tablet portrait and up
+$bp-lg:  1024px;   // tablet landscape / small laptop
+$bp-xl:  1280px;   // desktop
+$bp-2xl: 1536px;   // wide desktop
+
+// Mobile-first mixins
+@mixin sm  { @media (min-width: $bp-sm)  { @content; } }
+@mixin md  { @media (min-width: $bp-md)  { @content; } }
+@mixin lg  { @media (min-width: $bp-lg)  { @content; } }
+@mixin xl  { @media (min-width: $bp-xl)  { @content; } }
+@mixin xxl { @media (min-width: $bp-2xl) { @content; } }
+
+// Convenience
+@mixin mobile-only  { @media (max-width: #{$bp-sm - 1px})   { @content; } }
+@mixin tablet-only  { @media (min-width: $bp-sm) and (max-width: #{$bp-lg - 1px}) { @content; } }
+@mixin touch-device { @media (hover: none) and (pointer: coarse) { @content; } }

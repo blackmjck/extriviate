@@ -1,0 +1,151 @@
+// _08.utilities.scss
+// Shared utility classes: .visually-hidden, .game-container, .btn, layout helpers.
+
+// ——— Accessibility ———
+
+.visually-hidden {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+// ——— Layout ———
+
+.game-container {
+  margin: 0 auto;
+  max-width: var(--page-max-width-wide);
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-top: max(1rem, env(safe-area-inset-top));
+  width: 100%;
+}
+
+.creator-nav {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-right: var(--gap-sm);
+}
+
+// ——— Buttons ———
+
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: var(--transition-colors);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  &--primary {
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-bg-hover);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 1px solid var(--primary-border);
+    color: var(--primary-bg);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-surface);
+    }
+  }
+
+  &--danger-ghost {
+    background: transparent;
+    border: 1px solid var(--danger-border);
+    color: var(--text-danger);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-surface);
+    }
+  }
+
+  &--host {
+    background: transparent;
+    border: 1px solid var(--accent-border);
+    color: var(--accent-bg);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-surface);
+    }
+  }
+
+  &--publish {
+    background: transparent;
+    border: 1px solid var(--success-border);
+    color: var(--text-success);
+
+    &:hover:not(:disabled) {
+      background: var(--success-surface);
+    }
+  }
+
+  &--sm {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}
+
+// ——— Shared page states ———
+
+.error-banner {
+  background: var(--danger-surface);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  color: var(--text-danger);
+  font-size: var(--text-sm);
+  margin-bottom: var(--gap-lg);
+  padding: var(--space-3) var(--space-4);
+}
+
+.loading {
+  color: var(--text-subtle);
+  font-size: var(--text-base);
+  padding: var(--space-16) 0;
+  text-align: center;
+}
+
+.empty-state {
+  color: var(--text-subtle);
+  padding: var(--space-16) 0;
+  text-align: center;
+
+  p {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-5);
+  }
+}
+
+.pagination {
+  align-items: center;
+  display: flex;
+  gap: var(--gap-md);
+  justify-content: center;
+  margin-top: var(--space-8);
+
+  &__info {
+    font-size: var(--text-sm);
+    color: var(--text-subtle);
+  }
+}

@@ -109,7 +109,7 @@ describe('connect() / initial connection', () => {
 describe('auth on open — registered user (H-1 regression)', () => {
   it('sends { type: "auth", token } on onopen when token provided and no guest session', () => {
     const { service } = setup(false);
-    service.connect(1, 'jwt-token');
+    service.connect(1, () => 'jwt-token');
     const ws = MockWebSocket.createdInstances[0];
     fireOpen(ws);
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: 'auth', token: 'jwt-token' }));
@@ -125,7 +125,7 @@ describe('auth on open — registered user (H-1 regression)', () => {
 
   it('does not send reconnect_guest for a registered user', () => {
     const { service } = setup(false);
-    service.connect(1, 'jwt-token');
+    service.connect(1, () => 'jwt-token');
     const ws = MockWebSocket.createdInstances[0];
     fireOpen(ws);
     const calls = ws.send.mock.calls.map((c: unknown[]) => c[0] as string);
@@ -369,7 +369,7 @@ describe('premature flush prevention — pending queue held until server confirm
   it('does not flush queued messages immediately after onopen when auth token is present', () => {
     const { service } = setup(false);
     service.send({ type: 'buzz', playerId: 1 } as ClientGameMessage);
-    service.connect(1, 'jwt-token');
+    service.connect(1, () => 'jwt-token');
     const ws = MockWebSocket.createdInstances[0];
     fireOpen(ws);
     // Only the auth message was sent; the queued buzz must be withheld
@@ -394,7 +394,7 @@ describe('premature flush prevention — pending queue held until server confirm
     const { service } = setup(false);
     service.send({ type: 'buzz', playerId: 7 } as ClientGameMessage);
     service.send({ type: 'answer_submitted', playerId: 7, answer: 'Paris' } as ClientGameMessage);
-    service.connect(1, 'jwt-token');
+    service.connect(1, () => 'jwt-token');
     const ws = MockWebSocket.createdInstances[0];
     fireOpen(ws);
     // Queue is still held after auth message
@@ -411,12 +411,70 @@ describe('premature flush prevention — pending queue held until server confirm
   it('calling flushPendingMessages() a second time is a no-op', () => {
     const { service } = setup(false);
     service.send({ type: 'buzz', playerId: 1 } as ClientGameMessage);
-    service.connect(1, 'jwt-token');
+    service.connect(1, () => 'jwt-token');
     const ws = MockWebSocket.createdInstances[0];
     fireOpen(ws);
     service.flushPendingMessages();
     const countAfterFirstFlush = ws.send.mock.calls.length;
     service.flushPendingMessages(); // second call — queue is empty
     expect(ws.send.mock.calls.length).toBe(countAfterFirstFlush);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// token getter
+// ---------------------------------------------------------------------------
+
+describe('token getter', () => {
+  it('getter is called at connect time on open and its return value is sent as the auth token', () => {
+    const { service } = setup(false);
+    service.connect(1, () => 'initial-token');
+    const ws = MockWebSocket.createdInstances[0];
+    fireOpen(ws);
+    expect(ws.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'auth', token: 'initial-token' }),
+    );
+  });
+
+  it('getter is called fresh on each reconnect so a rotated token is picked up', () => {
+    vi.useFakeTimers();
+    const { service } = setup(false);
+
+    let currentToken = 'token-v1';
+    service.connect(1, () => currentToken);
+
+    const ws1 = MockWebSocket.createdInstances[0];
+    fireOpen(ws1);
+
+    // Verify the first open used the initial token value
+    expect(ws1.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'auth', token: 'token-v1' }),
+    );
+
+    // Simulate an unintentional disconnect — the service will schedule a reconnect
+    ws1.onclose?.();
+
+    // Rotate the token while the reconnect timer is pending
+    currentToken = 'token-v2';
+
+    // Advance time to trigger the reconnect
+    vi.advanceTimersByTime(1200);
+
+    const ws2 = MockWebSocket.createdInstances[1];
+    fireOpen(ws2);
+
+    // The retry open must have called the getter again and picked up the new value
+    expect(ws2.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'auth', token: 'token-v2' }),
+    );
+  });
+
+  it('no auth message is sent when connect is called with no getter', () => {
+    const { service } = setup(false);
+    // No tokenGetter argument — passes undefined implicitly
+    service.connect(1);
+    const ws = MockWebSocket.createdInstances[0];
+    fireOpen(ws);
+    expect(ws.send).not.toHaveBeenCalled();
   });
 });

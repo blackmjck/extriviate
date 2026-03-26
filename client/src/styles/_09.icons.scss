@@ -1,0 +1,28 @@
+// _09.icons.scss
+// Icon size tokens and .icon utility class for Tabler Icons SVG sprite.
+// Usage: <svg aria-hidden="true" focusable="false" class="icon"><use href="#tabler-*"></use></svg>
+// Sprite: /src/assets/icons/sprite.svg — add icons as needed from @tabler/icons.
+
+:root {
+  --icon-xs: 12px;
+  --icon-sm: 16px;
+  --icon-md: 20px;   // standard UI icon
+  --icon-lg: 24px;   // prominent action icon
+  --icon-xl: 32px;   // illustrative / empty-state icon
+}
+
+// Utility class — icons inherit text color automatically via currentColor
+.icon {
+  display: inline-block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vertical-align: middle;
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+
+  &--sm { width: var(--icon-sm); height: var(--icon-sm); }
+  &--lg { width: var(--icon-lg); height: var(--icon-lg); }
+  &--xl { width: var(--icon-xl); height: var(--icon-xl); }
+}

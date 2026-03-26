@@ -11,10 +11,10 @@
 
 .control-btn {
   align-items: center;
-  background: var(--surface-2);
-  border: 2px solid var(--border-strong);
+  background: var(--elevation-1);
+  border: 2px solid var(--neutral-border-strong);
   border-radius: 50%;
-  color: var(--text-primary);
+  color: var(--text-default);
   cursor: pointer;
   display: flex;
   height: 40px;
@@ -31,12 +31,12 @@
   }
 
   &:hover {
-    background: var(--border-moderate);
+    background: var(--neutral-border-md);
     border-color: rgba(255, 255, 255, 0.25);
   }
 
   &.off {
-    background: var(--danger-dim);
+    background: var(--danger-surface);
     border-color: var(--danger-border);
 
     &:hover {

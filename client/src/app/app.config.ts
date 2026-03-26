@@ -6,6 +6,7 @@ import {
   withInterceptors,
   type HttpInterceptorFn,
 } from '@angular/common/http';
+import { authRefreshInterceptor } from './core/interceptors/auth-refresh.interceptor';
 import { provideServiceWorker } from '@angular/service-worker';
 import { zxcvbnOptions } from '@zxcvbn-ts/core';
 import * as zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
@@ -37,7 +38,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor, authRefreshInterceptor])),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

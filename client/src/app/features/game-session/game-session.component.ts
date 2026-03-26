@@ -72,10 +72,10 @@ export class GameSessionComponent implements OnInit, OnDestroy {
     if (this.socketService.connectionState() === 'disconnected') {
       const id = this.sessionId();
       const isGuestReconnect = this.guestSession.hasSession();
-      const token = isGuestReconnect
-        ? (this.guestSession.getToken() ?? undefined)
-        : (this.authService.getAccessToken() ?? undefined);
-      this.socketService.connect(id, token, isGuestReconnect);
+      const tokenGetter = isGuestReconnect
+        ? () => this.guestSession.getToken() ?? undefined
+        : () => this.authService.getAccessToken() ?? undefined;
+      this.socketService.connect(id, tokenGetter, isGuestReconnect);
     }
   }
 

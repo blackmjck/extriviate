@@ -1,5 +1,5 @@
 :host {
-  background: var(--bg-primary);
+  background: var(--bg-base);
   display: block;
   min-height: 100dvh;
   width: 100%;
@@ -37,7 +37,7 @@
 }
 
 .overlay-message {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-ui);
   font-size: 1.5rem;
   padding: 2rem;

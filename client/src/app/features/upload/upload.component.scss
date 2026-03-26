@@ -11,8 +11,8 @@
 // ---- Drop Zone ----
 
 .drop-zone {
-  background: var(--surface-1);
-  border: 2px dashed var(--border-strong);
+  background: var(--neutral-surface);
+  border: 2px dashed var(--neutral-border-strong);
   border-radius: 12px;
   cursor: pointer;
   padding: 40px 24px;
@@ -20,12 +20,12 @@
   transition: border-color 0.2s, background 0.2s;
 
   &--active {
-    background: var(--accent-dim);
-    border-color: var(--accent);
+    background: var(--primary-surface);
+    border-color: var(--primary-bg);
   }
 
   &--uploading {
-    border-color: var(--border-subtle);
+    border-color: var(--neutral-border);
     border-style: solid;
     cursor: default;
   }
@@ -56,9 +56,9 @@
   }
 
   &__browse-btn {
-    background: var(--accent);
+    background: var(--primary-bg);
     border-radius: 6px;
-    color: var(--on-accent);
+    color: var(--primary-fg);
     cursor: pointer;
     display: inline-block;
     font-size: 0.85rem;
@@ -67,7 +67,7 @@
     transition: background 0.15s;
 
     &:hover {
-      background: var(--accent-light);
+      background: var(--primary-bg-hover);
     }
   }
 
@@ -86,7 +86,7 @@
   }
 
   &__file-name {
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-size: 0.85rem;
     max-width: 100%;
     overflow: hidden;
@@ -95,7 +95,7 @@
   }
 
   &__percent {
-    color: var(--score-value);
+    color: var(--text-score);
     font-family: var(--font-score);
     font-size: 0.9rem;
     font-weight: 700;
@@ -105,14 +105,14 @@
 // ---- Progress Bar ----
 
 .progress-bar {
-  background: var(--border-subtle);
+  background: var(--neutral-border);
   border-radius: 4px;
   height: 8px;
   overflow: hidden;
   width: 100%;
 
   &__fill {
-    background: var(--accent);
+    background: var(--primary-bg);
     border-radius: 4px;
     height: 100%;
     transition: width 0.2s ease-out;
@@ -122,10 +122,10 @@
 // ---- Error ----
 
 .error-banner {
-  background: var(--danger-dim);
+  background: var(--danger-surface);
   border: 1px solid var(--danger-border);
   border-radius: 6px;
-  color: var(--danger);
+  color: var(--danger-bg);
   font-size: 0.85rem;
   padding: 10px 14px;
 }

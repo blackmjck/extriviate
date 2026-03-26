@@ -16,11 +16,8 @@ export class FooterComponent {
   readonly year = new Date().getFullYear();
 
   readonly themeOptions: { value: ActiveTheme; label: string }[] = [
-    { value: 'quiz-show', label: 'Quiz Show' },
-    { value: 'light', label: 'Light' },
     { value: 'dark', label: 'Dark' },
-    { value: 'showcase', label: 'Showcase' },
-    { value: 'glitzy', label: 'Glitzy' },
+    { value: 'light', label: 'Light' },
   ];
 
   protected onThemeChange(event: Event): void {

@@ -13,7 +13,7 @@
 }
 
 .point-banner {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 800;
@@ -27,7 +27,7 @@
 
 // Timer
 .timer {
-  color: var(--text-primary);
+  color: var(--text-default);
   font-variant-numeric: tabular-nums;
   font-size: 3rem;
   font-weight: 800;
@@ -35,7 +35,7 @@
 
   &.urgent {
     animation: pulse 0.6s ease-in-out infinite;
-    color: var(--danger);
+    color: var(--danger-bg);
   }
 }
 
@@ -51,7 +51,7 @@
 
 // Buzz button
 .buzz-button {
-  background: var(--danger);
+  background: var(--danger-bg);
   border-radius: 50%;
   border: 4px solid rgba(255, 255, 255, 0.2);
   box-shadow:
@@ -91,17 +91,17 @@
 }
 
 .answer-input {
-  background: var(--surface-2);
+  background: var(--elevation-1);
   border-radius: 8px;
-  border: 2px solid var(--accent);
-  color: var(--text-primary);
+  border: 2px solid var(--primary-bg);
+  color: var(--text-default);
   flex: 1;
   font-size: 1rem;
   padding: 12px 16px;
   outline: none;
 
   &:focus {
-    border-color: var(--score-value);
+    border-color: var(--text-score);
     box-shadow: 0 0 0 2px rgba(245, 200, 66, 0.2);
   }
 }
@@ -109,9 +109,9 @@
 .ptt-button {
   align-items: center;
   background: transparent;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--primary-bg);
   border-radius: 50%;
-  color: var(--text-primary);
+  color: var(--text-default);
   cursor: pointer;
   display: flex;
   font-size: 1.2rem;
@@ -121,8 +121,8 @@
   width: 44px;
 
   &.listening {
-    background: var(--danger-dim);
-    border-color: var(--danger);
+    background: var(--danger-surface);
+    border-color: var(--danger-bg);
   }
 }
 
@@ -131,10 +131,10 @@
 }
 
 .submit-button {
-  background: var(--accent);
+  background: var(--primary-bg);
   border: none;
   border-radius: 8px;
-  color: var(--on-accent);
+  color: var(--primary-fg);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
@@ -142,7 +142,7 @@
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--accent-light);
+    background: var(--primary-bg-hover);
   }
 }
 
@@ -162,12 +162,12 @@
 
   &.correct {
     background: rgba(46, 204, 113, 0.15);
-    border: 2px solid var(--success);
+    border: 2px solid var(--success-bg);
   }
 
   &.wrong {
-    background: var(--danger-dim);
-    border: 2px solid var(--danger);
+    background: var(--danger-surface);
+    border: 2px solid var(--danger-bg);
   }
 }
 
@@ -184,7 +184,7 @@
 }
 
 .correct-answer {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-question);
   font-size: 1.1rem;
   margin-top: 12px;

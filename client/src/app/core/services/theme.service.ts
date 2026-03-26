@@ -1,18 +1,15 @@
 import { Injectable, signal, effect, inject, DestroyRef } from '@angular/core';
 
-export type ActiveTheme = 'dark' | 'light' | 'quiz-show' | 'showcase' | 'glitzy';
+export type ActiveTheme = 'dark' | 'light';
 
 const STORAGE_KEY = 'extriviate_theme';
 
-const VALID_THEMES = new Set<string>(['dark', 'light', 'quiz-show', 'showcase', 'glitzy']);
+const VALID_THEMES = new Set<string>(['dark', 'light']);
 
 // Maps each ActiveTheme to the value written to data-theme on <html>.
 const THEME_ATTR: Record<ActiveTheme, string> = {
   dark: '',
   light: 'light',
-  'quiz-show': 'quiz-show',
-  showcase: 'showcase',
-  glitzy: 'glitzy',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -47,7 +44,8 @@ export class ThemeService {
 
   private resolveInitialTheme(): ActiveTheme {
     const stored = localStorage.getItem(STORAGE_KEY);
+    // Unknown stored values (e.g. 'quiz-show', 'glitzy', 'showcase' from old saves) fall back to dark.
     if (stored && VALID_THEMES.has(stored)) return stored as ActiveTheme;
-    return this.systemDark.matches ? 'quiz-show' : 'light';
+    return this.systemDark.matches ? 'dark' : 'light';
   }
 }

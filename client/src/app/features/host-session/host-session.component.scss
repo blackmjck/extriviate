@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   font-family: var(--font-ui);
@@ -19,7 +19,7 @@
   }
 
   &__title {
-    color: var(--text-primary);
+    color: var(--text-default);
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
@@ -45,10 +45,10 @@
   }
 
   &__error-banner {
-    background: var(--danger-dim);
+    background: var(--danger-surface);
     border: 1px solid var(--danger-border);
     border-radius: 8px;
-    color: var(--danger);
+    color: var(--danger-bg);
     font-size: 0.9rem;
     margin-bottom: 1rem;
     padding: 12px 16px;
@@ -85,23 +85,23 @@
   }
 
   &__input {
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    background: var(--neutral-surface);
+    border: 1px solid var(--neutral-border);
     border-radius: 6px;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-family: inherit;
     font-size: 1rem;
     padding: 0.6rem 0.75rem;
     transition: border-color 0.15s;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
       outline: none;
     }
   }
 
   &__error {
-    color: var(--danger);
+    color: var(--danger-bg);
     font-size: 0.85rem;
     margin: 0;
   }
@@ -116,7 +116,7 @@
 // ---- Radio options ----
 
 .radio-option {
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--neutral-border);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -136,12 +136,12 @@
   }
 
   &--selected {
-    background: var(--accent-dim);
-    border-color: var(--accent);
+    background: var(--primary-surface);
+    border-color: var(--primary-bg);
   }
 
   &__title {
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-size: 0.95rem;
     font-weight: 600;
   }
@@ -155,8 +155,8 @@
 // ---- Toggle ----
 
 .toggle {
-  background: var(--surface-2);
-  border: 1px solid var(--border-subtle);
+  background: var(--elevation-1);
+  border: 1px solid var(--neutral-border);
   border-radius: 20px;
   color: var(--text-subtle);
   cursor: pointer;
@@ -169,8 +169,8 @@
     border-color 0.15s;
 
   &--on {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+    background: var(--primary-bg);
+    border-color: var(--primary-bg);
+    color: var(--primary-fg);
   }
 }

@@ -1,0 +1,33 @@
+// _07.reset.scss
+// Global resets: box-sizing, body defaults, font smoothing, focus management.
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--bg-base);
+  color: var(--text-default);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  min-height: 100vh;
+  padding: 0;
+}
+
+// Global focus indicator — uses --focus-ring which is theme-aware.
+// Satisfies WCAG 2.4.7 (AA). Components that set outline: none on inputs
+// must supply their own visible focus style.
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+// Remove focus ring for mouse users (shown only for keyboard navigation)
+:focus:not(:focus-visible) {
+  outline: none;
+}

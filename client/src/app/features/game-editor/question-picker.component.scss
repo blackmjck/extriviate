@@ -5,20 +5,20 @@
 
   &__pv-row {
     align-items: center;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--neutral-border);
     display: flex;
     gap: 12px;
     padding-bottom: 12px;
   }
 
   &__dd-row {
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--neutral-border);
     padding: 8px 0;
   }
 
   &__dd-label {
     align-items: center;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     cursor: pointer;
     display: flex;
     font-size: 0.875rem;
@@ -27,7 +27,7 @@
     user-select: none;
 
     input[type='checkbox'] {
-      accent-color: var(--accent);
+      accent-color: var(--primary-bg);
       cursor: pointer;
       height: 16px;
       width: 16px;
@@ -45,10 +45,10 @@
   }
 
   &__pv-input {
-    background: var(--surface-2);
-    border: 1px solid var(--border-moderate);
+    background: var(--elevation-1);
+    border: 1px solid var(--neutral-border-md);
     border-radius: 6px;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-size: 0.9rem;
     outline: none;
     padding: 7px 10px;
@@ -56,7 +56,7 @@
     width: 100px;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
     }
   }
 
@@ -71,8 +71,8 @@
 
   &__item {
     align-items: center;
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    background: var(--neutral-surface);
+    border: 1px solid var(--neutral-border);
     border-radius: 6px;
     display: flex;
     gap: 12px;
@@ -85,7 +85,7 @@
   }
 
   &__preview {
-    color: var(--text-muted);
+    color: var(--text-subtle);
     flex: 1;
     font-size: 0.875rem;
     margin: 0;
@@ -115,7 +115,7 @@
   }
 
   &__footer {
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid var(--neutral-border);
     padding-top: 12px;
   }
 }
@@ -137,10 +137,10 @@
 }
 
 .error-banner {
-  background: var(--danger-dim);
+  background: var(--danger-surface);
   border: 1px solid var(--danger-border);
   border-radius: 6px;
-  color: var(--danger);
+  color: var(--danger-bg);
   font-size: 0.875rem;
   padding: 10px 14px;
 }
@@ -161,22 +161,22 @@
   }
 
   &--primary {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--primary-bg);
+    color: var(--primary-fg);
     flex-shrink: 0;
 
     &:hover:not(:disabled) {
-      background: var(--accent-light);
+      background: var(--primary-bg-hover);
     }
   }
 
   &--ghost {
     background: transparent;
     border: 1px solid var(--accent-border);
-    color: var(--accent);
+    color: var(--primary-bg);
 
     &:hover:not(:disabled) {
-      background: var(--accent-dim);
+      background: var(--primary-surface);
     }
   }
 

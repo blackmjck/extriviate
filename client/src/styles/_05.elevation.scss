@@ -1,0 +1,63 @@
+// _05.elevation.scss
+// Elevation tints (M3-inspired), drop shadow scale, z-index scale, border-radius scale.
+
+:root {
+
+  // ——— Surface Tint Levels (M3-inspired) ———
+  // Apply as background-image overlay on a panel:
+  //   background: var(--elevation-1), var(--bg-card);
+  --elevation-0: transparent;                       // base / no elevation
+  --elevation-1: rgba(255, 255, 255, 0.05);        // raised cards, standard panels
+  --elevation-2: rgba(255, 255, 255, 0.08);        // dropdowns, hover menus
+  --elevation-3: rgba(255, 255, 255, 0.11);        // drawers, side sheets
+  --elevation-4: rgba(255, 255, 255, 0.12);        // dialogs, modals
+  --elevation-5: rgba(255, 255, 255, 0.14);        // top-level notifications
+
+  // ——— Drop Shadows ———
+  --shadow-none:       none;
+  --shadow-xs:         0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm:         0 1px 4px rgba(0, 0, 0, 0.30);
+  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.40);
+  --shadow-lg:         0 8px 24px rgba(0, 0, 0, 0.50);
+  --shadow-xl:         0 16px 48px rgba(0, 0, 0, 0.60);
+  --shadow-inner:      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.40);
+
+  // ——— Z-Index Scale ———
+  --z-base:      0;
+  --z-raised:    1;       // sticky table headers, minor stacking
+  --z-header:    100;     // site header (sticky)
+  --z-dropdown:  200;     // dropdowns, tooltips, context menus (above header)
+  --z-drawer:    300;     // side drawers, mobile nav
+  --z-overlay:   400;     // modal backdrops / scrims
+  --z-modal:     500;     // dialog content (above overlay)
+  --z-toast:     600;     // notification toasts
+  --z-tooltip:   700;     // tooltips that must clear modals
+  --z-vignette:  9998;    // game-show stage vignette (must clear all UI chrome)
+  --z-emergency: 9999;    // reconnect banner (topmost)
+
+  // ——— Border-Radius Scale ———
+  --radius-none: 0;
+  --radius-xs:   3px;      // micro-badges, tight corners
+  --radius-sm:   6px;      // buttons, inputs, tags
+  --radius-md:   10px;     // cards, panels
+  --radius-lg:   16px;     // modals, dialogs, large containers
+  --radius-xl:   24px;     // bottom sheets, hero cards
+  --radius-full: 9999px;   // pills, buzz button, circular avatars
+}
+
+// Light theme — reduce shadow opacity (shadows are subtler on light backgrounds)
+[data-theme='light'] {
+  --elevation-1: rgba(0, 0, 0, 0.04);
+  --elevation-2: rgba(0, 0, 0, 0.06);
+  --elevation-3: rgba(0, 0, 0, 0.08);
+  --elevation-4: rgba(0, 0, 0, 0.09);
+  --elevation-5: rgba(0, 0, 0, 0.11);
+
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-sm:   0 1px 4px rgba(0, 0, 0, 0.10);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg:   0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.18);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.80);
+}

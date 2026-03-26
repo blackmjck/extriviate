@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   padding: 32px 24px;
@@ -19,7 +19,7 @@
   }
 
   &__title {
-    color: var(--accent);
+    color: var(--primary-bg);
     flex: 1;
     font-size: 1.75rem;
     font-weight: 700;
@@ -28,14 +28,14 @@
 }
 
 .cat-form {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 10px;
   margin-bottom: 1.5rem;
   padding: 1.25rem;
 
   &__heading {
-    color: var(--text-primary);
+    color: var(--text-default);
     font-family: var(--font-question);
     font-size: 1.1rem;
     margin: 0 0 1rem;
@@ -46,7 +46,7 @@
   }
 
   &__label {
-    color: var(--text-muted);
+    color: var(--text-subtle);
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
@@ -54,18 +54,18 @@
   }
 
   &__input {
-    background: var(--surface-2);
-    border: 1px solid var(--border-strong);
+    background: var(--elevation-1);
+    border: 1px solid var(--neutral-border-strong);
     border-radius: 6px;
     box-sizing: border-box;
-    color: var(--text-primary);
+    color: var(--text-default);
     font-family: inherit;
     font-size: 0.9375rem;
     padding: 0.6rem 0.75rem;
     width: 100%;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
       box-shadow: 0 0 0 3px var(--accent-border);
       outline: none;
     }
@@ -77,7 +77,7 @@
   }
 
   &__error {
-    color: var(--error-text);
+    color: var(--text-error);
     display: block;
     font-size: 0.8rem;
     margin-top: 0.3rem;
@@ -95,8 +95,8 @@
 
 .cat-item {
   align-items: center;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 8px;
   display: flex;
   gap: 1rem;
@@ -111,7 +111,7 @@
   }
 
   &__name {
-    color: var(--text-primary);
+    color: var(--text-default);
     font-size: 0.9375rem;
     font-weight: 600;
     overflow: hidden;

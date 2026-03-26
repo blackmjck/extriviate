@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   padding: 48px 24px;
@@ -16,7 +16,7 @@
 }
 
 .title {
-  color: var(--accent);
+  color: var(--primary-bg);
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 2px;
@@ -57,7 +57,7 @@
   }
 
   &__score {
-    color: var(--score-value);
+    color: var(--text-score);
     font-family: var(--font-score);
     font-size: 1.1rem;
     font-weight: 700;
@@ -65,7 +65,7 @@
 
   &__bar {
     align-items: flex-end;
-    background: var(--accent);
+    background: var(--primary-bg);
     border-radius: 6px 6px 0 0;
     display: flex;
     justify-content: center;
@@ -75,13 +75,13 @@
   }
 
   &__rank {
-    color: var(--on-accent);
+    color: var(--primary-fg);
     font-size: 1.5rem;
     font-weight: 800;
   }
 
   &__slot--rank-1 .podium__bar {
-    background: var(--accent);
+    background: var(--primary-bg);
   }
 
   &__slot--rank-2 .podium__bar {
@@ -101,7 +101,7 @@
   width: 100%;
 
   th {
-    border-bottom: 2px solid var(--border-strong);
+    border-bottom: 2px solid var(--neutral-border-strong);
     color: var(--text-subtle);
     font-size: 0.75rem;
     font-weight: 500;
@@ -115,7 +115,7 @@
     transition: background 0.15s;
 
     &:hover {
-      background: var(--surface-1);
+      background: var(--neutral-surface);
     }
 
     &--top3 {
@@ -123,7 +123,7 @@
     }
 
     td {
-      border-bottom: 1px solid var(--surface-2);
+      border-bottom: 1px solid var(--elevation-1);
       padding: 10px 12px;
     }
   }
@@ -138,7 +138,7 @@
   }
 
   &__score {
-    color: var(--score-value);
+    color: var(--text-score);
     font-family: var(--font-score);
     font-weight: 700;
     text-align: right;
@@ -149,10 +149,10 @@
 // ---- Play Again ----
 
 .play-again-btn {
-  background: var(--accent);
+  background: var(--primary-bg);
   border: none;
   border-radius: 8px;
-  color: var(--on-accent);
+  color: var(--primary-fg);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
@@ -165,7 +165,7 @@
     transform 0.1s;
 
   &:hover {
-    background: var(--accent-light);
+    background: var(--primary-bg-hover);
     transform: translateY(-1px);
   }
 

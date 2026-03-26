@@ -19,9 +19,9 @@
 
 .category-header {
   align-items: center;
-  background: var(--accent);
+  background: var(--primary-bg);
   border-radius: 4px 4px 0 0;
-  color: var(--on-accent);
+  color: var(--primary-fg);
   display: flex;
   font-size: 0.85rem;
   font-weight: 700;
@@ -44,8 +44,8 @@
 
 .cell {
   align-items: center;
-  background: var(--accent);
-  border: 2px solid var(--border-subtle);
+  background: var(--primary-bg);
+  border: 2px solid var(--neutral-border);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -58,7 +58,7 @@
     transform 0.1s ease;
 
   &:hover:not(:disabled) {
-    background: var(--accent-light);
+    background: var(--primary-bg-hover);
     transform: scale(1.03);
   }
 
@@ -67,7 +67,7 @@
   }
 
   &.answered {
-    background: var(--surface-1);
+    background: var(--neutral-surface);
     border-color: transparent;
     cursor: default;
     opacity: 0.3;
@@ -84,7 +84,7 @@
 }
 
 .point-value {
-  color: var(--on-accent);
+  color: var(--primary-fg);
   font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 800;
@@ -105,8 +105,8 @@
 
 .orientation-prompt {
   align-items: center;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -117,7 +117,7 @@
   text-align: center;
 
   p {
-    color: var(--on-surface);
+    color: var(--text-default);
     font-size: 0.85rem;
     margin: 0;
   }

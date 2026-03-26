@@ -36,7 +36,7 @@
   animation: spin 0.8s linear infinite;
   border: 2px solid rgba(245, 200, 66, 0.25);
   border-radius: 50%;
-  border-top-color: var(--score-value);
+  border-top-color: var(--text-score);
   display: inline-block;
   flex-shrink: 0;
   height: 16px;
@@ -52,7 +52,7 @@
 // ---- Text ----
 
 .banner-text {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-ui);
   font-size: 0.875rem;
   font-weight: 600;

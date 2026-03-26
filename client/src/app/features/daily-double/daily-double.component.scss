@@ -23,8 +23,8 @@
 }
 
 .daily-double-card {
-  background: var(--bg-primary);
-  border: 3px solid var(--score-value);
+  background: var(--bg-base);
+  border: 3px solid var(--text-score);
   border-radius: 16px;
   box-shadow: 0 0 60px rgba(245, 200, 66, 0.25);
   padding: 40px 32px;
@@ -34,7 +34,7 @@
 }
 
 .title {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-display);
   font-size: 2.5rem;
   margin: 0 0 24px;
@@ -44,7 +44,7 @@
 }
 
 .score-display {
-  color: var(--text-primary);
+  color: var(--text-default);
   font-size: 1.1rem;
   margin: 0 0 20px;
   opacity: 0.85;
@@ -68,10 +68,10 @@
 .wager-input {
   -moz-appearance: textfield;
   appearance: textfield;
-  background: var(--surface-2);
-  border: 2px solid var(--accent);
+  background: var(--elevation-1);
+  border: 2px solid var(--primary-bg);
   border-radius: 8px;
-  color: var(--score-value);
+  color: var(--text-score);
   font-size: 1.5rem;
   font-weight: 700;
   outline: none;
@@ -80,7 +80,7 @@
   width: 160px;
 
   &:focus {
-    border-color: var(--score-value);
+    border-color: var(--text-score);
     box-shadow: 0 0 0 2px rgba(245, 200, 66, 0.2);
   }
 
@@ -99,10 +99,10 @@
 }
 
 .wager-submit {
-  background: var(--score-value);
+  background: var(--text-score);
   border: none;
   border-radius: 8px;
-  color: var(--bg-primary);
+  color: var(--bg-base);
   cursor: pointer;
   font-size: 1.1rem;
   font-weight: 700;

@@ -506,6 +506,80 @@ describe('AuthService', () => {
   });
 
   // -------------------------------------------------------------------------
+  describe('refreshTokenOnce()', () => {
+    it('returns a Promise that resolves and updates getAccessToken on success', async () => {
+      const { service, httpMock } = setup();
+
+      const p = service.refreshTokenOnce();
+      httpMock
+        .expectOne('/api/auth/refresh')
+        .flush({ success: true, data: { accessToken: 'once-token' } });
+
+      await p;
+      expect(service.getAccessToken()).toBe('once-token');
+      httpMock.verify();
+    });
+
+    it('concurrent calls share a single in-flight request', async () => {
+      const { service, httpMock } = setup();
+
+      const p1 = service.refreshTokenOnce();
+      const p2 = service.refreshTokenOnce();
+
+      // Only one network request must have been made
+      const pending = httpMock.match('/api/auth/refresh');
+      expect(pending.length).toBe(1);
+      pending[0].flush({ success: true, data: { accessToken: 'shared-token' } });
+
+      await Promise.all([p1, p2]);
+      expect(service.getAccessToken()).toBe('shared-token');
+      httpMock.verify();
+    });
+
+    it('clears the in-flight promise slot after success so the next call issues a new request', async () => {
+      const { service, httpMock } = setup();
+
+      // First call
+      const p1 = service.refreshTokenOnce();
+      httpMock
+        .expectOne('/api/auth/refresh')
+        .flush({ success: true, data: { accessToken: 'token-v1' } });
+      await p1;
+
+      // Second call — must produce a brand-new request
+      const p2 = service.refreshTokenOnce();
+      httpMock
+        .expectOne('/api/auth/refresh')
+        .flush({ success: true, data: { accessToken: 'token-v2' } });
+      await p2;
+
+      expect(service.getAccessToken()).toBe('token-v2');
+      httpMock.verify();
+    });
+
+    it('clears the in-flight promise slot after failure so the next call issues a new request', async () => {
+      const { service, httpMock } = setup();
+
+      // First call — fails
+      const p1 = service.refreshTokenOnce().catch(() => undefined);
+      httpMock
+        .expectOne('/api/auth/refresh')
+        .flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+      await p1;
+
+      // Second call — must produce a brand-new request (slot was cleared by finally())
+      const p2 = service.refreshTokenOnce();
+      httpMock
+        .expectOne('/api/auth/refresh')
+        .flush({ success: true, data: { accessToken: 'recovered-token' } });
+      await p2;
+
+      expect(service.getAccessToken()).toBe('recovered-token');
+      httpMock.verify();
+    });
+  });
+
+  // -------------------------------------------------------------------------
   describe('loadUser()', () => {
     describe('when an access token is already in memory', () => {
       it('GETs /api/users/me with the Authorization header', async () => {

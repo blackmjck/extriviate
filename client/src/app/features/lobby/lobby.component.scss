@@ -1,6 +1,6 @@
 .lobby-page {
   align-items: center;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-base);
   display: flex;
   font-family: var(--font-ui);
   justify-content: center;
@@ -9,8 +9,8 @@
 }
 
 .lobby-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   max-width: 520px;
@@ -19,7 +19,7 @@
 }
 
 .lobby-title {
-  color: var(--text-primary);
+  color: var(--text-default);
   font-family: var(--font-question);
   font-size: 1.75rem;
   margin: 0 0 1.5rem;
@@ -44,8 +44,8 @@
 
 .join-code-display {
   align-items: center;
-  background: var(--surface-1);
-  border: 2px dashed var(--border-strong);
+  background: var(--neutral-surface);
+  border: 2px dashed var(--neutral-border-strong);
   border-radius: 12px;
   cursor: pointer;
   display: flex;
@@ -57,13 +57,13 @@
     background 0.2s;
 
   &:hover {
-    background: var(--accent-dim);
-    border-color: var(--accent);
+    background: var(--primary-surface);
+    border-color: var(--primary-bg);
   }
 }
 
 .code-text {
-  color: var(--score-value);
+  color: var(--text-score);
   font-family: var(--font-ui);
   font-size: 2.5rem;
   font-weight: 700;
@@ -76,24 +76,24 @@
 }
 
 .error-banner {
-  background: var(--danger-dim);
+  background: var(--danger-surface);
   border: 1px solid var(--danger-border);
   border-radius: 8px;
-  color: var(--error-text);
+  color: var(--text-error);
   font-size: 0.875rem;
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
 }
 
 .media-prompt {
-  background: var(--accent-dim);
+  background: var(--primary-surface);
   border: 1px solid rgba(65, 105, 225, 0.2);
   border-radius: 8px;
   margin-bottom: 1.25rem;
   padding: 1rem;
 
   &__text {
-    color: var(--text-muted);
+    color: var(--text-subtle);
     font-size: 0.9rem;
     margin: 0 0 0.75rem;
   }
@@ -105,10 +105,10 @@
 }
 
 .btn-enable-media {
-  background: var(--accent);
+  background: var(--primary-bg);
   border: none;
   border-radius: 6px;
-  color: var(--on-accent);
+  color: var(--primary-fg);
   cursor: pointer;
   flex: 1;
   font-family: var(--font-ui);
@@ -123,7 +123,7 @@
 
 .btn-skip-media {
   background: transparent;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--neutral-border-strong);
   border-radius: 6px;
   color: var(--text-secondary);
   cursor: pointer;
@@ -132,7 +132,7 @@
   padding: 0.6rem 1rem;
 
   &:hover {
-    background: var(--surface-2);
+    background: var(--elevation-1);
   }
 }
 
@@ -148,7 +148,7 @@
 }
 
 .section-heading {
-  color: var(--text-muted);
+  color: var(--text-subtle);
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
@@ -164,11 +164,11 @@
 }
 
 .btn-start {
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  background: linear-gradient(135deg, var(--primary-bg), var(--primary-bg-hover));
   border: none;
   border-radius: 8px;
   box-shadow: 0 4px 16px var(--accent-border);
-  color: var(--on-accent);
+  color: var(--primary-fg);
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 1.125rem;

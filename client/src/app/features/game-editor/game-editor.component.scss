@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   padding: 32px 24px;
@@ -18,7 +18,7 @@
   }
 
   &__title {
-    color: var(--accent);
+    color: var(--primary-bg);
     flex: 1;
     font-size: 1.5rem;
     font-weight: 700;
@@ -57,10 +57,10 @@
 }
 
 .input {
-  background: var(--surface-2);
-  border: 1px solid var(--border-moderate);
+  background: var(--elevation-1);
+  border: 1px solid var(--neutral-border-md);
   border-radius: 6px;
-  color: var(--text-muted);
+  color: var(--text-subtle);
   font-size: 0.95rem;
   min-width: 280px;
   outline: none;
@@ -68,7 +68,7 @@
   transition: border-color 0.15s;
 
   &:focus {
-    border-color: var(--accent);
+    border-color: var(--primary-bg);
   }
 }
 
@@ -92,9 +92,9 @@
 
   &__category-header {
     align-items: center;
-    background: var(--accent);
+    background: var(--primary-bg);
     border-radius: 8px 8px 4px 4px;
-    color: var(--on-accent);
+    color: var(--primary-fg);
     cursor: pointer;
     display: flex;
     font-size: 0.85rem;
@@ -108,7 +108,7 @@
     transition: background 0.15s;
 
     &:hover {
-      background: var(--accent-light);
+      background: var(--primary-bg-hover);
     }
   }
 
@@ -126,8 +126,8 @@
 
   &__cell {
     align-items: center;
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
+    background: var(--neutral-surface);
+    border: 1px solid var(--neutral-border);
     border-radius: 4px;
     display: flex;
     justify-content: center;
@@ -162,7 +162,7 @@
 
     &--daily-double {
       background: rgba(245, 200, 66, 0.07);
-      border: 2px solid var(--score-value);
+      border: 2px solid var(--text-score);
       box-shadow: 0 0 8px rgba(245, 200, 66, 0.25);
     }
 
@@ -173,7 +173,7 @@
   }
 
   &__cell-add {
-    color: var(--accent);
+    color: var(--primary-bg);
     font-size: 1.25rem;
     font-weight: 300;
     opacity: 0.5;
@@ -183,7 +183,7 @@
     background: transparent;
     border: none;
     border-radius: 3px;
-    color: var(--destructive);
+    color: var(--danger-bg-strong);
     cursor: pointer;
     font-size: 0.7rem;
     line-height: 1;
@@ -202,7 +202,7 @@
   }
 
   &__point-value {
-    color: var(--score-value);
+    color: var(--text-score);
     font-family: var(--font-score);
     font-size: 1.25rem;
     font-weight: 700;
@@ -210,7 +210,7 @@
 
   &__dd-badge {
     bottom: 3px;
-    color: var(--score-value);
+    color: var(--text-score);
     font-size: 0.6rem;
     font-weight: 700;
     left: 4px;
@@ -238,8 +238,8 @@
   z-index: 100;
 
   &__panel {
-    background: var(--bg-overlay);
-    border: 1px solid var(--border-subtle);
+    background: var(--bg-sunken);
+    border: 1px solid var(--neutral-border);
     border-radius: 12px;
     max-height: 80vh;
     max-width: 640px;
@@ -255,7 +255,7 @@
     margin-bottom: 20px;
 
     h2 {
-      color: var(--accent);
+      color: var(--primary-bg);
       font-size: 1.25rem;
       font-weight: 700;
       margin: 0;
@@ -283,7 +283,7 @@
   animation: spin 0.7s linear infinite;
   border: 2px solid var(--text-hint);
   border-radius: 50%;
-  border-top-color: var(--accent);
+  border-top-color: var(--primary-bg);
   height: 12px;
   width: 12px;
 }
@@ -303,10 +303,10 @@
 }
 
 .error-banner {
-  background: var(--danger-dim);
+  background: var(--danger-surface);
   border: 1px solid var(--danger-border);
   border-radius: 8px;
-  color: var(--danger);
+  color: var(--danger-bg);
   font-size: 0.9rem;
   margin-bottom: 24px;
   padding: 12px 16px;

@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   flex: 1;
@@ -19,7 +19,7 @@
   }
 
   &__title {
-    color: var(--accent);
+    color: var(--primary-bg);
     flex: 1;
     font-size: 1.75rem;
     font-weight: 700;
@@ -36,8 +36,8 @@
 }
 
 .game-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -57,7 +57,7 @@
   }
 
   &__title {
-    color: var(--text-primary);
+    color: var(--text-default);
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0;

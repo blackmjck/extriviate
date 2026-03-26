@@ -15,7 +15,7 @@ export class GameSocketService {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private currentSessionId: number | null = null;
-  private currentToken: string | undefined;
+  private tokenGetter: (() => string | undefined) | undefined;
   private pendingMessages: ClientGameMessage[] = [];
   private intentionallyClosed = false;
   private hasConnectedOnce = false;
@@ -26,11 +26,15 @@ export class GameSocketService {
   readonly reconnecting = signal(false);
   readonly messages$ = new Subject<GameplayMessage>();
 
-  connect(sessionId: number, token?: string, isReconnect = false): void {
+  connect(
+    sessionId: number,
+    tokenGetter?: (() => string | undefined),
+    isReconnect = false,
+  ): void {
     this.intentionallyClosed = false;
     this.isReconnecting = isReconnect;
     this.currentSessionId = sessionId;
-    this.currentToken = token;
+    this.tokenGetter = tokenGetter;
     this.reconnectAttempt = 0;
     this.openConnection();
   }
@@ -82,8 +86,11 @@ export class GameSocketService {
         if (guestToken) {
           this.socket!.send(JSON.stringify({ type: 'reconnect_guest', guestToken }));
         }
-      } else if (this.currentToken) {
-        this.socket!.send(JSON.stringify({ type: 'auth', token: this.currentToken }));
+      } else {
+        const token = this.tokenGetter?.();
+        if (token) {
+          this.socket!.send(JSON.stringify({ type: 'auth', token }));
+        }
       }
       this.isReconnecting = false;
       // Pending messages are flushed only after the server confirms identity

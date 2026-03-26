@@ -115,11 +115,16 @@ export class JoinComponent implements OnInit {
         if (guestToken) {
           this.guestSession.store(guestToken, player.id, updatedSession.id);
         }
-        // Connect without a token - the socket will send reconnect_guest on open.
-        this.gameSocket.connect(updatedSession.id, tokens?.accessToken);
+        // Connect without a token getter - the socket will send reconnect_guest on open.
+        this.gameSocket.connect(updatedSession.id);
       } else {
-        // Registered user - pass the access token so the socket can send auth.
-        this.gameSocket.connect(updatedSession.id, tokens?.accessToken);
+        // Registered user: prefer the live access token from AuthService (kept fresh
+        // by the auth interceptor), falling back to the token in the join response.
+        const capturedToken = tokens?.accessToken;
+        this.gameSocket.connect(
+          updatedSession.id,
+          () => this.auth.getAccessToken() ?? capturedToken,
+        );
       }
 
       await this.router.navigate(['/session', updatedSession.id]);

@@ -30,31 +30,31 @@
   }
 
   &--primary {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--primary-bg);
+    color: var(--primary-fg);
 
     &:hover {
-      background: var(--accent-light);
+      background: var(--primary-bg-hover);
     }
   }
 
   &--ghost {
     background: transparent;
     border: 1px solid var(--accent-border);
-    color: var(--accent);
+    color: var(--primary-bg);
 
     &:hover {
-      background: var(--accent-dim);
+      background: var(--primary-surface);
     }
   }
 
   &--danger-ghost {
     background: transparent;
     border: 1px solid var(--danger-border);
-    color: var(--danger);
+    color: var(--danger-bg);
 
     &:hover {
-      background: var(--danger-dim);
+      background: var(--danger-surface);
     }
   }
 }
@@ -62,8 +62,8 @@
 // ---- Form ----
 
 .cat-form {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -91,17 +91,17 @@
 }
 
 .input {
-  background: var(--surface-2);
-  border: 1px solid var(--border-moderate);
+  background: var(--elevation-1);
+  border: 1px solid var(--neutral-border-md);
   border-radius: 6px;
-  color: var(--text-muted);
+  color: var(--text-subtle);
   font-size: 0.9rem;
   outline: none;
   padding: 8px 12px;
   transition: border-color 0.15s;
 
   &:focus {
-    border-color: var(--accent);
+    border-color: var(--primary-bg);
   }
 }
 
@@ -117,7 +117,7 @@
 
   &__item {
     align-items: center;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--neutral-border);
     display: flex;
     gap: 8px;
     padding: 4px 0;
@@ -131,7 +131,7 @@
     background: none;
     border: none;
     border-radius: 6px;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     cursor: pointer;
     display: flex;
     flex: 1;
@@ -142,7 +142,7 @@
     transition: background 0.15s;
 
     &:hover:not(:disabled) {
-      background: var(--accent-dim);
+      background: var(--primary-surface);
     }
 
     &:disabled {
@@ -162,7 +162,7 @@
 
   &__used-badge {
     align-self: flex-start;
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--neutral-border-strong);
     border-radius: 4px;
     color: var(--text-subtle);
     font-size: 0.65rem;
@@ -197,10 +197,10 @@
 }
 
 .error-banner {
-  background: var(--danger-dim);
+  background: var(--danger-surface);
   border: 1px solid var(--danger-border);
   border-radius: 6px;
-  color: var(--danger);
+  color: var(--danger-bg);
   font-size: 0.85rem;
   padding: 10px 14px;
 }

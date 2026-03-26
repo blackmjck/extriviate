@@ -1,0 +1,104 @@
+// _02.themes.scss
+// Only two themes: Dark (default :root) and Light ([data-theme='light']).
+// Game-show visual effects are default Dark behavior, not a separate theme.
+
+// ——— Dark Theme Default Effects ———
+// These apply globally (no [data-theme] selector needed) because Dark is the default.
+
+// Beveled heading effect — 1980s studio graphic aesthetic
+h1, h2, h3 {
+  letter-spacing: var(--tracking-widest);
+  text-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.65),
+    -1px -1px 0 rgba(255, 255, 255, 0.07);
+  text-transform: uppercase;
+}
+
+// Studio vignette — darkens corners to focus attention on the center stage
+body::after {
+  background: radial-gradient(
+    ellipse 80% 65% at 50% 35%,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.38) 100%
+  );
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: var(--z-vignette);
+}
+
+// Metallic primary button — default Dark style
+.btn--primary {
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md), var(--shadow-inner);
+}
+
+// ——— Light Theme ———
+[data-theme='light'] {
+  // ——— Tier 1 primitive overrides ———
+  --_neutral-50:  #1a1a2e;   // dark text (inverted for light bg)
+  --_neutral-100: #2e2e48;
+  --_neutral-200: #4a4a72;   // secondary text on light bg
+  --_neutral-300: #4d4d4d;   // hint text — ≥7.14:1 on all light surfaces (AAA)
+  --_neutral-400: #c0c0d8;
+  --_neutral-500: #d0d0e8;
+  --_neutral-600: #ffffff;   // card background
+  --_neutral-700: #eaeaf5;   // raised background
+  --_neutral-800: #ededf8;   // sunken background
+  --_neutral-900: #f4f4fa;   // page background (light)
+
+  // ——— Semantic overrides: primary → blue (not gold) ———
+  --primary-bg:            var(--_blue-650);         // #2248c0 — 7.68:1 with white (AAA)
+  --primary-fg:            #ffffff;
+  --primary-bg-hover:      var(--_blue-660);         // #1e45b0 — 8.34:1 with white (AAA)
+  --primary-bg-active:     var(--_blue-700);
+  --primary-surface:       rgba(47, 87, 212, 0.08);
+  --primary-border:        rgba(47, 87, 212, 0.25);
+  --primary-border-strong: var(--_blue-650);
+  --focus-ring:            var(--_blue-650);
+
+  // ——— Accent stays gold — scores and highlights remain gold on light bg ———
+  --accent-bg:  var(--_gold-400);         // #f5c842
+  --accent-fg:  #1a1a2e;                  // dark text on gold (light theme)
+
+  // ——— Warning uses amber (gold is accent, not warning, on light bg) ———
+  --warning-bg:    var(--_orange-400);       // #ff9900 — bright amber for dark text (AAA)
+  --warning-fg:    #0a0a14;                  // near-black on #ff9900 = 9.43:1 (AAA)
+  --text-warning:  var(--_amber-900);        // #5c3d00 — ≥8.34:1 on all light surfaces (AAA)
+
+  // ——— Status text colors (adjusted for light bg contrast) ———
+  --text-error:    var(--_red-700);          // #922b21 — dark red on light bg
+  --text-score:    var(--_gold-800);          // #604700 — ≥7.38:1 on all light surfaces (AAA)
+  --text-success:  var(--_green-800);        // #0b5228 — ≥7.92:1 on all light surfaces (AAA)
+  --text-disabled: rgba(26, 26, 46, 0.35);
+
+  // ——— Borders: neutral (no gold tint on light bg) ———
+  --neutral-border:        rgba(0, 0, 0, 0.10);
+  --neutral-border-md:     rgba(0, 0, 0, 0.16);
+  --neutral-border-strong: rgba(0, 0, 0, 0.24);
+
+  // ——— Scrim is lighter ———
+  --bg-scrim: rgba(0, 0, 0, 0.50);
+
+  // ——— Cancel Dark theme visual effects ———
+  h1, h2, h3 {
+    letter-spacing: normal;
+    text-shadow: none;
+    text-transform: none;
+  }
+
+  body::after {
+    display: none;   // no vignette on light theme
+  }
+
+  .btn--primary {
+    font-weight: var(--font-semibold);
+    letter-spacing: normal;
+    text-transform: none;
+    box-shadow: var(--shadow-sm);
+  }
+}

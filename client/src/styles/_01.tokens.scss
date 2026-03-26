@@ -1,0 +1,110 @@
+// _01.tokens.scss
+// Public semantic API — components ONLY reference these tokens, never primitives.
+
+:root {
+
+  // ============================================================
+  // SURFACES — page-level background layers (neutral/structural)
+  // ============================================================
+
+  --bg-base:     var(--_neutral-900);   // page background
+  --bg-raised:   var(--_neutral-700);   // elevated sections, sidebars
+  --bg-card:     var(--_neutral-600);   // cards, panels, containers
+  --bg-sunken:   var(--_neutral-800);   // wells, inset areas, code blocks
+  --bg-scrim:    rgba(0, 0, 0, 0.65);  // modal/drawer backdrop
+
+  // ============================================================
+  // TEXT — colors for text on surface backgrounds
+  // ============================================================
+
+  --text-default:   var(--_neutral-50);           // white — primary body text on cobalt
+  --text-secondary: var(--_neutral-200);          // warm cream — supporting / meta text
+  --text-subtle:    var(--_neutral-100);          // desaturated — low-emphasis labels
+  --text-hint:      var(--_neutral-300);          // hint text — ≥7.26:1 on dark surfaces (AAA)
+  --text-score:     var(--_gold-500);             // score/point value text — 11.12:1 on dark bg-base
+  --text-disabled:  rgba(255, 255, 255, 0.30);   // disabled form elements on cobalt
+  --text-error:     var(--_red-300);              // inline error messages
+  --text-inverse:   var(--_neutral-900);          // dark cobalt text for light surfaces
+
+  // ============================================================
+  // PRIMARY — main brand/interactive color
+  // Dark theme: GOLD (#f5c518). Light theme override: BLUE (#2f57d4).
+  // ============================================================
+
+  --primary-bg:            var(--_gold-500);               // gold — solid button, active badge
+  --primary-fg:            #0a1230;                        // dark navy on gold (11.4:1)
+  --primary-bg-hover:      var(--_gold-300);               // lighter gold hover
+  --primary-bg-active:     var(--_gold-600);               // darker gold pressed
+  --primary-surface:       rgba(245, 197, 24, 0.12);       // tinted chip/tag background
+  --primary-border:        rgba(245, 197, 24, 0.40);       // ghost button border
+  --primary-border-strong: var(--_gold-500);               // focused input border
+  --focus-ring:            var(--_gold-600);               // darker gold — 3:1+ on cobalt bg
+
+  // ============================================================
+  // ACCENT — secondary highlight (gold in Dark = same as primary;
+  // kept as distinct token for semantic clarity and light-theme separation)
+  // ============================================================
+
+  --accent-bg:      var(--_gold-500);               // score displays, highlights
+  --accent-fg:      #0a1230;                        // dark navy on gold
+  --accent-bg-hover: var(--_gold-300);
+  --accent-surface: rgba(245, 197, 24, 0.12);
+  --accent-border:  rgba(245, 197, 24, 0.40);
+
+  // ============================================================
+  // NEUTRAL — secondary UI elements, ghost buttons, muted cards
+  // ============================================================
+
+  --neutral-bg:            var(--_neutral-600);
+  --neutral-fg:            var(--_neutral-50);
+  --neutral-bg-hover:      var(--_neutral-500);
+  --neutral-surface:       rgba(255, 255, 255, 0.05);
+  --neutral-border:        rgba(245, 197, 24, 0.15);       // gold-tinted subtle border
+  --neutral-border-md:     rgba(245, 197, 24, 0.30);       // gold-tinted input/form border
+  --neutral-border-strong: rgba(245, 197, 24, 0.55);       // gold-tinted prominent border
+
+  // ============================================================
+  // SUCCESS — positive feedback, published state, correct answers
+  // ============================================================
+
+  --success-bg:       var(--_green-500);
+  --success-fg:       var(--_neutral-900);
+  --success-bg-hover: var(--_green-400);
+  --success-surface:  rgba(46, 204, 113, 0.12);
+  --success-border:   rgba(46, 204, 113, 0.30);
+  --text-success:     var(--_green-300);              // success text on dark bg
+  --published:        var(--_green-600);              // published game state indicator
+
+  // ============================================================
+  // WARNING — caution state, near-limit indicators
+  // ============================================================
+
+  --warning-bg:       var(--_orange-400);             // orange — distinct from gold primary
+  --warning-fg:       #0a0a14;                        // near-black on orange
+  --warning-bg-hover: var(--_orange-500);
+  --warning-surface:  rgba(255, 153, 0, 0.12);
+  --warning-border:   rgba(255, 153, 0, 0.35);
+  --text-warning:     var(--_orange-400);             // warning text on dark cobalt bg
+
+  // ============================================================
+  // DANGER — errors, destructive actions, wrong answers
+  // ============================================================
+
+  --danger-bg:            var(--_red-500);
+  --danger-fg:            #ffffff;                        // white on #a31515 = 7.91:1 (AAA)
+  --danger-bg-hover:      var(--_red-400);
+  --danger-bg-strong:     var(--_red-600);                // delete buttons, hard errors
+  --danger-surface:       rgba(163, 21, 21, 0.12);
+  --danger-border:        rgba(163, 21, 21, 0.30);
+  --danger-border-strong: var(--_red-500);
+  --text-danger:          var(--_red-300);                // error text on dark bg
+
+  // ============================================================
+  // DISABLED — inactive state modifier (applies to any role)
+  // ============================================================
+
+  --disabled-bg:     rgba(255, 255, 255, 0.06);
+  --disabled-fg:     rgba(232, 232, 240, 0.35);
+  --disabled-border: rgba(255, 255, 255, 0.08);
+
+}

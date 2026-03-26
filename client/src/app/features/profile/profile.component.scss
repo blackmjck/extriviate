@@ -1,6 +1,6 @@
 :host {
-  background: var(--bg-primary);
-  color: var(--text-muted);
+  background: var(--bg-base);
+  color: var(--text-subtle);
   display: block;
   // min-height: 100vh
   padding: 32px 24px;
@@ -19,7 +19,7 @@
   }
 
   &__title {
-    color: var(--accent);
+    color: var(--primary-bg);
     flex: 1;
     font-size: 1.75rem;
     font-weight: 700;
@@ -28,8 +28,8 @@
 }
 
 .profile-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 10px;
   margin-bottom: 1.5rem;
   padding: 1.25rem 1.5rem;
@@ -43,7 +43,7 @@
   }
 
   &__name {
-    color: var(--text-primary);
+    color: var(--text-default);
     font-size: 1.5rem;
     font-weight: 700;
   }
@@ -61,10 +61,10 @@
   }
 
   &__name-input {
-    background: var(--surface-2);
-    border: 1px solid var(--border-strong);
+    background: var(--elevation-1);
+    border: 1px solid var(--neutral-border-strong);
     border-radius: 6px;
-    color: var(--text-primary);
+    color: var(--text-default);
     flex: 1;
     font-family: inherit;
     font-size: 1rem;
@@ -72,7 +72,7 @@
     padding: 0.45rem 0.65rem;
 
     &:focus {
-      border-color: var(--accent);
+      border-color: var(--primary-bg);
       box-shadow: 0 0 0 3px var(--accent-border);
       outline: none;
     }
@@ -85,14 +85,14 @@
   }
 
   &__field-error {
-    color: var(--error-text);
+    color: var(--text-error);
     display: block;
     font-size: 0.8rem;
     margin-top: 0.3rem;
   }
 
   &__role {
-    color: var(--accent);
+    color: var(--primary-bg);
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -112,8 +112,8 @@
 
 .stat-card {
   align-items: center;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  background: var(--neutral-surface);
+  border: 1px solid var(--neutral-border);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -125,12 +125,12 @@
     border-color 0.15s;
 
   &[href]:hover {
-    background: var(--accent-dim);
+    background: var(--primary-surface);
     border-color: rgba(65, 105, 225, 0.25);
   }
 
   &__value {
-    color: var(--score-value);
+    color: var(--text-score);
     font-family: var(--font-score);
     font-size: 2.5rem;
     font-weight: 800;
